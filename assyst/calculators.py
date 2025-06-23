@@ -1,3 +1,8 @@
+'''
+Convenience shorts to create ASE calculators to be used inside ASSYST.
+
+Exists mostly to avoid passing around potentially large and unpickle-able calculator objects.
+'''
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, asdict
 from functools import lru_cache
@@ -7,16 +12,22 @@ from ase.calculators.calculator import Calculator
 from ase.calculators.morse import MorsePotential
 
 class AseCalculatorConfig(ABC):
-    """Base class to keep calculator configurations.
-
-    Exists mostly to avoid passing around potentially large and unpickle-able calculator objects."""
+    '''Base class to keep calculator configurations.'''
     @abstractmethod
     def get_calculator(self) -> Calculator:
+        '''Return the actual calculator object.
+
+        Returns:
+            :class:`ase.calculators.calculator.Calculator`: the actually usable calculator'''
         pass
 
 @dataclass(frozen=True, eq=True)
 class Grace(AseCalculatorConfig):
-    """Universal Graph Atomic Cluster Expansion models."""
+    '''Universal Graph Atomic Cluster Expansion models.
+
+    .. attention::
+        This class needs additional dependencies!
+        Install `tensorpotential` from `PyPI <https://pypi.org/project/tensorpotential/>`__.'''
     model: str = "GRACE-FS-OAM"
 
     @lru_cache(maxsize=1)

@@ -34,10 +34,10 @@ class Relax:
         Returned structure will have a SinglePointCalculator with the final energy, forces and stresses attached.
 
         Args:
-            structure (Atoms): structure to relax
+            structure (ase.Atoms): structure to relax
 
         Returns:
-            Atoms: relaxed structure with attached single point calculator.'''
+            :class:`ase.Atoms`: relaxed structure with attached single point calculator.'''
         calc = structure.calc
         structure = structure.copy()
         structure.calc = calc
@@ -97,18 +97,18 @@ def relax(
         settings: Relax,
         calculator: AseCalculatorConfig | Calculator,
         structure: Iterable[Atoms]
-) -> Atoms | Iterator[Atoms]:
+) -> Iterator[Atoms]:
     '''Relax structures according the given relaxation settings.
 
     Output structures have the final energy and force attached as ase's SinglePointCalculator.
 
     Args:
         settings (Relax): the kind of relaxation to perform (position, volume, etc.)
-        calculator (AseCalculatorConfig or ase.calculator.Calculator): the energy/force engine to use
-        structure (iterable of Atoms): the structures to minimize
+        calculator (AseCalculatorConfig or ase.calculators.calculator.Calculator): the energy/force engine to use
+        structure (iterable of ase.Atoms): the structures to minimize
 
     Yields:
-        `Atoms` the corresponding relaxed configuration to each input structure
+        :class:`ase.Atoms`: the corresponding relaxed configuration to each input structure
     '''
     for s in structure:
         if isinstance(calculator, AseCalculatorConfig):
