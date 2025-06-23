@@ -1,3 +1,5 @@
+[![Documentation Status](https://readthedocs.org/projects/assyst/badge/?version=latest)](https://assyst.readthedocs.io/en/latest/?badge=latest)
+
 # ASSYST or _Automated Small SYmmetric Structure Training_
 
 A minimal reference implementation of ASSYST method to generate transferable training data for machine learning potentials, see also the corresponding [paper](https://doi.org/10.1038/s41524-025-01669-4).
