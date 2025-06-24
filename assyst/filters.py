@@ -8,9 +8,13 @@ from collections import defaultdict
 from dataclasses import dataclass
 from itertools import combinations_with_replacement
 from math import nan, inf
+from typing import Callable
 
 from ase import Atoms
 from structuretoolkit import get_neighbors
+
+Filter = Callable[[Atoms], bool]
+
 
 @dataclass
 class DistanceFilter:
@@ -20,7 +24,7 @@ class DistanceFilter:
     radii: dict[str, float]
 
     @staticmethod
-    def _element_wise_dist(structure: Atoms):
+    def _element_wise_dist(structure: Atoms) -> dict[str, float]:
         pair = defaultdict(lambda: inf)
         # on weird aspect ratios the neighbor searching code can allocate huge structures,
         # because it explicitly repeats the structure to create ghost atoms
@@ -42,7 +46,7 @@ class DistanceFilter:
         Return True if structure satifies minimum distance criteria.
 
         Args:
-            structure (Atoms): structure to check
+            structure (ase.Atoms): structure to check
 
         Returns:
             `False`: at least on bond is shorter than the sum of given cutoff radii of the respective elements
@@ -55,6 +59,7 @@ class DistanceFilter:
                 return False
         return True
 
+
 @dataclass
 class AspectFilter:
     '''Filters structures with high aspect ratios.'''
@@ -64,13 +69,14 @@ class AspectFilter:
         '''Return True if structure's cell has an agreeable aspect ratio.
 
         Args:
-            structure (Atoms): structure to check
+            structure (ase.Atoms): structure to check
 
         Returns:
             `True`: lattice's aspect ratio is below or equal `:attr:`.maximum_aspect_ratio`.
             `False`: lattice's aspect ratio is above `:attr:`.maximum_aspect_ratio`.'''
         a, b, c = sorted(structure.cell.lengths())
         return c / a <= self.maximum_aspect_ratio
+
 
 @dataclass
 class VolumeFilter:
@@ -81,7 +87,7 @@ class VolumeFilter:
         '''Return True if structure's volume is within range.
 
         Args:
-            structure (Atoms): structure to check
+            structure (ase.Atoms): structure to check
 
         Returns:
             `True`: volume per atom is smaller or equal than `:attr:.maximum_volume_per_atom`.

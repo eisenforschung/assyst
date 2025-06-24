@@ -6,6 +6,8 @@ from typing import Iterable, Callable, NewType, Self, Iterator
 from dataclasses import dataclass
 import numpy as np
 
+from .filters import Filter
+
 
 def rattle(structure: Atoms, sigma: float) -> Atoms:
     """Randomly displace positions with gaussian noise.
@@ -56,7 +58,6 @@ class ModifyABC(ABC):
     def __add__(self, other: Self) -> 'Series':
         return Series((self, other))
 
-Filter = Callable[[Atoms], bool]
 Modify = Callable[[Atoms], Atoms] | ModifyABC
 
 def apply_modifications(

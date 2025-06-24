@@ -92,8 +92,9 @@ class Formulas(Sequence):
         return len(self.atoms)
 
 def sample_space_groups(
-        elements: Formulas | Iterable[dict[str, int]],
+        formulas: Formulas | Iterable[dict[str, int]],
         spacegroups: list[int] | tuple[int,...] | None = None,
+        min_atoms: int =  1,
         max_atoms: int = 10,
         max_structures: int | None = None,
 ) -> Iterator[Atoms]:
@@ -101,7 +102,7 @@ def sample_space_groups(
     Create symmetric random structures.
 
     Args:
-        elements (Formulas or iterable of dicts from str to int): list of chemical formulas
+        formulas (Formulas or iterable of dicts from str to int): list of chemical formulas
         spacegroups (list of int): which space groups to generate
         max_atoms (int): do not generate structures larger than this
         max_structures (int): generate at most this many structures
@@ -117,7 +118,7 @@ def sample_space_groups(
 
     yielded = 0
     with catch_warnings(category=UserWarning, action='ignore'):
-        for stoich in (bar := tqdm(elements)):
+        for stoich in (bar := tqdm(formulas)):
             elements, num_atoms = zip(*stoich.items())
             stoich_str = "".join(f"{s}{n}" for s, n in zip(elements, num_atoms))
             bar.set_description(stoich_str)
