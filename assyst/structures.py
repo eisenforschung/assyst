@@ -120,6 +120,8 @@ def sample_space_groups(
     with catch_warnings(category=UserWarning, action='ignore'):
         for stoich in (bar := tqdm(formulas)):
             elements, num_atoms = zip(*stoich.items())
+            if not min_atoms <= sum(num_atoms) <= max_atoms:
+                continue
             stoich_str = "".join(f"{s}{n}" for s, n in zip(elements, num_atoms))
             bar.set_description(stoich_str)
             for s in pyxtal(spacegroups, elements, num_atoms):
