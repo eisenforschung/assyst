@@ -43,16 +43,15 @@ class Relax:
         structure.calc = calc
         lbfgs = LBFGS(self.apply_filter_and_constraints(structure), logfile="/dev/null")
         lbfgs.run(fmax=self.force_tolerance, steps=self.max_steps)
-        calc = structure.calc
+        structure.calc = None
         structure.calc = SinglePointCalculator(
                 structure,
                 energy=calc.get_potential_energy(),
                 forces=calc.get_forces(),
                 stress=calc.get_stress()
         )
-        relaxed_structure = structure
-        relaxed_structure.constraints.clear()
-        return relaxed_structure
+        structure.constraints.clear()
+        return structure
 
 
 @dataclass(frozen=True, eq=True)
@@ -111,6 +110,7 @@ def relax(
         :class:`ase.Atoms`: the corresponding relaxed configuration to each input structure
     '''
     for s in structure:
+        s = s.copy()
         if isinstance(calculator, AseCalculatorConfig):
             s.calc = calculator.get_calculator()
         else:
