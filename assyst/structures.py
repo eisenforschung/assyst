@@ -8,6 +8,7 @@ from typing import Self, Iterable, Iterator, Literal
 
 from ase import Atoms
 from structuretoolkit.build.random import pyxtal
+from pyxtal.tolerance import Tol_matrix
 from tqdm.auto import tqdm
 import math
 
@@ -127,7 +128,7 @@ def sample_space_groups(
                 continue
             stoich_str = "".join(f"{s}{n}" for s, n in zip(elements, num_atoms))
             bar.set_description(stoich_str)
-            for s in pyxtal(spacegroups, elements, num_atoms, dim=dim):
+            for s in pyxtal(spacegroups, elements, num_atoms, dim=dim, tm=Tol_matrix(prototype='metallic')):
                 yield s['atoms']
                 yielded += 1
                 if yielded >= max_structures:
