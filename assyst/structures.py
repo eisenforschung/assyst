@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from collections.abc import Sequence
 from itertools import product
 from warnings import catch_warnings
-from typing import Self, Iterable, Iterator
+from typing import Self, Iterable, Iterator, Literal
 
 from ase import Atoms
 from structuretoolkit.build.random import pyxtal
@@ -97,6 +97,7 @@ def sample_space_groups(
         min_atoms: int =  1,
         max_atoms: int = 10,
         max_structures: int | None = None,
+        dim: Literal[0, 1, 2, 3] = 3,
 ) -> Iterator[Atoms]:
     '''
     Create symmetric random structures.
@@ -106,6 +107,8 @@ def sample_space_groups(
         spacegroups (list of int): which space groups to generate
         max_atoms (int): do not generate structures larger than this
         max_structures (int): generate at most this many structures
+        dim (one of 0, 1, 2, or 3): the dimensionality of the structures to generate; if lower than 3 the code generates
+            samples no longer from space groups, but from the subperiodic layer, rod, or point groups.
 
     Yields:
         `Atoms`: random symmetric crystal structures
@@ -124,7 +127,7 @@ def sample_space_groups(
                 continue
             stoich_str = "".join(f"{s}{n}" for s, n in zip(elements, num_atoms))
             bar.set_description(stoich_str)
-            for s in pyxtal(spacegroups, elements, num_atoms):
+            for s in pyxtal(spacegroups, elements, num_atoms, dim=dim):
                 yield s['atoms']
                 yielded += 1
                 if yielded >= max_structures:
