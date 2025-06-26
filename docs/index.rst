@@ -11,4 +11,5 @@ ASSYST documentation
    :caption: Contents:
 
    Home <self>
+   installation
    assyst
