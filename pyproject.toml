@@ -13,6 +13,7 @@ line-length = 120
 
 [project]
 name = "assyst"
+summary = "Reference implentation of the Automated Small Symmetric Structure Training method."
 dynamic = ["version"]
 authors = [
     { name="Marvin Poul", email="pmrv@posteo.de" },
@@ -26,12 +27,18 @@ classifiers = [
 #license-file = ["LICENSE"]
 dependencies = [
     "structuretoolkit[pyxtal]==0.0.32",
+    # only because the structuretoolkit conda package does not pull pyxtal and has no optional dependencies
+    # so even though the line above is sufficient for PyPI, we need this so it works from conda
+    "pyxtal>=1,<1.0.10",
     "tqdm>=4,<5",
     "ase>=3,<4",
     "matplotlib>=3,<4",
     "numpy>1,<3",
     "pandas>=2.2,<3",
 ]
+
+[project.optional-dependencies]
+grace = ["tensorpotential>=0.5.1,<0.5.2"]
 
 [project.urls]
 Repository = "https://github.com/eisenforschung/assyst"
