@@ -58,12 +58,20 @@ class TestFormulas(unittest.TestCase):
         self.assertEqual(len(f), 2, msg="Length of unary_range('Cu', 1, 3) should be 2")
 
 
+def make_mock_atoms():
+    atoms = MagicMock(spec=Atoms)
+    atoms.info = {}
+    return atoms
+
+def make_pyxtal_mock_side_effect(n: int = 1):
+    mock_atoms = make_mock_atoms()
+    return mock_atoms, lambda *_, **__: [{"atoms": mock_atoms} for _ in range(n)]
+
 class TestSampleSpaceGroups(unittest.TestCase):
 
     @patch("assyst.structures.pyxtal")
     def test_max_structures(self, mock_pyxtal):
-        mock_atoms = MagicMock(spec=Atoms)
-        mock_pyxtal.return_value = [{"atoms": mock_atoms}] * 5
+        mock_atoms, mock_pyxtal.side_effect = make_pyxtal_mock_side_effect(5)
 
         f = Formulas.unary_range("Cu", 1, 3)
         results = list(sample_space_groups(f, max_structures=3))
@@ -72,8 +80,7 @@ class TestSampleSpaceGroups(unittest.TestCase):
 
     @patch("assyst.structures.pyxtal")
     def test_pyxtal_called_once_per_composition(self, mock_pyxtal):
-        mock_atoms = MagicMock(spec=Atoms)
-        mock_pyxtal.return_value = [{"atoms": mock_atoms}]
+        mock_atoms, mock_pyxtal.side_effect = make_pyxtal_mock_side_effect()
 
         # Define 3 compositions: Cu1, Cu2, Cu3
         formulas = Formulas.unary_range("Cu", 1, 4)  # 3 compositions
@@ -100,8 +107,7 @@ class TestSampleSpaceGroups(unittest.TestCase):
 
     @patch("assyst.structures.pyxtal")
     def test_min_atoms(self, mock_pyxtal):
-        mock_atoms = MagicMock(spec=Atoms)
-        mock_pyxtal.return_value = [{"atoms": mock_atoms}]
+        mock_atoms, mock_pyxtal.side_effect = make_pyxtal_mock_side_effect()
 
         formulas = Formulas.unary_range("Cu", 1, 10)
         results = list(sample_space_groups(formulas, min_atoms=5))
@@ -122,22 +128,17 @@ class TestSampleSpaceGroups(unittest.TestCase):
                 self.assertLessEqual(5, sum(call.args[2]),
                     "sample_space_groups tried to call pyxtal with more atoms than it should have."
                 )
-
-
-if __name__ == "__main__":
-    unittest.main()
 
     @patch("assyst.structures.pyxtal")
     def test_max_atoms(self, mock_pyxtal):
-        mock_atoms = MagicMock(spec=Atoms)
-        mock_pyxtal.return_value = [{"atoms": mock_atoms}]
+        mock_atoms, mock_pyxtal.side_effect = make_pyxtal_mock_side_effect()
 
         formulas = Formulas.unary_range("Cu", 1, 10)
         results = list(sample_space_groups(formulas, max_atoms=5))
 
         with self.subTest("unary"):
             for call in mock_pyxtal.call_args_list:
-                self.assertLessEqual(sum(call.args[2]), 5, 
+                self.assertLessEqual(sum(call.args[2]), 5,
                     "sample_space_groups tried to call pyxtal with more atoms than it should have."
                 )
 
@@ -148,7 +149,7 @@ if __name__ == "__main__":
 
         with self.subTest("binary"):
             for call in mock_pyxtal.call_args_list:
-                self.assertLessEqual(sum(call.args[2]), 5, 
+                self.assertLessEqual(sum(call.args[2]), 5,
                     "sample_space_groups tried to call pyxtal with more atoms than it should have."
                 )
 
