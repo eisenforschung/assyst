@@ -115,8 +115,16 @@ def sample_space_groups(
         `Atoms`: random symmetric crystal structures
     '''
 
+    max_group = [58, 75, 80, 230][dim]
+
     if spacegroups is None:
-        spacegroups = list(range(1,231))
+        spacegroups = range(1, max_group + 1)
+    spacegroups = list(spacegroups)
+
+    max_spg = max(spacegroups)
+    min_spg = min(spacegroups)
+    if min_spg <= 0 or max_group < max_spg:
+        raise ValueError(f'spacegroups must be in range [1, {max_group}], not [{min_spg}, {max_spg}] (dim={dim})!')
     if max_structures is None:
         max_structures = math.inf
 
@@ -126,7 +134,7 @@ def sample_space_groups(
             elements, num_atoms = zip(*stoich.items())
             if not min_atoms <= sum(num_atoms) <= max_atoms:
                 continue
-            stoich_str = "".join(f"{s}{n}" for s, n in zip(elements, num_atoms))
+            stoich_str = ''.join(f'{s}{n}' for s, n in zip(elements, num_atoms))
             bar.set_description(stoich_str)
             for s in pyxtal(spacegroups, elements, num_atoms, dim=dim, tm=Tol_matrix(prototype='metallic')):
                 yield s['atoms']
