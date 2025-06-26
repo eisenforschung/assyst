@@ -1,4 +1,4 @@
-[![Documentation Status](https://readthedocs.org/projects/assyst/badge/?version=latest)](https://assyst.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/assyst/badge/?version=stable)](https://assyst.readthedocs.io/stable/?badge=stable)
 
 # ASSYST or _Automated Small SYmmetric Structure Training_
 
