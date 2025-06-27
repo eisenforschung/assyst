@@ -6,12 +6,14 @@ convenience.'''
 
 from collections import defaultdict
 from dataclasses import dataclass
-from itertools import combinations_with_replacement
+from itertools import combinations_with_replacement, product
 from math import nan, inf
-from typing import Callable
+from typing import Callable, Literal
 
 from ase import Atoms
 from structuretoolkit import get_neighbors
+from pyxtal.tolerance import Tol_matrix
+from ase.data import atomic_numbers
 
 Filter = Callable[[Atoms], bool]
 
@@ -58,6 +60,20 @@ class DistanceFilter:
             if pair[ei, ej] < self.radii.get(ei, nan) + self.radii.get(ej, nan):
                 return False
         return True
+
+    def to_tol_matrix(self, prototype: Literal['metallic', 'atomic', 'molecular', 'vdW'] = 'metallic') -> Tol_matrix:
+        '''Returns equivalent tolerance matrix for pyxtal.
+
+        Args:
+            prototype (metallic, atomic, molecular or vdW):
+                passed to Tol_matrix as is and used there to initialize radii of elements not explicitly set in this
+                filter
+        '''
+        return Tol_matrix(
+                *((atomic_numbers[e1], atomic_numbers[e2], self.radii[e1] + self.radii[e2])
+                    for e1, e2 in product(self.radii, repeat=2)),
+                prototype=prototype
+        )
 
 
 @dataclass

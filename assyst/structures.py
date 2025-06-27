@@ -4,13 +4,15 @@ from dataclasses import dataclass
 from collections.abc import Sequence
 from itertools import product, islice
 from warnings import catch_warnings
-from typing import Self, Iterable, Iterator, Literal
+from typing import Self, Iterable, Iterator, Literal, overload
+
+from .filters import DistanceFilter
 
 from ase import Atoms
 from structuretoolkit.build.random import pyxtal
 from pyxtal.tolerance import Tol_matrix
 from tqdm.auto import tqdm
-import math
+
 
 @dataclass(eq=True, frozen=True)
 class Formulas(Sequence):
@@ -80,25 +82,33 @@ class Formulas(Sequence):
 
         Must not share elements with other.elements.'''
         assert self.elements.isdisjoint(other.elements), "Can only multiply stoichiometries of different elements!"
-        s = ()
+        s: tuple[dict[str,int], ...] = ()
         for me, you in product(self.atoms, other.atoms):
             s += (me | you,)
         return Formulas(s)
 
     # Sequence Impl'
+    @overload
     def __getitem__(self, index: int) -> dict[str, int]:
+        ...
+    @overload
+    def __getitem__(self, index: slice) -> Sequence[dict[str, int]]:
+        ...
+    def __getitem__(self, index):
         return self.atoms[index]
 
     def __len__(self) -> int:
         return len(self.atoms)
 
+
 def sample_space_groups(
         formulas: Formulas | Iterable[dict[str, int]],
-        spacegroups: list[int] | tuple[int,...] | None = None,
+        spacegroups: list[int] | tuple[int,...] | Iterable[int] | None = None,
         min_atoms: int =  1,
         max_atoms: int = 10,
         max_structures: int | None = None,
         dim: Literal[0, 1, 2, 3] = 3,
+        tolerance: Literal['metallic'] | dict = 'metallic',
 ) -> Iterator[Atoms]:
     '''
     Create symmetric random structures.
@@ -110,6 +120,11 @@ def sample_space_groups(
         max_structures (int): generate at most this many structures
         dim (one of 0, 1, 2, or 3): the dimensionality of the structures to generate; if lower than 3 the code generates
             samples no longer from space groups, but from the subperiodic layer, rod, or point groups.
+        tolerance (str, dict of elements to radii):
+            specifies minimum allowed distances between atoms in generated structures;
+            if str then it should be one values understood by :class:`pyxtal.tolerace.Tol_matrix`;
+            if dict each value gives the minimum *radius* allowed for an atom, whether a given distance is allowed then
+            depends on the sum of the radii of the respective elements
 
     Yields:
         `Atoms`: random symmetric crystal structures
@@ -125,8 +140,17 @@ def sample_space_groups(
     max_spg = max(spacegroups)
     if min_spg <= 0 or max_group < max_spg:
         raise ValueError(f'spacegroups must be in range [1, {max_group}], not [{min_spg}, {max_spg}] (dim={dim})!')
-    if max_structures is None:
-        max_structures = math.inf
+
+    tm: Tol_matrix | None
+    match tolerance:
+        case 'metallic' | 'atomic' | 'molecular' | 'vdW':
+            tm = Tol_matrix(prototype=tolerance)
+        case dict():
+            tm = DistanceFilter(tolerance).to_tol_matrix() if len(tolerance) > 0 else None
+        case DistanceFilter():
+            tm = tolerance.to_tol_matrix()
+        case _:
+            raise ValueError('invalid value tolerance={tolerance}!')
 
     for stoich in (bar := tqdm(formulas)):
         elements, num_atoms = zip(*stoich.items())
@@ -134,12 +158,13 @@ def sample_space_groups(
             continue
         stoich_str = ''.join(f'{s}{n}' for s, n in zip(elements, num_atoms))
         bar.set_description(stoich_str)
+
         def pop(s):
             atoms = s.pop('atoms')
             atoms.info.update(s)
             return atoms
         with catch_warnings(category=UserWarning, action='ignore'):
-            px = pyxtal(spacegroups, elements, num_atoms, dim=dim, tm=Tol_matrix(prototype='metallic'))
+            px = pyxtal(spacegroups, elements, num_atoms, dim=dim, tm=tm)
             yield from islice(map(pop, px), max_structures)
             if max_structures is not None:
                 max_structures -= len(px)
