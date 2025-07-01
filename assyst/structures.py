@@ -52,7 +52,7 @@ class Formulas(Sequence):
     @property
     def elements(self) -> set[str]:
         '''Set of elements present in elements.'''
-        e = set()
+        e: set[str] = set()
         for s in self.atoms:
             e = e.union(s.keys())
         return e
@@ -72,7 +72,7 @@ class Formulas(Sequence):
         Truncates to the length of the shortest of the two element sequences.
         Must not share elements with other.elements.'''
         assert self.elements.isdisjoint(other.elements), "Can only or stoichiometries of different elements!"
-        s = ()
+        s: tuple[dict[str,int], ...] = ()
         for me, you in zip(self.atoms, other.atoms):
             s += (me | you,)
         return Formulas(s)
@@ -108,7 +108,7 @@ def sample_space_groups(
         max_atoms: int = 10,
         max_structures: int | None = None,
         dim: Literal[0, 1, 2, 3] = 3,
-        tolerance: Literal['metallic'] | dict = 'metallic',
+        tolerance: Literal['metallic', 'atomic', 'molecular', 'vdW'] | dict = 'metallic',
 ) -> Iterator[Atoms]:
     '''
     Create symmetric random structures.
@@ -130,6 +130,10 @@ def sample_space_groups(
         `Atoms`: random symmetric crystal structures
     '''
 
+    if not 0 <= dim <= 3:
+        raise ValueError(f'dim must be in range [0, 3], not {dim}!')
+
+    # number of (sub-)periodic symmetry groups available in 0-3 dimensions
     max_group = [58, 75, 80, 230][dim]
 
     if spacegroups is None:

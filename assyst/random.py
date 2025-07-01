@@ -134,6 +134,7 @@ class RandomChoice(ModifyABC):
     choice_a: Modify
     choice_b: Modify
     chance: float
+    "Probability to pick choice b"
 
     def __call__(self, structure: Atoms) -> Atoms:
         if np.random.rand() > self.chance:
