@@ -15,11 +15,41 @@ from structuretoolkit import get_neighbors
 from pyxtal.tolerance import Tol_matrix
 from ase.data import atomic_numbers
 
-Filter = Callable[[Atoms], bool]
+
+class FilterBase:
+    '''Base class for filter objects that implements conjunction and disjunction operators.'''
+    def __and__(self, other) -> 'AndFilter':
+        return AndFilter(self, other)
+
+    def __or__(self, other) -> 'OrFilter':
+        return OrFilter(self, other)
+
+
+Filter = Callable[[Atoms], bool] | FilterBase
+
+
+@dataclass(frozen=True, eq=True)
+class AndFilter(FilterBase):
+    '''Conjunction of two filters.'''
+    l: Filter
+    r: Filter
+
+    def __call__(self, structure: Atoms) -> bool:
+        return self.l(structure) and self.r(structure)
+
+
+@dataclass(frozen=True, eq=True)
+class OrFilter(FilterBase):
+    '''Disjunction of two filters.'''
+    l: Filter
+    r: Filter
+
+    def __call__(self, structure: Atoms) -> bool:
+        return self.l(structure) or self.r(structure)
 
 
 @dataclass
-class DistanceFilter:
+class DistanceFilter(FilterBase):
     '''Filter structures that contain too close atoms.
 
     Setting a radius to NaN allows all bonds involving this atom.'''
@@ -77,7 +107,7 @@ class DistanceFilter:
 
 
 @dataclass
-class AspectFilter:
+class AspectFilter(FilterBase):
     '''Filters structures with high aspect ratios.'''
     maximum_aspect_ratio: float = 6
 
@@ -95,7 +125,7 @@ class AspectFilter:
 
 
 @dataclass
-class VolumeFilter:
+class VolumeFilter(FilterBase):
     '''Filters structures by volume.'''
     maximum_volume_per_atom: float
 
