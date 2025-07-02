@@ -64,8 +64,8 @@ class DistanceFilter(FilterBase):
     radii: dict[str, float]
 
     @staticmethod
-    def _element_wise_dist(structure: Atoms) -> dict[str, float]:
-        pair = defaultdict(lambda: inf)
+    def _element_wise_dist(structure: Atoms) -> dict[tuple[str, str], float]:
+        pair: dict[tuple[str, str], float] = defaultdict(lambda: inf)
         # on weird aspect ratios the neighbor searching code can allocate huge structures,
         # because it explicitly repeats the structure to create ghost atoms
         # since we only care about the presence of short distances between atoms and not the

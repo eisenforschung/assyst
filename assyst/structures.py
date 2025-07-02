@@ -64,7 +64,7 @@ class Formulas(Sequence):
 
     def __add__(self, other: Self) -> Self:
         '''Extend underlying list of stoichiometries.'''
-        return Formulas(self.atoms + other.atoms)
+        return type(self)(self.atoms + other.atoms)
 
     def __or__(self, other: Self) -> Self:
         '''Inner product of underlying stoichiometries.
@@ -75,7 +75,7 @@ class Formulas(Sequence):
         s: tuple[dict[str,int], ...] = ()
         for me, you in zip(self.atoms, other.atoms):
             s += (me | you,)
-        return Formulas(s)
+        return type(self)(s)
 
     def __mul__(self, other: Self) -> Self:
         '''Outer product of underlying stoichiometries.
@@ -85,7 +85,7 @@ class Formulas(Sequence):
         s: tuple[dict[str,int], ...] = ()
         for me, you in product(self.atoms, other.atoms):
             s += (me | you,)
-        return Formulas(s)
+        return type(self)(s)
 
     # Sequence Impl'
     @overload
