@@ -12,9 +12,11 @@ from math import nan, inf
 from typing import Callable, Literal
 
 from ase import Atoms
+from ase.calculators.singlepoint import SinglePointCalculator
 from structuretoolkit import get_neighbors
 from pyxtal.tolerance import Tol_matrix
 from ase.data import atomic_numbers
+import numpy as np
 
 
 class FilterBase(ABC):
@@ -145,3 +147,32 @@ class VolumeFilter(FilterBase):
             `True`: volume per atom is smaller or equal than `:attr:.maximum_volume_per_atom`.
             `False`: otherwise'''
         return structure.cell.volume / len(structure) <= self.maximum_volume_per_atom
+
+
+class CalculatorFilter(FilterBase):
+    '''Filters that require a single point calculator set on the structure.'''
+    def __call__(self, structure: Atoms) -> bool:
+        if structure.calc == None:
+            raise ValueError('Structure must have single point calculator set!')
+        if not isinstance(structure, SinglePointCalculator):
+            raise ValueError(f'Structure must have single point calculator set, not {type(structure.calc)}!')
+
+@dataclass
+class EnergyFilter(FilterBase):
+    '''Filters structures by energy per atom.'''
+    min_energy: float = -inf
+    max_energy: float = +inf
+
+    def __call__(self, structure: Atoms) -> bool:
+        # TODO: check if cached energy
+        return self.min_energy <= structure.get_potential_energy() / len(structure) <= self.max_energy
+
+
+@dataclass
+class ForceFilter(FilterBase):
+    '''Filters structures by maximum force magnitude.'''
+    max_force: float = +inf
+
+    def __call__(self, structure: Atoms) -> bool:
+        # TODO: check if cached energy
+        return np.linalg.norm(structure.get_forces(), axis=-1).max() <= self.max_force
