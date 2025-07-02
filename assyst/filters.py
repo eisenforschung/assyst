@@ -4,6 +4,7 @@ The code in the other modules that uses them is set up such that simple
 functions can always be passed as well and that the classes here are just for
 convenience.'''
 
+from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
 from itertools import combinations_with_replacement, product
@@ -16,13 +17,18 @@ from pyxtal.tolerance import Tol_matrix
 from ase.data import atomic_numbers
 
 
-class FilterBase:
+class FilterBase(ABC):
     '''Base class for filter objects that implements conjunction and disjunction operators.'''
     def __and__(self, other) -> 'AndFilter':
         return AndFilter(self, other)
 
     def __or__(self, other) -> 'OrFilter':
         return OrFilter(self, other)
+
+    @abstractmethod
+    def __call__(self, structure: Atoms) -> bool:
+        '''Returns True if structure passes the filter, False if it should be dropped.'''
+        pass
 
 
 Filter = Callable[[Atoms], bool] | FilterBase
