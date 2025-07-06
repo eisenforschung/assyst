@@ -4,10 +4,10 @@ assyst package
 Submodules
 ----------
 
-assyst.structures module
-------------------------
+assyst.crystals module
+----------------------
 
-.. automodule:: assyst.structures
+.. automodule:: assyst.crystals
    :members:
    :show-inheritance:
    :undoc-members:
@@ -20,10 +20,10 @@ assyst.relax module
    :show-inheritance:
    :undoc-members:
 
-assyst.random module
---------------------
+assyst.perturbations module
+---------------------------
 
-.. automodule:: assyst.random
+.. automodule:: assyst.perturbations
    :members:
    :show-inheritance:
    :undoc-members:
@@ -36,18 +36,18 @@ assyst.filters module
    :show-inheritance:
    :undoc-members:
 
-assyst.plot module
---------------------
-
-.. automodule:: assyst.plot
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
 assyst.calculators module
 -------------------------
 
 .. automodule:: assyst.calculators
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+assyst.plot module
+------------------
+
+.. automodule:: assyst.plot
    :members:
    :show-inheritance:
    :undoc-members:
