@@ -1,8 +1,8 @@
-"""Nodes to randomly rattle and shake structures."""
+'''Classes to apply (random) perturbations to structures.'''
 
 from abc import ABC, abstractmethod
 from ase import Atoms
-from typing import Iterable, Callable, NewType, Self, Iterator
+from typing import Iterable, Callable, Self, Iterator
 from dataclasses import dataclass
 import numpy as np
 
@@ -42,13 +42,13 @@ def stretch(structure: Atoms, hydro: float, shear: float, minimum_strain=1e-3) -
     return structure
 
 
-class ModifyABC(ABC):
-    """Apply some modification to a given structure."""
+class PerturbationABC(ABC):
+    """Apply some perturbation to a given structure."""
     def __call__(self, structure: Atoms) -> Atoms:
-        if 'modification' not in structure.info:
-            structure.info['modification'] = str(self)
+        if 'perturbation' not in structure.info:
+            structure.info['perturbation'] = str(self)
         else:
-            structure.info['modification'] += '+' + str(self)
+            structure.info['perturbation'] += '+' + str(self)
         return structure
 
     @abstractmethod
@@ -58,22 +58,26 @@ class ModifyABC(ABC):
     def __add__(self, other: Self) -> 'Series':
         return Series((self, other))
 
-Modify = Callable[[Atoms], Atoms] | ModifyABC
 
-def apply_modifications(
+Perturbation = Callable[[Atoms], Atoms] | PerturbationABC
+
+
+def apply_perturbations(
         structures: Iterable[Atoms],
-        modifications: Iterable[Modify],
+        perturbations: Iterable[Perturbation],
         filters: Iterable[Filter] | Filter | None = None,
 ) -> Iterator[Atoms]:
-    """Apply a list of modifications to each structure and yield the result of each modification separately."""
+    '''Apply a list of perturbations to each structure and yield the result of each perturbation separately.
+
+    If a perturbation raises ValueError it is ignored.'''
     if filters is None:
         filters = []
     if not isinstance(filters, Iterable):
         filters = [filters]
-    modifications = list(modifications)
+    perturbations = list(perturbations)
 
     for structure in structures:
-        for mod in modifications:
+        for mod in perturbations:
             try:
                 m = mod(structure.copy())
             except ValueError:
@@ -83,7 +87,7 @@ def apply_modifications(
 
 
 @dataclass(frozen=True)
-class Rattle(ModifyABC):
+class Rattle(PerturbationABC):
     """Displace atoms by some absolute amount from a normal distribution."""
     sigma: float
     create_supercells: bool = False
@@ -100,8 +104,8 @@ class Rattle(ModifyABC):
 
 
 @dataclass(frozen=True)
-class Stretch(ModifyABC):
-    """Apply random cell modification."""
+class Stretch(PerturbationABC):
+    """Apply random cell perturbation."""
     hydro: float
     shear: float
     minimum_strain: float = 1e-3
@@ -115,24 +119,24 @@ class Stretch(ModifyABC):
 
 
 @dataclass(frozen=True)
-class Series(ModifyABC):
-    """Apply some modifications in sequence."""
-    modifications: tuple[Modify, ...]
+class Series(PerturbationABC):
+    """Apply some perturbations in sequence."""
+    perturbations: tuple[Perturbation, ...]
 
     def __call__(self, structure: Atoms) -> Atoms:
-        for mod in self.modifications:
+        for mod in self.perturbations:
             structure = mod(structure)
         return structure
 
     def __str__(self):
-        return "+".join(str(mod) for mod in self.modifications)
+        return "+".join(str(mod) for mod in self.perturbations)
 
 
 @dataclass(frozen=True)
-class RandomChoice(ModifyABC):
+class RandomChoice(PerturbationABC):
     """Apply either of two alternatives randomly."""
-    choice_a: Modify
-    choice_b: Modify
+    choice_a: Perturbation
+    choice_b: Perturbation
     chance: float
     "Probability to pick choice b"
 
