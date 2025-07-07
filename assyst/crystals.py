@@ -59,8 +59,8 @@ class Formulas(Sequence):
 
     @classmethod
     def unary_range(cls, element: str, *range_args) -> Self:
-        '''Creates '''
-        return cls(tuple({element: i} for i in range(*range_args) if i > 0))
+        '''Creates unary formulas with number of atoms as given by then builtin `range`.'''
+        return cls(tuple({element: i} for i in range(*range_args)))
 
     def __add__(self, other: Self) -> Self:
         '''Extend underlying list of stoichiometries.'''
@@ -157,6 +157,11 @@ def sample_space_groups(
             raise ValueError('invalid value tolerance={tolerance}!')
 
     for stoich in (bar := tqdm(formulas)):
+        # pyxtal never returns structures when one element with zero atoms is present, so filter here first for
+        # robustness
+        stoich = {e: n for e, n in stoich.items() if n > 0}
+        if len(stoich) == 0:
+            continue
         elements, num_atoms = zip(*stoich.items())
         if not min_atoms <= sum(num_atoms) <= max_atoms:
             continue
