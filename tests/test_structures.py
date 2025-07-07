@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 from ase import Atoms
 
-from assyst.structures import Formulas, sample_space_groups
+from assyst.crystals import Formulas, sample_space_groups
 
 
 class TestFormulas(unittest.TestCase):
@@ -63,13 +63,15 @@ def make_mock_atoms():
     atoms.info = {}
     return atoms
 
+
 def make_pyxtal_mock_side_effect(n: int = 1):
     mock_atoms = make_mock_atoms()
     return mock_atoms, lambda *_, **__: [{"atoms": mock_atoms} for _ in range(n)]
 
+
 class TestSampleSpaceGroups(unittest.TestCase):
 
-    @patch("assyst.structures.pyxtal")
+    @patch("assyst.crystals.pyxtal")
     def test_max_structures(self, mock_pyxtal):
         mock_atoms, mock_pyxtal.side_effect = make_pyxtal_mock_side_effect(5)
 
@@ -78,7 +80,7 @@ class TestSampleSpaceGroups(unittest.TestCase):
 
         self.assertEqual(len(results), 3, msg="Should not generate more than max_structures=3")
 
-    @patch("assyst.structures.pyxtal")
+    @patch("assyst.crystals.pyxtal")
     def test_pyxtal_called_once_per_composition(self, mock_pyxtal):
         mock_atoms, mock_pyxtal.side_effect = make_pyxtal_mock_side_effect()
 
@@ -105,7 +107,7 @@ class TestSampleSpaceGroups(unittest.TestCase):
                     msg=f"Expected pyxtal to be called with atom counts {expected[1]}, got {actual[1]}"
         )
 
-    @patch("assyst.structures.pyxtal")
+    @patch("assyst.crystals.pyxtal")
     def test_min_atoms(self, mock_pyxtal):
         mock_atoms, mock_pyxtal.side_effect = make_pyxtal_mock_side_effect()
 
@@ -129,7 +131,7 @@ class TestSampleSpaceGroups(unittest.TestCase):
                     "sample_space_groups tried to call pyxtal with more atoms than it should have."
                 )
 
-    @patch("assyst.structures.pyxtal")
+    @patch("assyst.crystals.pyxtal")
     def test_max_atoms(self, mock_pyxtal):
         mock_atoms, mock_pyxtal.side_effect = make_pyxtal_mock_side_effect()
 
