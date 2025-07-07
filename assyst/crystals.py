@@ -100,6 +100,13 @@ class Formulas(Sequence):
     def __len__(self) -> int:
         return len(self.atoms)
 
+    def trim(self, min_atoms: int = 1, max_atoms: int | None = None) -> Self:
+        '''Returns a copy of itself with formulas with lesser or more atoms than given limits removed.'''
+        if max_atoms is not None:
+            return type(self)(tuple(f for f in self if min_atoms <= sum(f.values()) <= max_atoms))
+        else:
+            return type(self)(tuple(f for f in self if min_atoms <= sum(f.values())))
+
 
 def sample_space_groups(
         formulas: Formulas | Iterable[dict[str, int]],
@@ -108,7 +115,7 @@ def sample_space_groups(
         max_atoms: int = 10,
         max_structures: int | None = None,
         dim: Literal[0, 1, 2, 3] = 3,
-        tolerance: Literal['metallic', 'atomic', 'molecular', 'vdW'] | dict = 'metallic',
+        tolerance: Literal['metallic', 'atomic', 'molecular', 'vdW'] | DistanceFilter | dict = 'metallic',
 ) -> Iterator[Atoms]:
     '''
     Create symmetric random structures.
