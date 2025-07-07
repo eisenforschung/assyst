@@ -4,6 +4,7 @@ assyst package
 Submodules
 ----------
 
+.. _crystals:
 assyst.crystals module
 ----------------------
 
@@ -12,6 +13,7 @@ assyst.crystals module
    :show-inheritance:
    :undoc-members:
 
+.. _relax:
 assyst.relax module
 -------------------
 
@@ -20,6 +22,7 @@ assyst.relax module
    :show-inheritance:
    :undoc-members:
 
+.. _perturbations:
 assyst.perturbations module
 ---------------------------
 

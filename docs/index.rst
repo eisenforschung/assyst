@@ -12,4 +12,5 @@ ASSYST documentation
 
    Home <self>
    installation
+   overview
    assyst
