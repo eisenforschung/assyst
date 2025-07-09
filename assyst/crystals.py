@@ -27,24 +27,24 @@ class Formulas(Sequence):
 
     >>> el_manual = Formulas(({'Cu': 1}, {'Cu': 2}))
 
-    :meth:`.unary_range` is a helper class method that initializes `Formulas` for a single element and takes the same
+    :meth:`.range` is a helper class method that initializes `Formulas` for a single element and takes the same
     arguments as the builtin `range`, except that it skips the zero.
 
-    >>> el = Formulas.unary_range('Cu', 3)
+    >>> el = Formulas.range('Cu', 3)
     Formulas(atoms=({'Cu': 1}, {'Cu': 2}))
     >>> el == el_manual
     True
 
     Addition is overloaded to the addition of the underlying tuples.
 
-    >>> Formulas.unary_range('Cu', 1, 5) == Formulas.unary_range('Cu', 1, 3) + Formulas.unary_range('Cu', 3, 5)
+    >>> Formulas.range('Cu', 1, 5) == Formulas.range('Cu', 1, 3) + Formulas.range('Cu', 3, 5)
 
     The bitwise or operation is akin to the inner product
 
-    >>> Formulas.unary_range('Cu', 3) | Formulas.unary_range('Ag', 3)
+    >>> Formulas.range('Cu', 3) | Formulas.range('Ag', 3)
     Formulas(atoms=({'Cu': 1, 'Ag': 1}, {'Cu': 2, 'Ag': 2}))
 
-    >>> Formulas.unary_range('Cu', 3) * Formulas.unary_range('Ag', 3)
+    >>> Formulas.range('Cu', 3) * Formulas.range('Ag', 3)
     Formulas(atoms=({'Cu': 1, 'Ag': 1}, {'Cu': 2, 'Ag': 1}, {'Cu': 1, 'Ag': 2}, {'Cu': 2, 'Ag': 2}))
     '''
     atoms: tuple[dict[str, int], ...]
@@ -58,9 +58,17 @@ class Formulas(Sequence):
         return e
 
     @classmethod
-    def unary_range(cls, element: str, *range_args) -> Self:
-        '''Creates unary formulas with number of atoms as given by then builtin `range`.'''
-        return cls(tuple({element: i} for i in range(*range_args)))
+    def range(cls, elements: str | Iterable[str], *range_args) -> Self:
+        '''Creates formulas with number of atoms as given by the builtin `range`.
+
+        Multiple elements are combined as the outer product.'''
+        if isinstance(elements, str):
+            return cls(tuple({elements: i} for i in range(*range_args)))
+        formulas = [cls.range(e, *range_args) for e in elements]
+        total = formulas[0]
+        for f in formulas[1:]:
+            total *= f
+        return total
 
     def __add__(self, other: Self) -> Self:
         '''Extend underlying list of stoichiometries.'''
