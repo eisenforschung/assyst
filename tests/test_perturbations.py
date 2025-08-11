@@ -123,5 +123,38 @@ class TestPerturbations(unittest.TestCase):
         perturbed_structures = list(apply_perturbations(structures, perturbations))
         self.assertEqual(len(perturbed_structures), 0)
 
+    def test_stretch_strain_distribution(self):
+        """Test that stretch applies strain within the correct ranges."""
+        for _ in range(10): # Repeat test 10 times with different random values
+            hydro = np.random.uniform(0.05, 0.3)
+            shear = np.random.uniform(0.05, 0.3)
+            minimum_strain = np.random.uniform(1e-4, 1e-2)
+
+            # Ensure hydro and shear are greater than minimum_strain
+            hydro = max(hydro, minimum_strain + 1e-3)
+            shear = max(shear, minimum_strain + 1e-3)
+
+            original_cell = self.structure.get_cell().copy()
+            stretched_structure = stretch(self.structure.copy(), hydro=hydro, shear=shear, minimum_strain=minimum_strain)
+            stretched_cell = stretched_structure.get_cell()
+
+            strain_modifier = np.linalg.inv(original_cell) @ stretched_cell
+
+            epsilon = strain_modifier - np.identity(3)
+
+            self.assertTrue(np.allclose(epsilon, epsilon.T), "Strain matrix should be symmetric")
+
+            # Check diagonal elements
+            diag_strains = np.diag(epsilon)
+            for strain_val in diag_strains:
+                self.assertTrue(minimum_strain <= abs(strain_val) <= hydro)
+
+            # Check off-diagonal elements
+            off_diag_indices = np.triu_indices(3, k=1)
+            off_diag_strains = epsilon[off_diag_indices]
+            for strain_val in off_diag_strains:
+                self.assertTrue(minimum_strain <= abs(strain_val) <= shear)
+
+
 if __name__ == '__main__':
     unittest.main()

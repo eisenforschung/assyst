@@ -26,18 +26,20 @@ def stretch(structure: Atoms, hydro: float, shear: float, minimum_strain=1e-3) -
     These don't offer a lot of new information and can also confuse VASP's symmetry analyzer.
 
     Operates INPLACE."""
-    def scale(r):
-        # map [0, 1) to [-1, 1)
-        r = 2 * r - 1
-        # map [-1, 1) to [-(1-m), 1-m)
-        r *= (1 - minimum_strain)
-        # map  [-(1-m), 1-m) to [-1, -m] u [m, 1)
-        r += np.sign(r) * minimum_strain
-        return r
+    def get_strains(max_strain, size):
+        signs = np.random.choice([-1, 1], size=size)
+        magnitudes = np.random.uniform(minimum_strain, max_strain, size=size)
+        return signs * magnitudes
 
-    strain = shear * scale(np.random.rand(3, 3))
-    strain = 0.5 * (strain + strain.T)  # symmetrize
-    np.fill_diagonal(strain, 1 + hydro * scale(np.random.rand(3)))
+    strain = np.zeros((3,3))
+    # Off-diagonal elements
+    indices = np.triu_indices(3, k=1)
+    strain[indices] = get_strains(shear, 3)
+    strain += strain.T
+
+    # Diagonal elements
+    np.fill_diagonal(strain, 1 + get_strains(hydro, 3))
+
     structure.set_cell(structure.cell.array @ strain, scale_atoms=True)
     return structure
 
