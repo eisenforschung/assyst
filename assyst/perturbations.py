@@ -35,9 +35,9 @@ def stretch(structure: Atoms, hydro: float, shear: float, minimum_strain=1e-3) -
         r += np.sign(r) * minimum_strain
         return r
 
-    strain = shear * (2 * np.random.rand(3, 3) - 1)
+    strain = shear * scale(np.random.rand(3, 3))
     strain = 0.5 * (strain + strain.T)  # symmetrize
-    np.fill_diagonal(strain, 1 + hydro * (2 * np.random.rand(3) - 1))
+    np.fill_diagonal(strain, 1 + hydro * scale(np.random.rand(3)))
     structure.set_cell(structure.cell.array @ strain, scale_atoms=True)
     return structure
 
