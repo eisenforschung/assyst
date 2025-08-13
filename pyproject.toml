@@ -26,10 +26,10 @@ classifiers = [
 ]
 #license-file = ["LICENSE"]
 dependencies = [
-    "structuretoolkit[pyxtal]==0.0.32",
+    "structuretoolkit[pyxtal]==0.0.34",
     # only because the structuretoolkit conda package does not pull pyxtal and has no optional dependencies
     # so even though the line above is sufficient for PyPI, we need this so it works from conda
-    "pyxtal>=1,<1.0.10",
+    "pyxtal>=1,<1.1.0",
     "tqdm>=4,<5",
     "ase>=3,<4",
     "matplotlib>=3,<4",
