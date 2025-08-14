@@ -178,5 +178,41 @@ class TestSampleSpaceGroups(unittest.TestCase):
                 )
 
 
+class TestSampleSpaceGroupsArguments(unittest.TestCase):
+    def test_invalid_dim(self):
+        with self.assertRaises(ValueError):
+            list(sample_space_groups(Formulas.range("Cu", 1, 2), dim=4))
+
+    def test_invalid_spacegroups(self):
+        with self.assertRaises(ValueError):
+            list(sample_space_groups(Formulas.range("Cu", 1, 2), spacegroups=[0, 1]))
+        with self.assertRaises(ValueError):
+            list(sample_space_groups(Formulas.range("Cu", 1, 2), spacegroups=[231]))
+
+    def test_invalid_tolerance(self):
+        with self.assertRaises(ValueError):
+            list(sample_space_groups(Formulas.range("Cu", 1, 2), tolerance="invalid"))
+
+    @patch("assyst.crystals.pyxtal")
+    def test_empty_stoichiometry(self, mock_pyxtal):
+        mock_atoms, mock_pyxtal.side_effect = make_pyxtal_mock_side_effect()
+        formulas = Formulas(atoms=({},))
+        results = list(sample_space_groups(formulas))
+        self.assertEqual(len(results), 0)
+        mock_pyxtal.assert_not_called()
+
+    @patch("assyst.crystals.pyxtal")
+    def test_empty_dict_tolerance(self, mock_pyxtal):
+        mock_atoms, mock_pyxtal.side_effect = make_pyxtal_mock_side_effect()
+        list(sample_space_groups(Formulas.range("Cu", 1, 2), tolerance={}))
+        self.assertIsNone(mock_pyxtal.call_args.kwargs['tm'])
+
+    @patch("assyst.crystals.pyxtal")
+    def test_distance_filter_tolerance(self, mock_pyxtal):
+        from assyst.filters import DistanceFilter
+        mock_atoms, mock_pyxtal.side_effect = make_pyxtal_mock_side_effect()
+        list(sample_space_groups(Formulas.range("Cu", 1, 2), tolerance=DistanceFilter({'Cu': 1.0})))
+        self.assertIsNotNone(mock_pyxtal.call_args.kwargs['tm'])
+
 if __name__ == "__main__":
     unittest.main()

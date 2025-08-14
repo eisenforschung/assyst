@@ -156,5 +156,16 @@ class TestPerturbations(unittest.TestCase):
                 self.assertTrue(minimum_strain <= abs(strain_val) <= shear)
 
 
+    def test_perturbation_info_concatenation(self):
+        """Test that perturbation info is concatenated."""
+        rattle_pert = Rattle(sigma=0.1)
+        stretch_pert = Stretch(hydro=0.1, shear=0.1)
+
+        structure = self.structure.copy()
+        structure = rattle_pert(structure)
+        structure = stretch_pert(structure)
+
+        self.assertIn('rattle(0.1)+stretch(hydro=0.1, shear=0.1)', structure.info['perturbation'])
+
 if __name__ == '__main__':
     unittest.main()
