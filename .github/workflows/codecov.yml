@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  coverage:
     strategy:
       fail-fast: false
       matrix:
@@ -16,17 +16,21 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        pip install -e .[test]
+        pip install -e .[coverage]
     - name: Run tests and generate report
       run: |
-        coverage run -m unittest discover tests
+        pytest --cov --cov-branch --cov-report=xml
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
       with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        slug: pmrv/assyst
         fail_ci_if_error: true
