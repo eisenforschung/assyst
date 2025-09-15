@@ -40,7 +40,7 @@ dependencies = [
 
 [project.optional-dependencies]
 grace = ["tensorpotential>=0.5.1,<0.5.3"]
-doc = ["sphinx", "furo"]
+doc = ["sphinx", "furo", "nbsphinx", "pandoc"]
 coverage = ["pytest", "pytest-cov"]
 
 [project.urls]

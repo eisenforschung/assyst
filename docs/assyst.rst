@@ -51,11 +51,3 @@ assyst.plot module
    :members:
    :show-inheritance:
    :undoc-members:
-
-Module contents
----------------
-
-.. automodule:: assyst
-   :members:
-   :show-inheritance:
-   :undoc-members:

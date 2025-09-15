@@ -12,4 +12,6 @@ ASSYST documentation
 
    Home <self>
    installation
+   quickstart
+   notebooks
    assyst

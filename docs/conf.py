@@ -6,6 +6,10 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+import os.path
+import shutil
+from glob import glob
+
 project = 'ASSYST'
 copyright = '2025, Max-Planck-Institute for Sustainable Materials'
 author = 'Marvin Poul'
@@ -18,16 +22,23 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
+    'nbsphinx',
 ]
 
+if os.path.exists("notebooks_files"):
+    shutil.rmtree("notebooks_files")
+os.makedirs("notebooks_files")
+for f in glob("../notebooks/*.ipynb"):
+    shutil.copy(f, "notebooks_files/")
+for f in glob("../notebooks/Quickstart/*.ipynb"):
+    shutil.copy(f, "notebooks_files/")
+
 intersphinx_mapping = {
-        'ase': ('https://wiki.fysik.dtu.dk/ase', None),
+        'ase': ('https://ase-lib.org/', None),
 }
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
-
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
