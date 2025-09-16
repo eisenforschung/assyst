@@ -4,9 +4,18 @@ from typing import Literal, Callable, Iterable
 from collections import Counter, defaultdict
 
 from ase import Atoms
-from matscipy.neighbours import neighbour_list
 import matplotlib.pyplot as plt
 import numpy as np
+
+from pyiron_snippets.import_alarm import ImportAlarm
+
+
+with ImportAlarm(
+        "matscipy required; install with "
+        "'conda install -c conda-forge matscipy' or 'pip install matscipy'",
+        _fail_on_warning=True
+) as neighbor_alarm:
+    from matscipy.neighbours import neighbour_list
 
 
 def _volume(structures: Iterable[Atoms]) -> list[float]:
@@ -80,6 +89,7 @@ def concentration_histogram(structures: list[Atoms], elements: Iterable[str] | N
     plt.ylabel("#$\\,$Structures")
 
 
+@neighbor_alarm
 def distance_histogram(
         structures: list[Atoms],
         rmax: float = 6.0,
