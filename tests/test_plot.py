@@ -4,6 +4,12 @@ import numpy as np
 from ase import Atoms
 from assyst.plot import _volume, _energy, _concentration, volume_histogram, size_histogram, concentration_histogram, distance_histogram, energy_volume
 
+try:
+    import matscipy
+except ImportError:
+    matscipy = None
+
+
 class TestPlotHelpers(unittest.TestCase):
     def setUp(self):
         self.s1 = Atoms('H2', positions=[[0,0,0], [1,0,0]], cell=[10,10,10])
@@ -55,6 +61,7 @@ class TestPlotFunctions(unittest.TestCase):
         concentration_histogram(self.structures)
         mock_bar.assert_called()
 
+    @unittest.skipIf(matscipy is None, "matscipy not installed")
     @patch('matplotlib.pyplot.hist')
     def test_distance_histogram(self, mock_hist):
         distance_histogram(self.structures)
