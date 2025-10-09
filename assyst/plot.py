@@ -13,7 +13,7 @@ from pyiron_snippets.import_alarm import ImportAlarm
 with ImportAlarm(
         "matscipy required; install with "
         "'conda install -c conda-forge matscipy' or 'pip install matscipy'",
-        _fail_on_warning=True
+        raise_exception=True
 ) as neighbor_alarm:
     from matscipy.neighbours import neighbour_list
 
