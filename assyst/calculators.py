@@ -15,7 +15,7 @@ from pyiron_snippets.import_alarm import ImportAlarm
 with ImportAlarm(
         "grace-tensorpotential required; install with "
         "'conda install -c conda-forge grace-tensorpotential' or 'pip install tensorpotential'",
-        _fail_on_warning=True
+        raise_exception=True
 ) as grace_alarm:
     from tensorpotential.calculator import grace_fm
 
