@@ -64,9 +64,10 @@ class DistanceFilter(FilterBase):
     Setting a radius to NaN allows all bonds involving this atom.'''
     radii: dict[str, float]
 
-    def _element_wise_dist(self, structure: Atoms) -> dict[tuple[str, str], float]:
+    @staticmethod
+    def _element_wise_dist(structure: Atoms) -> dict[tuple[str, str], float]:
         pair: dict[tuple[str, str], float] = defaultdict(lambda: inf)
-        for i, j, d in neighbor_list('ijd', structure, 1.01 * max(self.radii.values())):
+        for i, j, d in zip(*neighbor_list('ijd', structure, 5.0)):
             ei, ej = sorted((structure.symbols[i], structure.symbols[j]))
             pair[ei, ej] = min(d, pair[ei, ej])
         return pair
