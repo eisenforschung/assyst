@@ -13,10 +13,11 @@ from typing import Callable, Literal
 
 from ase import Atoms
 from ase.calculators.singlepoint import SinglePointCalculator
-from structuretoolkit import get_neighbors
 from pyxtal.tolerance import Tol_matrix
 from ase.data import atomic_numbers
 import numpy as np
+
+from assyst.neighbours import neighbour_list
 
 
 class FilterBase(ABC):
@@ -63,22 +64,11 @@ class DistanceFilter(FilterBase):
     Setting a radius to NaN allows all bonds involving this atom.'''
     radii: dict[str, float]
 
-    @staticmethod
-    def _element_wise_dist(structure: Atoms) -> dict[tuple[str, str], float]:
+    def _element_wise_dist(self, structure: Atoms) -> dict[tuple[str, str], float]:
         pair: dict[tuple[str, str], float] = defaultdict(lambda: inf)
-        # on weird aspect ratios the neighbor searching code can allocate huge structures,
-        # because it explicitly repeats the structure to create ghost atoms
-        # since we only care about the presence of short distances between atoms and not the
-        # real neighbor information, simply double the structure to make sure we see all bonds
-        # and turn off PBC
-        # this can miss neighbors in structures with highly acute lattice angles, but we'll live
-        sr = structure.repeat(2)
-        sr.pbc = [False, False, False]
-        n = get_neighbors(sr, num_neighbors=len(structure), mode="ragged")
-        for i, (I, D) in enumerate(zip(n.indices, n.distances)):
-            for j, d in zip(I, D):
-                ei, ej = sorted((sr.symbols[i], sr.symbols[j]))
-                pair[ei, ej] = min(d, pair[ei, ej])
+        for i, j, d in neighbour_list('ijd', structure, 1.01 * max(self.radii.values())):
+            ei, ej = sorted((structure.symbols[i], structure.symbols[j]))
+            pair[ei, ej] = min(d, pair[ei, ej])
         return pair
 
     def __call__(self, structure: Atoms) -> bool:
