@@ -1,4 +1,4 @@
-'''Crystal structure generation step of ASSYST.'''
+"""Crystal structure generation step of ASSYST."""
 
 from dataclasses import dataclass
 from collections.abc import Sequence
@@ -103,9 +103,10 @@ def pyxtal(
             )
         return structures
 
+
 @dataclass(eq=True, frozen=True)
 class Formulas(Sequence):
-    '''Simple helper to generate lists of structure compositions.
+    """Simple helper to generate lists of structure compositions.
 
     :func:`.sample_space_groups` is the intended consumer and expects an iterable of dictionaries, where each dictionary
     maps an element name to the number of atoms of this type in one structure.
@@ -135,12 +136,13 @@ class Formulas(Sequence):
 
     >>> Formulas.range('Cu', 3) * Formulas.range('Ag', 3)
     Formulas(atoms=({'Cu': 1, 'Ag': 1}, {'Cu': 2, 'Ag': 1}, {'Cu': 1, 'Ag': 2}, {'Cu': 2, 'Ag': 2}))
-    '''
+    """
+
     atoms: tuple[dict[str, int], ...]
 
     @property
     def elements(self) -> set[str]:
-        '''Set of elements present in elements.'''
+        """Set of elements present in elements."""
         e: set[str] = set()
         for s in self.atoms:
             e = e.union(s.keys())
@@ -148,9 +150,9 @@ class Formulas(Sequence):
 
     @classmethod
     def range(cls, elements: str | Iterable[str], *range_args) -> Self:
-        '''Creates formulas with number of atoms as given by the builtin `range`.
+        """Creates formulas with number of atoms as given by the builtin `range`.
 
-        Multiple elements are combined as the outer product.'''
+        Multiple elements are combined as the outer product."""
         if isinstance(elements, str):
             return cls(tuple({elements: i} for i in range(*range_args)))
         formulas = [cls.range(e, *range_args) for e in elements]
@@ -160,37 +162,39 @@ class Formulas(Sequence):
         return total
 
     def __add__(self, other: Self) -> Self:
-        '''Extend underlying list of stoichiometries.'''
+        """Extend underlying list of stoichiometries."""
         return type(self)(self.atoms + other.atoms)
 
     def __or__(self, other: Self) -> Self:
-        '''Inner product of underlying stoichiometries.
+        """Inner product of underlying stoichiometries.
 
         Truncates to the length of the shortest of the two element sequences.
-        Must not share elements with other.elements.'''
-        assert self.elements.isdisjoint(other.elements), "Can only or stoichiometries of different elements!"
-        s: tuple[dict[str,int], ...] = ()
+        Must not share elements with other.elements."""
+        assert self.elements.isdisjoint(
+            other.elements
+        ), "Can only or stoichiometries of different elements!"
+        s: tuple[dict[str, int], ...] = ()
         for me, you in zip(self.atoms, other.atoms):
             s += (me | you,)
         return type(self)(s)
 
     def __mul__(self, other: Self) -> Self:
-        '''Outer product of underlying stoichiometries.
+        """Outer product of underlying stoichiometries.
 
-        Must not share elements with other.elements.'''
-        assert self.elements.isdisjoint(other.elements), "Can only multiply stoichiometries of different elements!"
-        s: tuple[dict[str,int], ...] = ()
+        Must not share elements with other.elements."""
+        assert self.elements.isdisjoint(
+            other.elements
+        ), "Can only multiply stoichiometries of different elements!"
+        s: tuple[dict[str, int], ...] = ()
         for me, you in product(self.atoms, other.atoms):
             s += (me | you,)
         return type(self)(s)
 
     # Sequence Impl'
     @overload
-    def __getitem__(self, index: int) -> dict[str, int]:
-        ...
+    def __getitem__(self, index: int) -> dict[str, int]: ...
     @overload
-    def __getitem__(self, index: slice) -> Sequence[dict[str, int]]:
-        ...
+    def __getitem__(self, index: slice) -> Sequence[dict[str, int]]: ...
     def __getitem__(self, index):
         return self.atoms[index]
 
@@ -198,23 +202,27 @@ class Formulas(Sequence):
         return len(self.atoms)
 
     def trim(self, min_atoms: int = 1, max_atoms: int | None = None) -> Self:
-        '''Returns a copy of itself with formulas with lesser or more atoms than given limits removed.'''
+        """Returns a copy of itself with formulas with lesser or more atoms than given limits removed."""
         if max_atoms is not None:
-            return type(self)(tuple(f for f in self if min_atoms <= sum(f.values()) <= max_atoms))
+            return type(self)(
+                tuple(f for f in self if min_atoms <= sum(f.values()) <= max_atoms)
+            )
         else:
             return type(self)(tuple(f for f in self if min_atoms <= sum(f.values())))
 
 
 def sample_space_groups(
-        formulas: Formulas | Iterable[dict[str, int]],
-        spacegroups: list[int] | tuple[int,...] | Iterable[int] | None = None,
-        min_atoms: int =  1,
-        max_atoms: int = 10,
-        max_structures: int | None = None,
-        dim: Literal[0, 1, 2, 3] = 3,
-        tolerance: Literal['metallic', 'atomic', 'molecular', 'vdW'] | DistanceFilter | dict = 'metallic',
+    formulas: Formulas | Iterable[dict[str, int]],
+    spacegroups: list[int] | tuple[int, ...] | Iterable[int] | None = None,
+    min_atoms: int = 1,
+    max_atoms: int = 10,
+    max_structures: int | None = None,
+    dim: Literal[0, 1, 2, 3] = 3,
+    tolerance: (
+        Literal["metallic", "atomic", "molecular", "vdW"] | DistanceFilter | dict
+    ) = "metallic",
 ) -> Iterator[Atoms]:
-    '''
+    """
     Create symmetric random structures.
 
     Args:
@@ -232,10 +240,10 @@ def sample_space_groups(
 
     Yields:
         `Atoms`: random symmetric crystal structures
-    '''
+    """
 
     if not 0 <= dim <= 3:
-        raise ValueError(f'dim must be in range [0, 3], not {dim}!')
+        raise ValueError(f"dim must be in range [0, 3], not {dim}!")
 
     # number of (sub-)periodic symmetry groups available in 0-3 dimensions
     max_group = [58, 75, 80, 230][dim]
@@ -247,18 +255,24 @@ def sample_space_groups(
     min_spg = min(spacegroups)
     max_spg = max(spacegroups)
     if min_spg <= 0 or max_group < max_spg:
-        raise ValueError(f'spacegroups must be in range [1, {max_group}], not [{min_spg}, {max_spg}] (dim={dim})!')
+        raise ValueError(
+            f"spacegroups must be in range [1, {max_group}], not [{min_spg}, {max_spg}] (dim={dim})!"
+        )
 
     tm: Tol_matrix | None
     match tolerance:
-        case 'metallic' | 'atomic' | 'molecular' | 'vdW':
+        case "metallic" | "atomic" | "molecular" | "vdW":
             tm = Tol_matrix(prototype=tolerance)
         case dict():
-            tm = DistanceFilter(tolerance).to_tol_matrix() if len(tolerance) > 0 else None
+            tm = (
+                DistanceFilter(tolerance).to_tol_matrix()
+                if len(tolerance) > 0
+                else None
+            )
         case DistanceFilter():
             tm = tolerance.to_tol_matrix()
         case _:
-            raise ValueError('invalid value tolerance={tolerance}!')
+            raise ValueError("invalid value tolerance={tolerance}!")
 
     for stoich in (bar := tqdm(formulas)):
         # pyxtal never returns structures when one element with zero atoms is present, so filter here first for
@@ -269,14 +283,15 @@ def sample_space_groups(
         elements, num_atoms = zip(*stoich.items())
         if not min_atoms <= sum(num_atoms) <= max_atoms:
             continue
-        stoich_str = ''.join(f'{s}{n}' for s, n in zip(elements, num_atoms))
+        stoich_str = "".join(f"{s}{n}" for s, n in zip(elements, num_atoms))
         bar.set_description(stoich_str)
 
         def pop(s):
-            atoms = s.pop('atoms')
+            atoms = s.pop("atoms")
             atoms.info.update(s)
             return atoms
-        with catch_warnings(category=UserWarning, action='ignore'):
+
+        with catch_warnings(category=UserWarning, action="ignore"):
             px = pyxtal(spacegroups, elements, num_atoms, dim=dim, tm=tm)
             yield from islice(map(pop, px), max_structures)
             if max_structures is not None:

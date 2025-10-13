@@ -1,4 +1,5 @@
-'''Relaxation step of ASSYST.'''
+"""Relaxation step of ASSYST."""
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Literal, Iterable, Iterator
@@ -14,21 +15,23 @@ from ase.optimize import LBFGS
 
 import numpy as np
 
+
 @dataclass(frozen=True, eq=True)
 class Relax:
-    '''Minimize energy with respect to internal positions.
+    """Minimize energy with respect to internal positions.
 
-    Also used as a base class for all other relaxation.'''
+    Also used as a base class for all other relaxation."""
+
     max_steps: int = 100
     force_tolerance: float = 1e-3
     algorithm: Literal["LBFGS"] = "LBFGS"
 
     def apply_filter_and_constraints(self, structure: Atoms):
-        '''Hook to allow subclasses to add filters and constraints.'''
+        """Hook to allow subclasses to add filters and constraints."""
         return structure
 
     def relax(self, structure: Atoms) -> Atoms:
-        '''Relax a structure and return result.
+        """Relax a structure and return result.
 
         Structure must have a calculator attached.
         Returned structure will have a SinglePointCalculator with the final energy, forces and stresses attached.
@@ -37,7 +40,8 @@ class Relax:
             structure (ase.Atoms): structure to relax
 
         Returns:
-            :class:`ase.Atoms`: relaxed structure with attached single point calculator.'''
+            :class:`ase.Atoms`: relaxed structure with attached single point calculator.
+        """
         calc = structure.calc
         structure = structure.copy()
         structure.calc = calc
@@ -45,10 +49,10 @@ class Relax:
         lbfgs.run(fmax=self.force_tolerance, steps=self.max_steps)
         structure.calc = None
         structure.calc = SinglePointCalculator(
-                structure,
-                energy=calc.get_potential_energy(),
-                forces=calc.get_forces(),
-                stress=calc.get_stress()
+            structure,
+            energy=calc.get_potential_energy(),
+            forces=calc.get_forces(),
+            stress=calc.get_stress(),
         )
         structure.constraints.clear()
         return structure
@@ -56,26 +60,30 @@ class Relax:
 
 @dataclass(frozen=True, eq=True)
 class CellRelax(Relax):
-    '''Minimize energy while keeping relative positions and volume constant.'''
+    """Minimize energy while keeping relative positions and volume constant."""
 
     def apply_filter_and_constraints(self, structure: Atoms):
-        structure.set_constraint(FixAtoms(np.ones(len(structure),dtype=bool)))
+        structure.set_constraint(FixAtoms(np.ones(len(structure), dtype=bool)))
         return FrechetCellFilter(structure, constant_volume=True)
 
 
 @dataclass(frozen=True, eq=True)
 class VolumeRelax(Relax):
-    '''Minimize energy while keeping relative positions and cell shape constant.'''
+    """Minimize energy while keeping relative positions and cell shape constant."""
+
     pressure: float = 0.0
 
     def apply_filter_and_constraints(self, structure: Atoms):
-        structure.set_constraint(FixAtoms(np.ones(len(structure),dtype=bool)))
-        return FrechetCellFilter(structure, hydrostatic_strain=True, scalar_pressure=self.pressure)
+        structure.set_constraint(FixAtoms(np.ones(len(structure), dtype=bool)))
+        return FrechetCellFilter(
+            structure, hydrostatic_strain=True, scalar_pressure=self.pressure
+        )
 
 
 @dataclass(frozen=True, eq=True)
 class SymmetryRelax(Relax):
-    ''' Minimize energy with respect to internal positions and cell, while keeping space group fixed.'''
+    """Minimize energy with respect to internal positions and cell, while keeping space group fixed."""
+
     pressure: float = 0.0
 
     def apply_filter_and_constraints(self, structure: Atoms):
@@ -85,7 +93,8 @@ class SymmetryRelax(Relax):
 
 @dataclass(frozen=True, eq=True)
 class FullRelax(Relax):
-    ''' Minimize energy with respect to internal positions and cell without constraints.'''
+    """Minimize energy with respect to internal positions and cell without constraints."""
+
     pressure: float = 0.0
 
     def apply_filter_and_constraints(self, structure: Atoms):
@@ -93,11 +102,11 @@ class FullRelax(Relax):
 
 
 def relax(
-        settings: Relax,
-        calculator: AseCalculatorConfig | Calculator,
-        structure: Iterable[Atoms]
+    settings: Relax,
+    calculator: AseCalculatorConfig | Calculator,
+    structure: Iterable[Atoms],
 ) -> Iterator[Atoms]:
-    '''Relax structures according the given relaxation settings.
+    """Relax structures according the given relaxation settings.
 
     Output structures have the final energy and force attached as ase's SinglePointCalculator.
 
@@ -108,7 +117,7 @@ def relax(
 
     Yields:
         :class:`ase.Atoms`: the corresponding relaxed configuration to each input structure
-    '''
+    """
     for s in structure:
         s = s.copy()
         if isinstance(calculator, AseCalculatorConfig):

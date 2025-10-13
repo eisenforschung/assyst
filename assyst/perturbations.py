@@ -1,4 +1,4 @@
-'''Classes to apply (random) perturbations to structures.'''
+"""Classes to apply (random) perturbations to structures."""
 
 from abc import ABC, abstractmethod
 from ase import Atoms
@@ -26,12 +26,13 @@ def stretch(structure: Atoms, hydro: float, shear: float, minimum_strain=1e-3) -
     These don't offer a lot of new information and can also confuse VASP's symmetry analyzer.
 
     Operates INPLACE."""
+
     def get_strains(max_strain, size):
         signs = np.random.choice([-1, 1], size=size)
         magnitudes = np.random.uniform(minimum_strain, max_strain, size=size)
         return signs * magnitudes
 
-    strain = np.zeros((3,3))
+    strain = np.zeros((3, 3))
     # Off-diagonal elements
     indices = np.triu_indices(3, k=1)
     strain[indices] = get_strains(shear, 3)
@@ -46,18 +47,19 @@ def stretch(structure: Atoms, hydro: float, shear: float, minimum_strain=1e-3) -
 
 class PerturbationABC(ABC):
     """Apply some perturbation to a given structure."""
+
     def __call__(self, structure: Atoms) -> Atoms:
-        if 'perturbation' not in structure.info:
-            structure.info['perturbation'] = str(self)
+        if "perturbation" not in structure.info:
+            structure.info["perturbation"] = str(self)
         else:
-            structure.info['perturbation'] += '+' + str(self)
+            structure.info["perturbation"] += "+" + str(self)
         return structure
 
     @abstractmethod
     def __str__(self) -> str:
         pass
 
-    def __add__(self, other: Self) -> 'Series':
+    def __add__(self, other: Self) -> "Series":
         return Series((self, other))
 
 
@@ -65,13 +67,13 @@ Perturbation = Callable[[Atoms], Atoms] | PerturbationABC
 
 
 def apply_perturbations(
-        structures: Iterable[Atoms],
-        perturbations: Iterable[Perturbation],
-        filters: Iterable[Filter] | Filter | None = None,
+    structures: Iterable[Atoms],
+    perturbations: Iterable[Perturbation],
+    filters: Iterable[Filter] | Filter | None = None,
 ) -> Iterator[Atoms]:
-    '''Apply a list of perturbations to each structure and yield the result of each perturbation separately.
+    """Apply a list of perturbations to each structure and yield the result of each perturbation separately.
 
-    If a perturbation raises ValueError it is ignored.'''
+    If a perturbation raises ValueError it is ignored."""
     if filters is None:
         filters = []
     if not isinstance(filters, Iterable):
@@ -91,6 +93,7 @@ def apply_perturbations(
 @dataclass(frozen=True)
 class Rattle(PerturbationABC):
     """Displace atoms by some absolute amount from a normal distribution."""
+
     sigma: float
     create_supercells: bool = False
     "Create minimal 2x2x2 super cells when applied to structures of only one atom."
@@ -108,6 +111,7 @@ class Rattle(PerturbationABC):
 @dataclass(frozen=True)
 class Stretch(PerturbationABC):
     """Apply random cell perturbation."""
+
     hydro: float
     shear: float
     minimum_strain: float = 1e-3
@@ -123,6 +127,7 @@ class Stretch(PerturbationABC):
 @dataclass(frozen=True)
 class Series(PerturbationABC):
     """Apply some perturbations in sequence."""
+
     perturbations: tuple[Perturbation, ...]
 
     def __call__(self, structure: Atoms) -> Atoms:
@@ -137,6 +142,7 @@ class Series(PerturbationABC):
 @dataclass(frozen=True)
 class RandomChoice(PerturbationABC):
     """Apply either of two alternatives randomly."""
+
     choice_a: Perturbation
     choice_b: Perturbation
     chance: float
