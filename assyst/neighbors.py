@@ -7,9 +7,9 @@ with ImportAlarm(
         "'pip install matscipy'",
 ) as neighbor_alarm:
     try:
-        from matscipy.neighbours import neighbour_list
+        from matscipy.neighbours import neighbour_list as neighbor_list
     except ImportError:
-        from ase.neighbourlist import neighbour_list
+        from ase.neighborlist import neighbor_list
         raise
 
-__all__ = ["neighbour_list"]
+__all__ = ["neighbor_list"]

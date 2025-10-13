@@ -7,7 +7,7 @@ from ase import Atoms
 import matplotlib.pyplot as plt
 import numpy as np
 
-from assyst.neighbours import neighbour_list
+from assyst.neighbors import neighbor_list
 
 
 def _volume(structures: Iterable[Atoms]) -> list[float]:
@@ -107,7 +107,7 @@ def distance_histogram(
             'mean': np.mean,
     }
     reduce = _preset.get(reduce, reduce)
-    return plt.hist([reduce(neighbour_list('d', s, float(rmax))) for s in structures], **kwargs)
+    return plt.hist([reduce(neighbor_list('d', s, float(rmax))) for s in structures], **kwargs)
 
 
 def energy_volume(

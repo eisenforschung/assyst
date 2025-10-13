@@ -17,7 +17,7 @@ from pyxtal.tolerance import Tol_matrix
 from ase.data import atomic_numbers
 import numpy as np
 
-from assyst.neighbours import neighbour_list
+from assyst.neighbors import neighbor_list
 
 
 class FilterBase(ABC):
@@ -66,7 +66,7 @@ class DistanceFilter(FilterBase):
 
     def _element_wise_dist(self, structure: Atoms) -> dict[tuple[str, str], float]:
         pair: dict[tuple[str, str], float] = defaultdict(lambda: inf)
-        for i, j, d in neighbour_list('ijd', structure, 1.01 * max(self.radii.values())):
+        for i, j, d in neighbor_list('ijd', structure, 1.01 * max(self.radii.values())):
             ei, ej = sorted((structure.symbols[i], structure.symbols[j]))
             pair[ei, ej] = min(d, pair[ei, ej])
         return pair
