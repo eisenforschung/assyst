@@ -19,7 +19,7 @@ authors = [
     { name="Marvin Poul", email="pmrv@posteo.de" },
 ]
 readme = "README.md"
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.11,<3.14"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
