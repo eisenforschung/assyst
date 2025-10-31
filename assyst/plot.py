@@ -138,3 +138,12 @@ def energy_volume(structures: list[Atoms], **kwargs):
         plt.scatter(V, E, **kwargs)
     else:
         plt.hexbin(V, E, **kwargs, bins="log")
+
+
+__all__ = [
+        "volume_histogram",
+        "size_histogram",
+        "concentration_histogram",
+        "distance_histogram",
+        "energy_volume",
+]

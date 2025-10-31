@@ -63,3 +63,10 @@ class Morse(AseCalculatorConfig):
 
     def get_calculator(self) -> Calculator:
         return MorsePotential(**asdict(self))
+
+
+__all__ = [
+        "AseCalculatorConfig",
+        "Grace",
+        "Morse",
+]

@@ -298,3 +298,10 @@ def sample_space_groups(
                 max_structures -= len(px)
                 if max_structures <= 0:
                     break
+
+
+__all__ = [
+        "pyxtal",
+        "Formulas",
+        "sample_space_groups",
+]

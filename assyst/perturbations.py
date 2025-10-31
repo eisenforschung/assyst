@@ -156,3 +156,16 @@ class RandomChoice(PerturbationABC):
 
     def __str__(self):
         return str(self.choice_a) + "|" + str(self.choice_b)
+
+
+__all__ = [
+        "rattle",
+        "stretch",
+        "PerturbationABC",
+        "Perturbation",
+        "apply_perturbations",
+        "Rattle",
+        "Stretch",
+        "Series",
+        "RandomChoice",
+]

@@ -1,6 +1,5 @@
 """Relaxation step of ASSYST."""
 
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Literal, Iterable, Iterator
 
@@ -125,3 +124,13 @@ def relax(
         else:
             s.calc = calculator
         yield settings.relax(s)
+
+
+__all__ = [
+        "Relax",
+        "CellRelax",
+        "VolumeRelax",
+        "SymmetryRelax",
+        "FullRelax",
+        "relax",
+]

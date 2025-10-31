@@ -205,3 +205,17 @@ class ForceFilter(CalculatorFilter):
         if not self._check(structure):
             return True
         return np.linalg.norm(structure.get_forces(), axis=-1).max() <= self.max_force
+
+
+__all__ = [
+        "FilterBase",
+        "Filter",
+        "AndFilter",
+        "OrFilter",
+        "DistanceFilter",
+        "AspectFilter",
+        "VolumeFilter",
+        "CalculatorFilter",
+        "EnergyFilter",
+        "ForceFilter"
+]
