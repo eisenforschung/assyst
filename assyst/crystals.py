@@ -9,11 +9,20 @@ from typing import Self, Iterable, Iterator, Literal, overload, Union
 from .filters import DistanceFilter
 
 from ase import Atoms
-import numpy as np
 from pyxtal import pyxtal as _pyxtal
 from pyxtal.msg import Comp_CompatibilityError
 from pyxtal.tolerance import Tol_matrix
 from tqdm.auto import tqdm
+
+
+def _get_real_spacegroup(s):
+    """Use pyxtal to sniff spacegroup of generated crystals.
+
+    The pyxtal object does not update the space group after a call to from_random, but keeps the requested one around.
+    Since the generated atoms may actually be of higher symmetry, reinitialize here to make sure what we've got."""
+    p = _pyxtal()
+    p.from_seed(s)
+    return p.group.number
 
 
 def pyxtal(
@@ -83,7 +92,7 @@ def pyxtal(
     # return a single structure
     if repeat == 1 and isinstance(group, int):
         allow_exceptions = False
-        return generate(group)
+        return generate(group)[0]
     else:
         structures = []
         if isinstance(group, int):
@@ -95,7 +104,10 @@ def pyxtal(
                 if s is None:
                     failed_groups.append(g)
                     continue
-                structures.append({"atoms": s, "symmetry": g, "repeat": i})
+                structures.append({
+                    "atoms": s, "symmetry": g, "repeat": i,
+                    "requested spacegroup": g, "spacegroup": _get_real_spacegroup(s),
+                })
         if len(failed_groups) > 0:
             warn(
                 f"Groups [{', '.join(map(str, failed_groups))}] could not be generated with stoichiometry {stoich}!",
@@ -228,6 +240,7 @@ def sample_space_groups(
     Args:
         formulas (Formulas or iterable of dicts from str to int): list of chemical formulas
         spacegroups (list of int): which space groups to generate
+        min_atoms (int): do not generate structures smaller than this
         max_atoms (int): do not generate structures larger than this
         max_structures (int): generate at most this many structures
         dim (one of 0, 1, 2, or 3): the dimensionality of the structures to generate; if lower than 3 the code generates
