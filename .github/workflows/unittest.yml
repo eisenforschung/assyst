@@ -24,8 +24,7 @@ jobs:
     - name: Setup
       shell: bash -l {0}
       run: |
-        pip install -e .[plotneighborlist]
-        pip install pytest
+        pip install -e .[test,plotneighborlist]
     - name: run tests
       shell: bash -l {0}
       run: |
