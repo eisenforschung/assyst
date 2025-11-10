@@ -1,19 +1,27 @@
-import unittest
 from ase import Atoms
+from ase.cell import Cell
 from assyst.filters import VolumeFilter
 
-class TestVolumeFilter(unittest.TestCase):
-    def test_volume_filter(self):
-        filter = VolumeFilter(maximum_volume_per_atom=20.0)
+# TODO unify duplicated code
+from hypothesis import given, strategies as st
+from pyxtal.lattice import generate_cellpara
 
-        # Volume per atom = 8.0
-        structure1 = Atoms('Cu', cell=[2, 2, 2], pbc=True)
-        self.assertTrue(filter(structure1))
 
-        # Volume per atom = 20.0
-        structure2 = Atoms('Cu2', cell=[4, 5, 2], pbc=True)
-        self.assertTrue(filter(structure2))
+@st.composite
+def cells(draw):
+    ltype = st.sampled_from(["monoclinic", "triclinic", "orthorhombic", "tetragonal", "hexagonal", "trigonal", "cubic"])
+    volume = st.floats(min_value=5, max_value=100, allow_nan=False, allow_infinity=False)
+    return Cell.fromcellpar(generate_cellpara(draw(ltype), draw(volume)))
 
-        # Volume per atom = 20.0001
-        structure3 = Atoms('Cu', cell=[2, 2, 5.0001], pbc=True)
-        self.assertFalse(filter(structure3))
+
+@given(cells(), st.floats(0, exclude_min=True))
+def test_volume_filter(cell, maximum_volume_per_atom):
+    filter = VolumeFilter(maximum_volume_per_atom)
+
+    structure = Atoms('Cu', cell=cell, pbc=True)
+    volume = structure.cell.volume/len(structure)
+    assert filter(structure) == (volume <= maximum_volume_per_atom), \
+        "VolumeFilter should filter only structures larger than given volume!"
+    filter = VolumeFilter(volume)
+    assert filter(structure), \
+        "VolumeFilter should not filter structures with exactly the given volume!"

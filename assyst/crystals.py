@@ -29,9 +29,9 @@ def pyxtal(
     group: Union[int, list[int]],
     species: tuple[str],
     num_ions: tuple[int],
-    dim=3,
-    repeat=1,
-    allow_exceptions=True,
+    dim: Literal[1, 2, 3] = 3,
+    repeat: int = 1,
+    allow_exceptions: bool = True,
     **kwargs,
 ) -> Union[Atoms, list[dict]]:
     """

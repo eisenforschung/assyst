@@ -1,9 +1,12 @@
 import unittest
+from itertools import product
+from hypothesis import given, strategies as st
 import numpy as np
 from ase import Atoms
 from assyst.filters import DistanceFilter
 from pyxtal.tolerance import Tol_matrix
 from ase.data import atomic_numbers
+
 
 class TestDistanceFilter(unittest.TestCase):
     def test_element_wise_dist(self):
@@ -79,22 +82,24 @@ class TestDistanceFilter(unittest.TestCase):
         filter = DistanceFilter({'Cu': 0.3})
         self.assertFalse(filter(structure), msg="minimal image d=0.5 < 2*0.3")
 
-    def test_to_tol_matrix(self):
-        """to_tol_matrix returns a correct Tol_matrix object."""
-        radii = {'Cu': 1.3, 'Ag': 1.5}
-        filter = DistanceFilter(radii)
-        tol_matrix = filter.to_tol_matrix()
 
-        self.assertIsInstance(tol_matrix, Tol_matrix)
+radii = st.floats(1, allow_nan=False, allow_infinity=False)
+elements = st.sampled_from(list(atomic_numbers.keys())[1:106]) # pyxtal tol somehow only supports until element 105
 
-        # Check a few values
-        cu_cu = radii['Cu'] + radii['Cu']
-        ag_ag = radii['Ag'] + radii['Ag']
-        cu_ag = radii['Cu'] + radii['Ag']
 
-        self.assertEqual(tol_matrix.get_tol(atomic_numbers['Cu'], atomic_numbers['Cu']), cu_cu)
-        self.assertEqual(tol_matrix.get_tol(atomic_numbers['Ag'], atomic_numbers['Ag']), ag_ag)
-        self.assertEqual(tol_matrix.get_tol(atomic_numbers['Cu'], atomic_numbers['Ag']), cu_ag)
+@given(radii, radii, elements, elements)
+def test_to_tol_matrix(ra, rb, a, b):
+    """to_tol_matrix returns a correct Tol_matrix object."""
+    radii = {a: ra, b: rb}
+    filter = DistanceFilter(radii)
+    tol_matrix = filter.to_tol_matrix()
+
+    assert isinstance(tol_matrix, Tol_matrix)
+
+    for i, j in product((a, b), repeat=2):
+        assert tol_matrix.get_tol(atomic_numbers[i], atomic_numbers[j]) == radii[i] + radii[j]
+
 
 if __name__ == '__main__':
     unittest.main()
+    test_to_tol_matrix()
