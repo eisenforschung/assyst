@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
+from hypothesis import given, strategies as st, settings
 from ase import Atoms
 
 from assyst.crystals import Formulas, sample_space_groups, _get_real_spacegroup
@@ -215,10 +216,12 @@ class TestSampleSpaceGroupsArguments(unittest.TestCase):
         self.assertIsNotNone(mock_pyxtal.call_args.kwargs['tm'])
 
 
-def test_spacegroup_info():
+@settings(deadline=1000, max_examples=10)
+@given(st.lists(st.integers(1, 230), max_size=230, unique=True))
+def test_spacegroup_info(spacegroups):
     """sample_space_groups() should add two fields to Atoms.info describing the requested and actual space group for
     each structure."""
-    for group in range(1, 230 + 1, 3):
+    for group in spacegroups:
         for atoms in sample_space_groups([{"Cu": 4}], [group]):
             assert "requested spacegroup" in atoms.info and "spacegroup" in atoms.info, \
                 "sample_space_groups() does not supply spacegroup metadata!"
