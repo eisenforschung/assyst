@@ -39,7 +39,7 @@ dependencies = [
 test = ["pytest"]
 doc = ["sphinx", "furo"]
 coverage = ["pytest", "pytest-cov"]
-grace = ["tensorpotential>=0.5.1,<0.5.4"]
+grace = ["tensorpotential>=0.5.1,<0.5.7"]
 plotneighborlist = ["matscipy>=1,<2"]
 
 [project.urls]
