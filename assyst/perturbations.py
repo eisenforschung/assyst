@@ -15,7 +15,7 @@ def rattle(structure: Atoms, sigma: float) -> Atoms:
     Operates INPLACE."""
     if len(structure) == 1:
         raise ValueError("Can only rattle structures larger than one atom.")
-    structure.rattle(stdev=sigma)
+    structure.rattle(stdev=sigma, rng=np.random)
     return structure
 
 
