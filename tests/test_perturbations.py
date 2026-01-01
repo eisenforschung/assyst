@@ -24,6 +24,12 @@ class TestPerturbations(unittest.TestCase):
         with self.assertRaises(ValueError):
             rattle(self.single_atom_structure.copy(), sigma=0.1)
 
+    def test_rattle_returns_different_structure_on_multiple_calls(self):
+        """Test that rattle returns distinct values on subsequent calls with same input."""
+        positions1 = rattle(self.structure.copy(), sigma=1).positions
+        positions2 = rattle(self.structure.copy(), sigma=1).positions
+        self.assertTrue(not np.array_equal(positions1, positions2))
+
     def test_stretch_modifies_cell(self):
         """Test that stretch modifies the cell of the structure."""
         original_cell = self.structure.get_cell().copy()
