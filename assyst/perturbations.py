@@ -19,6 +19,25 @@ def rattle(structure: Atoms, sigma: float) -> Atoms:
     return structure
 
 
+def scaled_rattle(structure: Atoms, sigma: float, reference: dict[str, float]) -> Atoms:
+    """Randomly displace positions with gaussian noise relative to elemental reference length.
+
+    Args:
+        structure (:class:`.ase.Atoms`):
+        sigma (float):
+        structure (:class:`.ase.Atoms`):
+    """
+    sigma = sigma * np.ones(len(structure))
+    if not all(r > 0 for r in reference.values()):
+        raise ValueError("Reference lengths must be strictly positive!")
+    for i, sym in enumerate(structure.symbols):
+        try:
+            sigma[i] *= reference[sym]
+        except KeyError:
+            raise ValueError(f"No value for element {sym} provided in argument `reference`!") from None
+    return rattle(structure, sigma.reshape(-1, 1))
+
+
 def stretch(structure: Atoms, hydro: float, shear: float, minimum_strain=1e-3) -> Atoms:
     """Randomly stretch cell with uniform noise.
 

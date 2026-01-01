@@ -1,9 +1,16 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+from math import inf
+
+import pytest
+from hypothesis import given, strategies as st
 import numpy as np
 from ase import Atoms
+from ase.build import bulk
+from ase.data import atomic_numbers
 
-from assyst.perturbations import rattle, stretch, Rattle, Stretch, Series, RandomChoice, apply_perturbations
+from assyst.perturbations import rattle, scaled_rattle, stretch, Rattle, Stretch, Series, RandomChoice, apply_perturbations
+
 
 class TestPerturbations(unittest.TestCase):
 
@@ -107,7 +114,7 @@ class TestPerturbations(unittest.TestCase):
 
         perturbed_structures = list(apply_perturbations(structures, perturbations))
 
-        self.assertEqual(len(perturbed_structures), 6) # 3 structures * 2 perturbations
+        self.assertEqual(len(perturbed_structures), 6)  # 3 structures * 2 perturbations
 
     def test_apply_perturbations_with_filter(self):
         """Test the apply_perturbations function with a filter."""
@@ -123,7 +130,7 @@ class TestPerturbations(unittest.TestCase):
     def test_apply_perturbations_value_error(self):
         """Test that apply_perturbations handles ValueError."""
         structures = [self.single_atom_structure.copy()]
-        perturbations = [Rattle(sigma=0.1, create_supercells=False)] # This will raise ValueError
+        perturbations = [Rattle(sigma=0.1, create_supercells=False)]  # This will raise ValueError
 
         # The ValueError from Rattle should be caught, and no structures should be yielded.
         perturbed_structures = list(apply_perturbations(structures, perturbations))
@@ -131,7 +138,7 @@ class TestPerturbations(unittest.TestCase):
 
     def test_stretch_strain_distribution(self):
         """Test that stretch applies strain within the correct ranges."""
-        for _ in range(10): # Repeat test 10 times with different random values
+        for _ in range(10):  # Repeat test 10 times with different random values
             hydro = np.random.uniform(0.05, 0.3)
             shear = np.random.uniform(0.05, 0.3)
             minimum_strain = np.random.uniform(1e-4, 1e-2)
@@ -161,7 +168,6 @@ class TestPerturbations(unittest.TestCase):
             for strain_val in off_diag_strains:
                 self.assertTrue(minimum_strain <= abs(strain_val) <= shear)
 
-
     def test_perturbation_info_concatenation(self):
         """Test that perturbation info is concatenated."""
         rattle_pert = Rattle(sigma=0.1)
@@ -172,6 +178,74 @@ class TestPerturbations(unittest.TestCase):
         structure = stretch_pert(structure)
 
         self.assertIn('rattle(0.1)+stretch(hydro=0.1, shear=0.1)', structure.info['perturbation'])
+
+
+@pytest.fixture
+def reference_dict():
+    """
+    Per‑element scaling factors that will be multiplied by the global
+    ``sigma`` argument inside ``scaled_rattle``.
+    """
+    return {
+        "H": 0.8,   # Å
+        "C": 1.2,   # Å
+        "O": 1.0,   # Å
+    }
+
+
+def test_scaled_rattle_raises_value_error_for_single_atom():
+    """scaled_rattle should raise a ValueError for a single-atom structure."""
+    single_atom_structure = Atoms('H', positions=[[0, 0, 0]], cell=[10, 10, 10])
+    with pytest.raises(ValueError):
+        scaled_rattle(single_atom_structure.copy(), sigma=0.1, reference={"H": 1})
+
+
+def test_scaled_rattle_missing_reference_raises():
+    """scaled_rattle should raise a ValueError if reference dict does not contain all elements!"""
+    structure = bulk("Fe")
+    bad_reference = {"Cu": 1.0}   # No entry for Fe
+    with pytest.raises(ValueError, match="No value for element Fe"):
+        scaled_rattle(structure.copy(), sigma=0.2, reference=bad_reference)
+
+
+@st.composite
+def random_element_structures(draw):
+    """Return structures with random elements inside"""
+    structure = bulk("Cu", cubic=True).repeat(3)
+    elements = st.lists(st.sampled_from(list(atomic_numbers.keys())[1:106]),
+                        min_size=len(structure), max_size=len(structure))
+    structure.symbols[:] = draw(elements)
+    return structure
+
+
+@given(random_element_structures(), st.floats(min_value=0.01, max_value=10))
+def test_scaled_rattle_respects_element_specific_sigma(simple_structure, sigma):
+    """
+    For each element present in the structure we verify two things:
+
+    1. The *mean* displacement of every Cartesian component is (close to) zero.
+    2. The *standard deviation* of the displacement matches the expected
+       ``sigma * reference[element]`` value.
+    """
+    unique_symbols = set(simple_structure.symbols)
+    reference_dict = {sym: (i+1)/len(unique_symbols) for i, sym in enumerate(unique_symbols)}
+    n_repeat = 500
+
+    displacements = np.stack([
+        scaled_rattle(simple_structure.copy(), sigma, reference_dict).positions
+        - simple_structure.positions for _ in range(n_repeat)
+    ])
+    displacements = displacements.transpose([1, 0, 2])
+
+    for sym, disp in zip(simple_structure.symbols, displacements):
+        element_sigma = sigma * reference_dict[sym]
+        # Instead of fancy hypothesis testing, just check that mean and variance are within five times their standard
+        # error, implying they should almost never fail
+        assert np.allclose(disp.mean(axis=0), 0.0,
+                           atol=5 * element_sigma / np.sqrt(n_repeat))
+        assert np.allclose(disp.var(axis=0),  element_sigma**2,
+                           atol=5 * np.sqrt(2 * sigma**4 / (n_repeat - 1)))
+
 
 if __name__ == '__main__':
     unittest.main()
