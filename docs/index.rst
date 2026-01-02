@@ -36,6 +36,7 @@ All three steps yield structures that are added to the training set.
 
 .. toctree::
    :maxdepth: 2
+   :hidden:
    :caption: Contents:
 
    Home <self>
