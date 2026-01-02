@@ -4,6 +4,12 @@
 
 A minimal reference implementation of ASSYST method to generate transferable training data for machine learning potentials, see also the corresponding [paper](https://doi.org/10.1038/s41524-025-01669-4).
 
+ASSYST is the Automated Small Symmetric Structure Training, a training protocol, aimed at providing comprehensive, transferable training sets for machine learning interatomic potentials (MLIP) automatically. A detailed explanation and verification of the method can be found in our papers. [1] [2] ASSYST gives up the notion of fitting potentials to individual phases or structures and instead tries to deliver a training set spanning the full potential energy surface (PES) of a material.
+
+This software package is a minimal implementation of this idea, designed to be as flexible as possible without assuming either a specific MLIP, reference data, or workflow manager in mind. It is built on ASE and can use any of its calculators. It also assumes that you bring your own reference energies and forces. For a ready-to-run implementation that targets Atomic Cluster Expansion and Moment Tensor Potentials fit to Density Functional Theory (DFT) data check out pyiron_potentialfit.
+
+## Citation
+
 Please use the following citation when referencing the method in your work.
 
 ```

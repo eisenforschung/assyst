@@ -4,6 +4,12 @@
 ASSYST documentation
 ====================
 
+.. image:: https://zenodo.org/badge/997271420.svg
+   :target: https://doi.org/10.5281/zenodo.15744358
+
+.. image:: https://codecov.io/gh/pmrv/assyst/graph/badge.svg?token=NIEJ01UMJF
+   :target: https://codecov.io/gh/pmrv/assyst
+
 ASSYST is the Automated Small Symmetric Structure Training, a training protocol, aimed at providing comprehensive,
 transferable training sets for machine learning interatomic potentials (MLIP) automatically. A detailed explanation and
 verification of the method can be found in our papers. `[1]
@@ -17,6 +23,10 @@ It is built on `ASE <https://ase-lib.org/index.html>`_ and can use any of its ca
 It also assumes that you bring your own reference energies and forces.
 For a ready-to-run implementation that targets Atomic Cluster Expansion and Moment Tensor Potentials fit to Density
 Functional Theory (DFT) data check out `pyiron_potentialfit <https://github.com/pyiron/pyiron_potentialfit>`_.
+
+Development happens on `Github <https://github.com/eisenforschung/assyst>`_, feel free to open any issues or pull
+request for additional features.
+We are open for any contributions!
 
 Overview
 ========
