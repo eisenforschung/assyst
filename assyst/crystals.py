@@ -92,7 +92,7 @@ def pyxtal(
     # return a single structure
     if repeat == 1 and isinstance(group, int):
         allow_exceptions = False
-        return generate(group)[0]
+        return generate(group)
     else:
         structures = []
         if isinstance(group, int):
