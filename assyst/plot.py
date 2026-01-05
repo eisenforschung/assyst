@@ -33,6 +33,12 @@ def _concentration(
     return concentrations
 
 
+def _distance(
+    structures: Iterable[Atoms], rmax: float
+) -> list[Iterable[float]]:
+    return [neighbor_list("d", s, float(rmax)) for s in structures]
+
+
 def volume_histogram(structures: list[Atoms], **kwargs):
     """Plot histogram of per-atom volumes.
 
@@ -118,6 +124,35 @@ def distance_histogram(
     return plt.hist(
         [reduce(neighbor_list("d", s, float(rmax))) for s in structures], **kwargs
     )
+
+
+def radial_distribution(
+    structures: list[Atoms],
+    rmax: float = 6.0,
+    **kwargs
+):
+    """Plot radial distribution of neighbors in training set.
+
+    Calculates all neighbors in all structures and histograms them together.
+    Bins are weighted by 1/(4 pi r^2), but because the density in each
+    structure can be different, the plot does *not* yield something that can be
+    directly compared to a Radial Distribution Function.
+    It can be used to locate prefered bonding distances or sampling of the
+    radial neighborhood in a training set given suitable data.
+
+    Args:
+        structures (list of :class:`ase.Atoms`):
+            structures to plot
+        rmax (float):
+            maximum cutoff to consider neighborhood
+        **kwargs: pass through to :func:`matplotlib.pyplot.hist`
+
+    Returns:
+        Return value of :func:`matplotlib.pyplot.hist`"""
+    kwargs.setdefault("bins", 100)
+    distances = np.concatenate([n for n in _distance(structures, rmax)])
+    weights = 1 / (4 * np.pi * distances ** 2)
+    return plt.hist(distances, weights=weights, **kwargs)
 
 
 def energy_histogram(
