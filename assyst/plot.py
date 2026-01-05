@@ -92,7 +92,7 @@ def concentration_histogram(
 def distance_histogram(
     structures: list[Atoms],
     rmax: float = 6.0,
-    reduce: Literal["min", "mean"] | Callable[[Iterable[float]], float] = "min",
+    reduce: Literal["min", "mean"] | Callable[[Iterable[float]], float] | None = "min",
     **kwargs,
 ):
     """Plot histogram of per-atom volumes.
@@ -118,6 +118,26 @@ def distance_histogram(
     return plt.hist(
         [reduce(neighbor_list("d", s, float(rmax))) for s in structures], **kwargs
     )
+
+
+def energy_histogram(
+        structures: list[Atoms],
+        **kwargs
+):
+    """Plot energy per atom histogram.
+
+    Requires that :class:`ase.calculators.SinglePointCalculator` are attached to the atoms, either from a relaxation
+    for final training set calculation.
+
+    Args:
+        structures (list of :class:`ase.Atoms`): structures to plot
+        **kwargs: pass through to :func:`matplotlib.pyplot.hist`
+
+    Returns:
+        Return value of `matplotlib.pyplot.hist`"""
+    kwargs.setdefault("bins", 100)
+    E = _energy(structures)
+    return plt.hist(E, **kwargs)
 
 
 def energy_volume(structures: list[Atoms], **kwargs):
