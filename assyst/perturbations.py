@@ -99,10 +99,21 @@ def apply_perturbations(
     structures: Iterable[Atoms],
     perturbations: Iterable[Perturbation],
     filters: Iterable[Filter] | Filter | None = None,
+    retries: int = 10,
 ) -> Iterator[Atoms]:
     """Apply a list of perturbations to each structure and yield the result of each perturbation separately.
 
-    If a perturbation raises ValueError it is ignored."""
+    If a perturbation raises ValueError it is ignored.
+
+    Args:
+        structures: Atomic structures to perturb.
+        perturbations: Functions that modify structures.
+        filters: Functions to filter valid results (optional).
+        retries: Max attempts per perturbation (default: 10).
+
+    Yields:
+        Perturbed structure that passes all filters.
+    """
     if filters is None:
         filters = []
     if not isinstance(filters, Iterable):
@@ -112,11 +123,13 @@ def apply_perturbations(
     for structure in structures:
         for mod in perturbations:
             try:
-                m = mod(structure.copy())
+                for _ in range(retries):
+                    m = mod(structure.copy())
+                    if all(f(m) for f in filters):
+                        yield m
+                        break
             except ValueError:
                 continue
-            if all(f(m) for f in filters):
-                yield m
 
 
 @dataclass(frozen=True)
