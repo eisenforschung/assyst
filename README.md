@@ -18,6 +18,8 @@ either a specific MLIP, reference data, or workflow manager in mind. It is built
 reference energies and forces. For a ready-to-run implementation that targets Atomic Cluster Expansion and Moment Tensor
 Potentials fit to Density Functional Theory (DFT) data check out pyiron_potentialfit.
 
+![ASSYST schema](docs/img/AssystSchematic.svg)
+
 ## Citation
 
 Please use the following citation when referencing the method in your work.
