@@ -9,7 +9,7 @@ from ase import Atoms
 from ase.build import bulk
 from ase.data import atomic_numbers
 
-from assyst.perturbations import rattle, scaled_rattle, stretch, Rattle, Stretch, Series, RandomChoice, apply_perturbations
+from assyst.perturbations import rattle, element_scaled_rattle, stretch, Rattle, Stretch, Series, RandomChoice, apply_perturbations
 
 
 class TestPerturbations(unittest.TestCase):
@@ -184,7 +184,7 @@ class TestPerturbations(unittest.TestCase):
 def reference_dict():
     """
     Per‑element scaling factors that will be multiplied by the global
-    ``sigma`` argument inside ``scaled_rattle``.
+    ``sigma`` argument inside ``element_scaled_rattle``.
     """
     return {
         "H": 0.8,   # Å
@@ -193,19 +193,19 @@ def reference_dict():
     }
 
 
-def test_scaled_rattle_raises_value_error_for_single_atom():
-    """scaled_rattle should raise a ValueError for a single-atom structure."""
+def test_element_scaled_rattle_raises_value_error_for_single_atom():
+    """element_scaled_rattle should raise a ValueError for a single-atom structure."""
     single_atom_structure = Atoms('H', positions=[[0, 0, 0]], cell=[10, 10, 10])
     with pytest.raises(ValueError):
-        scaled_rattle(single_atom_structure.copy(), sigma=0.1, reference={"H": 1})
+        element_scaled_rattle(single_atom_structure.copy(), sigma=0.1, reference={"H": 1})
 
 
-def test_scaled_rattle_missing_reference_raises():
-    """scaled_rattle should raise a ValueError if reference dict does not contain all elements!"""
+def test_element_scaled_rattle_missing_reference_raises():
+    """element_scaled_rattle should raise a ValueError if reference dict does not contain all elements!"""
     structure = bulk("Fe")
     bad_reference = {"Cu": 1.0}   # No entry for Fe
     with pytest.raises(ValueError, match="No value for element Fe"):
-        scaled_rattle(structure.copy(), sigma=0.2, reference=bad_reference)
+        element_scaled_rattle(structure.copy(), sigma=0.2, reference=bad_reference)
 
 
 @st.composite
@@ -219,7 +219,7 @@ def random_element_structures(draw):
 
 
 @given(random_element_structures(), st.floats(min_value=0.01, max_value=10))
-def test_scaled_rattle_respects_element_specific_sigma(simple_structure, sigma):
+def test_element_scaled_rattle_respects_element_specific_sigma(simple_structure, sigma):
     """
     For each element present in the structure we verify two things:
 
@@ -232,7 +232,7 @@ def test_scaled_rattle_respects_element_specific_sigma(simple_structure, sigma):
     n_repeat = 500
 
     displacements = np.stack([
-        scaled_rattle(simple_structure.copy(), sigma, reference_dict).positions
+        element_scaled_rattle(simple_structure.copy(), sigma, reference_dict).positions
         - simple_structure.positions for _ in range(n_repeat)
     ])
     displacements = displacements.transpose([1, 0, 2])

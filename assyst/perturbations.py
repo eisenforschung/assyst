@@ -19,13 +19,23 @@ def rattle(structure: Atoms, sigma: float) -> Atoms:
     return structure
 
 
-def scaled_rattle(structure: Atoms, sigma: float, reference: dict[str, float]) -> Atoms:
-    """Randomly displace positions with gaussian noise relative to elemental reference length.
+def element_scaled_rattle(structure: Atoms, sigma: float, reference: dict[str, float]) -> Atoms:
+    """Randomly displace positions with gaussian noise relative to an elemental reference length.
+
+    Operates like :func:`.rattle` but uses a standard deviation derived from the relative `sigma` and the `reference`,
+    where this reference is given by element.
+
+    Operates IN PLACE!
 
     Args:
-        structure (:class:`.ase.Atoms`):
-        sigma (float):
-        structure (:class:`.ase.Atoms`):
+        structure (:class:`.ase.Atoms`): structure to perturb
+        sigma (float): relative standard deviation
+        reference (dict of str to float): reference length per element
+
+    Raises:
+        ValueError: if len(structure) == 1, create a super cell first before calling again
+        ValueError: if reference values are not positive
+        ValueError: if reference does not contain all elements in given structure
     """
     sigma = sigma * np.ones(len(structure))
     if not all(r > 0 for r in reference.values()):
@@ -125,6 +135,29 @@ class Rattle(PerturbationABC):
 
     def __str__(self):
         return f"rattle({self.sigma})"
+
+
+@dataclass(frozen=True)
+class ElementScaledRattle(PerturbationABC):
+    """Displace atoms by some amount from a normal distribution.
+
+    Operates like :class:`.Rattle` but uses a standard deviation derived from the relative `sigma` and the `reference`,
+    where this reference is given by element.
+    """
+
+    sigma: float
+    reference: dict[str, float]
+    create_supercells: bool = False
+    "Create minimal 2x2x2 super cells when applied to structures of only one atom."
+
+    def __call__(self, structure: Atoms):
+        if self.create_supercells and len(structure) == 1:
+            structure = structure.repeat(2)
+        structure = super().__call__(structure)
+        return element_scaled_rattle(structure, self.sigma, self.reference)
+
+    def __str__(self):
+        return f"scaled_rattle({self.sigma})"
 
 
 @dataclass(frozen=True)
