@@ -64,7 +64,7 @@ def size_histogram(structures: list[Atoms], **kwargs):
 
     Returns:
         Return value of `matplotlib.pyplot.hist`"""
-    plt.hist(map(len, structures), **kwargs)
+    return plt.hist(list(map(len, structures)), **kwargs)
 
 
 def concentration_histogram(
