@@ -37,7 +37,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest", "hypothesis"]
-doc = ["sphinx", "furo"]
+doc = ["sphinx", "furo", "myst-nb"]
 coverage = ["pytest", "pytest-cov"]
 grace = ["tensorpotential>=0.5.1,<0.5.8"]
 plotneighborlist = ["matscipy>=1,<2"]
