@@ -5,4 +5,4 @@ Notebooks
    :maxdepth: 1
    :glob:
 
-   notebooks/*
+   notebooks/**
