@@ -42,7 +42,10 @@ if os.path.exists(nb_source_dir):
         shutil.copy(os.path.join(nb_source_dir, file), dest)
 
 intersphinx_mapping = {
-        'ase': ('https://wiki.fysik.dtu.dk/ase', None),
+    'python': ('https://docs.python.org/3/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'matplotlib': ('https://matplotlib.org/stable/', None),
+    'ase': ('https://wiki.fysik.dtu.dk/ase', None),
 }
 
 templates_path = ['_templates']
