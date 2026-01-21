@@ -132,12 +132,20 @@ def distance_histogram(
         "min": np.min,
         "mean": np.mean,
     }
-    reduce_func = _preset.get(reduce, reduce)
-    res = plt.hist(
-        [reduce_func(neighbor_list("d", s, float(rmax))) for s in structures], **kwargs
-    )
+
+    if reduce is None:
+        data = np.concatenate(
+            [neighbor_list("d", s, float(rmax)) for s in structures]
+        )
+        ylabel = r"#$\,$Neighbours"
+    else:
+        reduce_func = _preset.get(reduce, reduce)
+        data = [reduce_func(neighbor_list("d", s, float(rmax))) for s in structures]
+        ylabel = r"#$\,$Structures"
+
+    res = plt.hist(data, **kwargs)
     plt.xlabel(xlabel)
-    plt.ylabel(r"#$\,$Neighbours")
+    plt.ylabel(ylabel)
     return res
 
 
