@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from .filters import Filter
+from .utils import update_uuid
 
 
 def rattle(structure: Atoms, sigma: float) -> Atoms:
@@ -78,6 +79,7 @@ class PerturbationABC(ABC):
     """Apply some perturbation to a given structure."""
 
     def __call__(self, structure: Atoms) -> Atoms:
+        update_uuid(structure)
         if "perturbation" not in structure.info:
             structure.info["perturbation"] = str(self)
         else:
@@ -124,7 +126,14 @@ def apply_perturbations(
         for mod in perturbations:
             try:
                 for _ in range(retries):
-                    m = mod(structure.copy())
+                    m = structure.copy()
+                    old_uuid = m.info.get("uuid")
+                    m = mod(m)
+                    if m is None:
+                        continue
+                    if m.info.get("uuid") == old_uuid:
+                        update_uuid(m)
+
                     if all(f(m) for f in filters):
                         yield m
                         break
@@ -197,7 +206,12 @@ class Series(PerturbationABC):
 
     def __call__(self, structure: Atoms) -> Atoms:
         for mod in self.perturbations:
+            old_uuid = structure.info.get("uuid")
             structure = mod(structure)
+            if structure is None:
+                raise ValueError("A perturbation in the series returned None.")
+            if structure.info.get("uuid") == old_uuid:
+                update_uuid(structure)
         return structure
 
     def __str__(self):
@@ -214,10 +228,15 @@ class RandomChoice(PerturbationABC):
     "Probability to pick choice b"
 
     def __call__(self, structure: Atoms) -> Atoms:
+        old_uuid = structure.info.get("uuid")
         if np.random.rand() > self.chance:
-            return self.choice_a(structure)
+            res = self.choice_a(structure)
         else:
-            return self.choice_b(structure)
+            res = self.choice_b(structure)
+
+        if res is not None and res.info.get("uuid") == old_uuid:
+            update_uuid(res)
+        return res
 
     def __str__(self):
         return str(self.choice_a) + "|" + str(self.choice_b)

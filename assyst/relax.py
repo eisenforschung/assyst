@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Literal, Iterable, Iterator
 
 from .calculators import AseCalculatorConfig
+from .utils import update_uuid
 
 from ase import Atoms
 from ase.calculators.calculator import Calculator
@@ -43,6 +44,7 @@ class Relax:
         """
         calc = structure.calc
         structure = structure.copy()
+        update_uuid(structure)
         structure.calc = calc
         lbfgs = LBFGS(self.apply_filter_and_constraints(structure), logfile="/dev/null")
         lbfgs.run(fmax=self.force_tolerance, steps=self.max_steps)
