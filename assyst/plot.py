@@ -191,7 +191,7 @@ def energy_histogram(
     kwargs.setdefault("bins", 100)
     E = _energy(structures)
     res = plt.hist(E, **kwargs)
-    plt.xlabel("Energy / atom [eV]")
+    plt.xlabel(r"Energy [eV/atom]")
     plt.ylabel(r"#$\,$Structures")
     return res
 
@@ -215,7 +215,7 @@ def energy_volume(structures: list[Atoms], **kwargs):
     else:
         plt.hexbin(V, E, **kwargs, bins="log")
     plt.xlabel(r"Volume [$\mathrm{\AA}^3/\mathrm{atom}$]")
-    plt.ylabel("Energy / atom [eV]")
+    plt.ylabel(r"Energy [eV/atom]")
 
 
 __all__ = [

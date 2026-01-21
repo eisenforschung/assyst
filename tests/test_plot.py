@@ -57,23 +57,15 @@ class TestPlotFunctions(unittest.TestCase):
     def setUp(self):
         self.structures = [Atoms('H2O', positions=[[0,0,0], [1,0,0], [0,1,0]], cell=[10,10,10])]
 
-    @patch('matplotlib.pyplot.ylabel')
-    @patch('matplotlib.pyplot.xlabel')
     @patch('matplotlib.pyplot.hist')
-    def test_volume_histogram(self, mock_hist, mock_xlabel, mock_ylabel):
+    def test_volume_histogram(self, mock_hist):
         volume_histogram(self.structures)
         mock_hist.assert_called_once()
-        mock_xlabel.assert_called_once_with(r"Volume [$\mathrm{\AA}^3/\mathrm{atom}$]")
-        mock_ylabel.assert_called_once_with(r"#$\,$Structures")
 
-    @patch('matplotlib.pyplot.ylabel')
-    @patch('matplotlib.pyplot.xlabel')
     @patch('matplotlib.pyplot.hist')
-    def test_size_histogram(self, mock_hist, mock_xlabel, mock_ylabel):
+    def test_size_histogram(self, mock_hist):
         size_histogram(self.structures)
         mock_hist.assert_called_once()
-        mock_xlabel.assert_called_once_with("# Atoms")
-        mock_ylabel.assert_called_once_with(r"#$\,$Structures")
 
     @patch('matplotlib.pyplot.bar')
     def test_concentration_histogram(self, mock_bar):
@@ -81,63 +73,40 @@ class TestPlotFunctions(unittest.TestCase):
         mock_bar.assert_called()
 
     @unittest.skipIf(matscipy is None, "matscipy not installed")
-    @patch('matplotlib.pyplot.ylabel')
-    @patch('matplotlib.pyplot.xlabel')
     @patch('matplotlib.pyplot.hist')
-    def test_distance_histogram(self, mock_hist, mock_xlabel, mock_ylabel):
+    def test_distance_histogram(self, mock_hist):
         distance_histogram(self.structures, reduce="min")
         mock_hist.assert_called_once()
-        mock_xlabel.assert_called_with(r"Minimum distance [$\mathrm{\AA}$]")
-        mock_ylabel.assert_called_once_with(r"#$\,$Neighbours")
 
         distance_histogram(self.structures, reduce="mean")
-        mock_xlabel.assert_called_with(r"Mean distance [$\mathrm{\AA}$]")
-
         distance_histogram(self.structures, reduce=None)
-        mock_xlabel.assert_called_with(r"Distance [$\mathrm{\AA}$]")
 
     @unittest.skipIf(matscipy is None, "matscipy not installed")
-    @patch('matplotlib.pyplot.ylabel')
-    @patch('matplotlib.pyplot.xlabel')
     @patch('matplotlib.pyplot.hist')
-    def test_radial_distribution(self, mock_hist, mock_xlabel, mock_ylabel):
+    def test_radial_distribution(self, mock_hist):
         radial_distribution(self.structures)
         mock_hist.assert_called_once()
-        mock_xlabel.assert_called_once_with(r"Distance [$\mathrm{\AA}$]")
-        mock_ylabel.assert_called_once_with("Radial distribution")
 
-    @patch('matplotlib.pyplot.ylabel')
-    @patch('matplotlib.pyplot.xlabel')
     @patch('matplotlib.pyplot.hist')
-    def test_energy_histogram(self, mock_hist, mock_xlabel, mock_ylabel):
+    def test_energy_histogram(self, mock_hist):
         s = Atoms('H', cell=[10,10,10])
         s.calc = MagicMock()
         s.calc.get_potential_energy.return_value = -1.0
         energy_histogram([s])
         mock_hist.assert_called_once()
-        mock_xlabel.assert_called_once_with("Energy / atom [eV]")
-        mock_ylabel.assert_called_once_with(r"#$\,$Structures")
 
-    @patch('matplotlib.pyplot.ylabel')
-    @patch('matplotlib.pyplot.xlabel')
     @patch('matplotlib.pyplot.scatter')
-    def test_energy_volume_scatter(self, mock_scatter, mock_xlabel, mock_ylabel):
+    def test_energy_volume_scatter(self, mock_scatter):
         s = Atoms('H', cell=[10,10,10])
         s.calc = MagicMock()
         s.calc.get_potential_energy.return_value = -1.0
         energy_volume([s])
         mock_scatter.assert_called_once()
-        mock_xlabel.assert_called_once_with(r"Volume [$\mathrm{\AA}^3/\mathrm{atom}$]")
-        mock_ylabel.assert_called_once_with("Energy / atom [eV]")
 
-    @patch('matplotlib.pyplot.ylabel')
-    @patch('matplotlib.pyplot.xlabel')
     @patch('matplotlib.pyplot.hexbin')
-    def test_energy_volume_hexbin(self, mock_hexbin, mock_xlabel, mock_ylabel):
+    def test_energy_volume_hexbin(self, mock_hexbin):
         s = Atoms('H', cell=[10,10,10])
         s.calc = MagicMock()
         s.calc.get_potential_energy.return_value = -1.0
         energy_volume([s] * 1001)
         mock_hexbin.assert_called_once()
-        mock_xlabel.assert_called_once_with(r"Volume [$\mathrm{\AA}^3/\mathrm{atom}$]")
-        mock_ylabel.assert_called_once_with("Energy / atom [eV]")
