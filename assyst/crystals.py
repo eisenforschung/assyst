@@ -29,7 +29,7 @@ def pyxtal(
     group: Union[int, list[int]],
     species: tuple[str],
     num_ions: tuple[int],
-    dim: Literal[1, 2, 3] = 3,
+    dim: Literal[0, 1, 2, 3] = 3,
     repeat: int = 1,
     allow_exceptions: bool = True,
     **kwargs,
