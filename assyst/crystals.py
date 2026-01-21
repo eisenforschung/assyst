@@ -29,7 +29,7 @@ def pyxtal(
     group: Union[int, list[int]],
     species: tuple[str],
     num_ions: tuple[int],
-    dim: Literal[1, 2, 3] = 3,
+    dim: Literal[0, 1, 2, 3] = 3,
     repeat: int = 1,
     allow_exceptions: bool = True,
     **kwargs,
@@ -41,7 +41,7 @@ def pyxtal(
         dim=3 => 1 - 230 (space groups)
         dim=2 => 1 -  80 (layer groups)
         dim=1 => 1 -  75 (rod groups)
-        dim=0 => 1 -  58 (point groups)
+        dim=0 => 1 -  56 (point groups)
 
     When `group` is passed as a list of integers or `repeat>1`, generate multiple structures and return them in a list
     of dicts containing the keys `atoms`, `symmetry` and `repeat` for the ASE structure, the symmetry group
@@ -259,7 +259,7 @@ def sample_space_groups(
         raise ValueError(f"dim must be in range [0, 3], not {dim}!")
 
     # number of (sub-)periodic symmetry groups available in 0-3 dimensions
-    max_group = [58, 75, 80, 230][dim]
+    max_group = [56, 75, 80, 230][dim]
 
     if spacegroups is None:
         spacegroups = range(1, max_group + 1)
