@@ -51,7 +51,7 @@ def volume_histogram(structures: list[Atoms], **kwargs):
     Returns:
         Return value of `matplotlib.pyplot.hist`"""
     res = plt.hist(_volume(structures), **kwargs)
-    plt.xlabel(r"Volume / atom [$\mathrm{\AA}^3$]")
+    plt.xlabel(r"Volume [$\mathrm{\AA}^3/\mathrm{atom}$]")
     plt.ylabel(r"#$\,$Structures")
     return res
 
@@ -137,7 +137,7 @@ def distance_histogram(
         [reduce_func(neighbor_list("d", s, float(rmax))) for s in structures], **kwargs
     )
     plt.xlabel(xlabel)
-    plt.ylabel(r"#$\,$Structures")
+    plt.ylabel(r"#$\,$Neighbours")
     return res
 
 
@@ -214,7 +214,7 @@ def energy_volume(structures: list[Atoms], **kwargs):
         plt.scatter(V, E, **kwargs)
     else:
         plt.hexbin(V, E, **kwargs, bins="log")
-    plt.xlabel(r"Volume / atom [$\mathrm{\AA}^3$]")
+    plt.xlabel(r"Volume [$\mathrm{\AA}^3/\mathrm{atom}$]")
     plt.ylabel("Energy / atom [eV]")
 
 

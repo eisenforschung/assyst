@@ -63,7 +63,7 @@ class TestPlotFunctions(unittest.TestCase):
     def test_volume_histogram(self, mock_hist, mock_xlabel, mock_ylabel):
         volume_histogram(self.structures)
         mock_hist.assert_called_once()
-        mock_xlabel.assert_called_once_with(r"Volume / atom [$\mathrm{\AA}^3$]")
+        mock_xlabel.assert_called_once_with(r"Volume [$\mathrm{\AA}^3/\mathrm{atom}$]")
         mock_ylabel.assert_called_once_with(r"#$\,$Structures")
 
     @patch('matplotlib.pyplot.ylabel')
@@ -88,7 +88,7 @@ class TestPlotFunctions(unittest.TestCase):
         distance_histogram(self.structures, reduce="min")
         mock_hist.assert_called_once()
         mock_xlabel.assert_called_with(r"Minimum distance [$\mathrm{\AA}$]")
-        mock_ylabel.assert_called_once_with(r"#$\,$Structures")
+        mock_ylabel.assert_called_once_with(r"#$\,$Neighbours")
 
         distance_histogram(self.structures, reduce="mean")
         mock_xlabel.assert_called_with(r"Mean distance [$\mathrm{\AA}$]")
@@ -127,7 +127,7 @@ class TestPlotFunctions(unittest.TestCase):
         s.calc.get_potential_energy.return_value = -1.0
         energy_volume([s])
         mock_scatter.assert_called_once()
-        mock_xlabel.assert_called_once_with(r"Volume / atom [$\mathrm{\AA}^3$]")
+        mock_xlabel.assert_called_once_with(r"Volume [$\mathrm{\AA}^3/\mathrm{atom}$]")
         mock_ylabel.assert_called_once_with("Energy / atom [eV]")
 
     @patch('matplotlib.pyplot.ylabel')
@@ -139,5 +139,5 @@ class TestPlotFunctions(unittest.TestCase):
         s.calc.get_potential_energy.return_value = -1.0
         energy_volume([s] * 1001)
         mock_hexbin.assert_called_once()
-        mock_xlabel.assert_called_once_with(r"Volume / atom [$\mathrm{\AA}^3$]")
+        mock_xlabel.assert_called_once_with(r"Volume [$\mathrm{\AA}^3/\mathrm{atom}$]")
         mock_ylabel.assert_called_once_with("Energy / atom [eV]")
