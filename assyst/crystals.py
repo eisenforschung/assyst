@@ -43,8 +43,8 @@ def pyxtal(
         dim=1 => 1 -  75 (rod groups)
         dim=0 => 1 -  58 (point groups)
 
-    When `group` is passed as a list of integers or `repeat>1`, generate multiple structures and return them in a list
-    of dicts containing the keys `atoms`, `symmetry` and `repeat` for the ASE structure, the symmetry group
+    When `group` is passed as a :class:`list` of :class:`int` or `repeat>1`, generate multiple structures and return them in a :class:`list`
+    of :class:`dict` containing the keys `atoms`, `symmetry` and `repeat` for the ASE structure, the symmetry group
     number and which iteration it is, respectively.
 
     Args:
@@ -57,8 +57,8 @@ def pyxtal(
         **kwargs: passed to `pyxtal.pyxtal` function verbatim
 
     Returns:
-        :class:`~.Atoms`: the generated structure, if repeat==1 and only one symmetry group is requested
-        list of dict of all generated structures, if repeat>1 or multiple symmetry groups are requested
+        :class:`ase.Atoms`: the generated structure, if repeat==1 and only one symmetry group is requested
+        :class:`list` of :class:`dict` of all generated structures, if repeat>1 or multiple symmetry groups are requested
 
     Raises:
         ValueError: if `species` and `num_ions` are not of the same length
@@ -238,7 +238,7 @@ def sample_space_groups(
     Create symmetric random structures.
 
     Args:
-        formulas (Formulas or iterable of dicts from str to int): list of chemical formulas
+        formulas (:class:`.Formulas` or :class:`collections.abc.Iterable` of :class:`dict` from :class:`str` to :class:`int`): :class:`list` of chemical formulas
         spacegroups (list of int): which space groups to generate
         min_atoms (int): do not generate structures smaller than this
         max_atoms (int): do not generate structures larger than this
@@ -247,12 +247,12 @@ def sample_space_groups(
             samples no longer from space groups, but from the subperiodic layer, rod, or point groups.
         tolerance (str, dict of elements to radii):
             specifies minimum allowed distances between atoms in generated structures;
-            if str then it should be one values understood by :class:`pyxtal.tolerace.Tol_matrix`;
+            if str then it should be one values understood by :class:`pyxtal.tolerance.Tol_matrix`;
             if dict each value gives the minimum *radius* allowed for an atom, whether a given distance is allowed then
             depends on the sum of the radii of the respective elements
 
     Yields:
-        `Atoms`: random symmetric crystal structures
+        :class:`ase.Atoms`: random symmetric crystal structures
     """
 
     if not 0 <= dim <= 3:
