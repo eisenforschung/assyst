@@ -2,24 +2,37 @@
 
 from abc import ABC, abstractmethod
 from ase import Atoms
-from typing import Iterable, Callable, Self, Iterator
+from typing import Iterable, Callable, Self, Iterator, Union
 from dataclasses import dataclass
 import numpy as np
 
 from .filters import Filter
 
 
-def rattle(structure: Atoms, sigma: float) -> Atoms:
+def rattle(
+    structure: Atoms, sigma: float, rng: Union[int, np.random.Generator, None] = None
+) -> Atoms:
     """Randomly displace positions with gaussian noise.
 
     Operates INPLACE."""
     if len(structure) == 1:
         raise ValueError("Can only rattle structures larger than one atom.")
-    structure.rattle(stdev=sigma, rng=np.random)
+
+    if isinstance(rng, int):
+        structure.rattle(stdev=sigma, seed=rng)
+    else:
+        if rng is None:
+            rng = np.random
+        structure.rattle(stdev=sigma, rng=rng)
     return structure
 
 
-def element_scaled_rattle(structure: Atoms, sigma: float, reference: dict[str, float]) -> Atoms:
+def element_scaled_rattle(
+    structure: Atoms,
+    sigma: float,
+    reference: dict[str, float],
+    rng: Union[int, np.random.Generator, None] = None,
+) -> Atoms:
     """Randomly displace positions with gaussian noise relative to an elemental reference length.
 
     Operates like :func:`.rattle` but uses a standard deviation derived from the relative `sigma` and the `reference`,
@@ -31,6 +44,7 @@ def element_scaled_rattle(structure: Atoms, sigma: float, reference: dict[str, f
         structure (:class:`ase.Atoms`): structure to perturb
         sigma (:class:`float`): relative standard deviation
         reference (:class:`dict` of :class:`str` to :class:`float`): reference length per element
+        rng (int, numpy.random.Generator): seed or random number generator
 
     Raises:
         ValueError: if len(structure) == 1, create a super cell first before calling again
@@ -45,20 +59,27 @@ def element_scaled_rattle(structure: Atoms, sigma: float, reference: dict[str, f
             sigma[i] *= reference[sym]
         except KeyError:
             raise ValueError(f"No value for element {sym} provided in argument `reference`!") from None
-    return rattle(structure, sigma.reshape(-1, 1))
+    return rattle(structure, sigma.reshape(-1, 1), rng=rng)
 
 
-def stretch(structure: Atoms, hydro: float, shear: float, minimum_strain=1e-3) -> Atoms:
+def stretch(
+    structure: Atoms,
+    hydro: float,
+    shear: float,
+    minimum_strain=1e-3,
+    rng: Union[int, np.random.Generator, None] = None,
+) -> Atoms:
     """Randomly stretch cell with uniform noise.
 
     Ensures at least `minimum_strain` strain to avoid structures very close to their original structures.
     These don't offer a lot of new information and can also confuse VASP's symmetry analyzer.
 
     Operates INPLACE."""
+    _rng = np.random.default_rng(rng)
 
     def get_strains(max_strain, size):
-        signs = np.random.choice([-1, 1], size=size)
-        magnitudes = np.random.uniform(minimum_strain, max_strain, size=size)
+        signs = _rng.choice([-1, 1], size=size)
+        magnitudes = _rng.uniform(minimum_strain, max_strain, size=size)
         return signs * magnitudes
 
     strain = np.zeros((3, 3))
@@ -132,25 +153,29 @@ def apply_perturbations(
                 continue
 
 
-@dataclass(frozen=True)
+@dataclass
 class Rattle(PerturbationABC):
     """Displace atoms by some absolute amount from a normal distribution."""
 
     sigma: float
     create_supercells: bool = False
     "Create minimal 2x2x2 super cells when applied to structures of only one atom."
+    rng: Union[int, np.random.Generator, None] = None
+
+    def __post_init__(self):
+        self.rng = np.random.default_rng(self.rng)
 
     def __call__(self, structure: Atoms):
         if self.create_supercells and len(structure) == 1:
             structure = structure.repeat(2)
         structure = super().__call__(structure)
-        return rattle(structure, self.sigma)
+        return rattle(structure, self.sigma, rng=self.rng)
 
     def __str__(self):
         return f"rattle({self.sigma})"
 
 
-@dataclass(frozen=True)
+@dataclass
 class ElementScaledRattle(PerturbationABC):
     """Displace atoms by some amount from a normal distribution.
 
@@ -162,28 +187,36 @@ class ElementScaledRattle(PerturbationABC):
     reference: dict[str, float]
     create_supercells: bool = False
     "Create minimal 2x2x2 super cells when applied to structures of only one atom."
+    rng: Union[int, np.random.Generator, None] = None
+
+    def __post_init__(self):
+        self.rng = np.random.default_rng(self.rng)
 
     def __call__(self, structure: Atoms):
         if self.create_supercells and len(structure) == 1:
             structure = structure.repeat(2)
         structure = super().__call__(structure)
-        return element_scaled_rattle(structure, self.sigma, self.reference)
+        return element_scaled_rattle(structure, self.sigma, self.reference, rng=self.rng)
 
     def __str__(self):
         return f"scaled_rattle({self.sigma})"
 
 
-@dataclass(frozen=True)
+@dataclass
 class Stretch(PerturbationABC):
     """Apply random cell perturbation."""
 
     hydro: float
     shear: float
     minimum_strain: float = 1e-3
+    rng: Union[int, np.random.Generator, None] = None
+
+    def __post_init__(self):
+        self.rng = np.random.default_rng(self.rng)
 
     def __call__(self, structure: Atoms):
         structure = super().__call__(structure)
-        return stretch(structure, self.hydro, self.shear, self.minimum_strain)
+        return stretch(structure, self.hydro, self.shear, self.minimum_strain, rng=self.rng)
 
     def __str__(self):
         return f"stretch(hydro={self.hydro}, shear={self.shear})"
@@ -204,7 +237,7 @@ class Series(PerturbationABC):
         return "+".join(str(mod) for mod in self.perturbations)
 
 
-@dataclass(frozen=True)
+@dataclass
 class RandomChoice(PerturbationABC):
     """Apply either of two alternatives randomly."""
 
@@ -212,9 +245,13 @@ class RandomChoice(PerturbationABC):
     choice_b: Perturbation
     chance: float
     "Probability to pick choice b"
+    rng: Union[int, np.random.Generator, None] = None
+
+    def __post_init__(self):
+        self.rng = np.random.default_rng(self.rng)
 
     def __call__(self, structure: Atoms) -> Atoms:
-        if np.random.rand() > self.chance:
+        if self.rng.random() > self.chance:
             return self.choice_a(structure)
         else:
             return self.choice_b(structure)

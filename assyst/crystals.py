@@ -6,6 +6,7 @@ from itertools import product, islice
 from warnings import catch_warnings, warn
 from typing import Self, Iterable, Iterator, Literal, overload, Union
 
+import numpy as np
 from .filters import DistanceFilter
 
 from ase import Atoms
@@ -32,6 +33,7 @@ def pyxtal(
     dim: Literal[0, 1, 2, 3] = 3,
     repeat: int = 1,
     allow_exceptions: bool = True,
+    rng: Union[int, np.random.Generator, None] = None,
     **kwargs,
 ) -> Union[Atoms, list[dict]]:
     """
@@ -54,6 +56,7 @@ def pyxtal(
         dim (int): dimensionality of the symmetry group, 0 is point groups, 1 is rod groups, 2 is layer groups and 3 is space groups
         repeat (int): how many random structures to generate
         allow_exceptions (bool): when generating multiple structures, silence errors when the requested stoichiometry and symmetry group are incompatible
+        rng (int, numpy.random.Generator): seed or random number generator
         **kwargs: passed to `pyxtal.pyxtal` function verbatim
 
     Returns:
@@ -72,11 +75,13 @@ def pyxtal(
         )
     stoich = "".join(f"{s}{n}" for s, n in zip(species, num_ions))
 
+    _rng = np.random.default_rng(rng)
+
     def generate(group):
         s = _pyxtal()
         try:
             s.from_random(
-                dim=dim, group=group, species=species, numIons=num_ions, **kwargs
+                dim=dim, group=group, species=species, numIons=num_ions, random_state=_rng, **kwargs
             )
         except Comp_CompatibilityError:
             if not allow_exceptions:
@@ -233,6 +238,7 @@ def sample_space_groups(
     tolerance: (
         Literal["metallic", "atomic", "molecular", "vdW"] | DistanceFilter | dict
     ) = "metallic",
+    rng: Union[int, np.random.Generator, None] = None,
 ) -> Iterator[Atoms]:
     """
     Create symmetric random structures.
@@ -250,6 +256,7 @@ def sample_space_groups(
             if str then it should be one values understood by :class:`pyxtal.tolerance.Tol_matrix`;
             if dict each value gives the minimum *radius* allowed for an atom, whether a given distance is allowed then
             depends on the sum of the radii of the respective elements
+        rng (int, numpy.random.Generator): seed or random number generator
 
     Yields:
         :class:`ase.Atoms`: random symmetric crystal structures
@@ -305,7 +312,7 @@ def sample_space_groups(
             return atoms
 
         with catch_warnings(category=UserWarning, action="ignore"):
-            px = pyxtal(spacegroups, elements, num_atoms, dim=dim, tm=tm)
+            px = pyxtal(spacegroups, elements, num_atoms, dim=dim, tm=tm, rng=rng)
             yield from islice(map(pop, px), max_structures)
             if max_structures is not None:
                 max_structures -= len(px)

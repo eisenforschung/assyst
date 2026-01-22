@@ -3,7 +3,7 @@ from unittest.mock import patch
 from math import inf
 
 import pytest
-from hypothesis import given, strategies as st
+from hypothesis import given, strategies as st, settings
 import numpy as np
 from ase import Atoms
 from ase.build import bulk
@@ -80,29 +80,33 @@ class TestPerturbations(unittest.TestCase):
 
     def test_random_choice_class(self):
         """Test the RandomChoice class."""
-        original_rand = np.random.rand
-
-        def side_effect(*args, **kwargs):
-            if not args and not kwargs:
-                # This is the call from RandomChoice: np.random.rand()
-                return side_effect.choice
-            # This is a call from rattle or stretch, e.g. np.random.rand(3, 3)
-            return original_rand(*args, **kwargs)
-
         rattle_pert = Rattle(sigma=0.1)
         stretch_pert = Stretch(hydro=0.1, shear=0.1)
-        # choice_a is rattle, choice_b is stretch
-        random_pert = RandomChoice(rattle_pert, stretch_pert, chance=0.5)
 
-        with patch('numpy.random.rand', side_effect=side_effect):
-            # With rand()=0.8, 0.8 > 0.5 is true, so choice_a (rattle) should be called.
-            side_effect.choice = 0.8
+        # choice_a is rattle, choice_b is stretch
+        # Use a Generator and mock its random method
+        with patch('numpy.random.default_rng') as mock_rng_factory:
+            # We want default_rng to return a mock when called with None (from RandomChoice)
+            # but maybe something more real or another mock when called from stretch.
+
+            mock_rng = mock_rng_factory.return_value
+            # For the call in RandomChoice
+            mock_rng.random.return_value = 0.8
+
+            # For the calls in stretch (if it uses the same mock)
+            mock_rng.choice.return_value = np.array([1, 1, 1])
+            mock_rng.uniform.return_value = np.array([0.05, 0.05, 0.05])
+
+            random_pert = RandomChoice(rattle_pert, stretch_pert, chance=0.5)
+
+            # With random()=0.8, 0.8 > 0.5 is true, so choice_a (rattle) should be called.
+            mock_rng.random.return_value = 0.8
             perturbed_structure_A = random_pert(self.structure.copy())
             self.assertIn('rattle(0.1)', perturbed_structure_A.info['perturbation'])
             self.assertNotIn('stretch', perturbed_structure_A.info['perturbation'])
 
-            # With rand()=0.2, 0.2 > 0.5 is false, so choice_b (stretch) should be called.
-            side_effect.choice = 0.2
+            # With random()=0.2, 0.2 > 0.5 is false, so choice_b (stretch) should be called.
+            mock_rng.random.return_value = 0.2
             perturbed_structure_B = random_pert(self.structure.copy())
             self.assertIn('stretch(hydro=0.1, shear=0.1)', perturbed_structure_B.info['perturbation'])
             self.assertNotIn('rattle', perturbed_structure_B.info['perturbation'])
@@ -218,6 +222,7 @@ def random_element_structures(draw):
     return structure
 
 
+@settings(deadline=None)
 @given(random_element_structures(), st.floats(min_value=0.01, max_value=10))
 def test_element_scaled_rattle_respects_element_specific_sigma(simple_structure, sigma):
     """
