@@ -64,4 +64,5 @@ The final step is labelling the structures with high quality DFT, which is outsi
    installation
    overview
    assyst
+   lineage
    notebooks

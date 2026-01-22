@@ -13,6 +13,7 @@ def test_full_workflow_lineage():
 
     uuid1 = s1.info.get("uuid")
     assert uuid1 is not None
+    assert s1.info.get("seed") == uuid1
     assert "lineage" not in s1.info or len(s1.info["lineage"]) == 0
 
     # 2. Perturb
@@ -24,6 +25,7 @@ def test_full_workflow_lineage():
     uuid2 = s2.info.get("uuid")
     assert uuid2 is not None
     assert uuid2 != uuid1
+    assert s2.info.get("seed") == uuid1
     # Lineage should contain uuid1 and the uuid after Rattle
     assert s2.info["lineage"][0] == uuid1
     assert len(s2.info["lineage"]) == 2
@@ -38,6 +40,7 @@ def test_full_workflow_lineage():
     uuid3 = s3.info.get("uuid")
     assert uuid3 is not None
     assert uuid3 != uuid2
+    assert s3.info.get("seed") == uuid1
     assert s3.info["lineage"] == [uuid1, uuid_after_rattle, uuid2]
 
 def test_individual_perturbations():
@@ -105,6 +108,7 @@ def test_no_initial_uuid():
     r = Rattle(0.1)
     s_perturbed = r(s)
     assert s_perturbed.info["uuid"] is not None
+    assert s_perturbed.info["seed"] == s_perturbed.info["uuid"]
     assert "lineage" not in s_perturbed.info
 
 def test_lineage_not_shared_with_parent():

@@ -19,5 +19,10 @@ def update_uuid(structure: Atoms) -> Atoms:
         lineage.append(structure.info['uuid'])
         structure.info['lineage'] = lineage
 
-    structure.info['uuid'] = str(uuid.uuid4())
+    new_uuid = str(uuid.uuid4())
+    structure.info['uuid'] = new_uuid
+
+    if 'seed' not in structure.info:
+        structure.info['seed'] = new_uuid
+
     return structure
