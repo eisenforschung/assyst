@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from .filters import Filter
+from .utils import update_uuid
 
 
 def rattle(
@@ -62,6 +63,10 @@ def element_scaled_rattle(
     return rattle(structure, sigma.reshape(-1, 1), rng=rng)
 
 
+def _ensure_perturbation(p: "Perturbation") -> "PerturbationABC":
+    return p if isinstance(p, PerturbationABC) else FunctionPerturbation(p)
+
+
 def stretch(
     structure: Atoms,
     hydro: float,
@@ -99,6 +104,7 @@ class PerturbationABC(ABC):
     """Apply some perturbation to a given structure."""
 
     def __call__(self, structure: Atoms) -> Atoms:
+        update_uuid(structure)
         if "perturbation" not in structure.info:
             structure.info["perturbation"] = str(self)
         else:
@@ -141,11 +147,16 @@ def apply_perturbations(
         filters = [filters]
     perturbations = list(perturbations)
 
+    perturbations = [_ensure_perturbation(p) for p in perturbations]
+
     for structure in structures:
         for mod in perturbations:
             try:
                 for _ in range(retries):
                     m = mod(structure.copy())
+                    if m is None:
+                        continue
+
                     if all(f(m) for f in filters):
                         yield m
                         break
@@ -223,14 +234,38 @@ class Stretch(PerturbationABC):
 
 
 @dataclass(frozen=True)
+class FunctionPerturbation(PerturbationABC):
+    """Wrap a simple function into a PerturbationABC."""
+
+    func: Perturbation
+
+    def __call__(self, structure: Atoms) -> Atoms:
+        # call super to update uuid
+        structure = super().__call__(structure)
+        return self.func(structure)
+
+    def __str__(self):
+        return str(self.func)
+
+
+@dataclass(frozen=True)
 class Series(PerturbationABC):
     """Apply some perturbations in sequence."""
 
     perturbations: tuple[Perturbation, ...]
 
-    def __call__(self, structure: Atoms) -> Atoms:
+    def __post_init__(self):
+        object.__setattr__(
+            self,
+            "perturbations",
+            tuple(_ensure_perturbation(p) for p in self.perturbations),
+        )
+
+    def __call__(self, structure: Atoms) -> Atoms | None:
         for mod in self.perturbations:
             structure = mod(structure)
+            if structure is None:
+                return None
         return structure
 
     def __str__(self):
@@ -249,6 +284,8 @@ class RandomChoice(PerturbationABC):
 
     def __post_init__(self):
         object.__setattr__(self, "rng", np.random.default_rng(self.rng))
+        object.__setattr__(self, "choice_a", _ensure_perturbation(self.choice_a))
+        object.__setattr__(self, "choice_b", _ensure_perturbation(self.choice_b))
 
     def __call__(self, structure: Atoms) -> Atoms:
         if self.rng.random() > self.chance:
