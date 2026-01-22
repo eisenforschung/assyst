@@ -107,6 +107,26 @@ def test_no_initial_uuid():
     assert s_perturbed.info["uuid"] is not None
     assert "lineage" not in s_perturbed.info
 
+def test_lineage_not_shared_with_parent():
+    s1 = Atoms("Cu2", positions=[[0,0,0], [1,1,1]], cell=[3,3,3], pbc=True)
+    s1.info["uuid"] = "uuid1"
+
+    # First modification
+    r = Rattle(0.1)
+    s2 = r(s1.copy())
+    assert s2.info["uuid"] != "uuid1"
+    assert s2.info["lineage"] == ["uuid1"]
+
+    # Original should NOT have uuid1 in lineage
+    assert "lineage" not in s1.info or s1.info["lineage"] == []
+
+    # Second modification
+    s3 = r(s2.copy())
+    assert s3.info["lineage"] == ["uuid1", s2.info["uuid"]]
+
+    # s2 lineage should NOT be affected by s3 modification
+    assert s2.info["lineage"] == ["uuid1"]
+
 def test_all_inplace_functions_via_apply_perturbations():
     from assyst.perturbations import rattle, stretch, element_scaled_rattle
     s = Atoms("Cu2", positions=[[0,0,0], [1,1,1]], cell=[3,3,3], pbc=True)

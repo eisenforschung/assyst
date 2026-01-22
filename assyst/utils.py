@@ -14,9 +14,10 @@ def update_uuid(structure: Atoms) -> Atoms:
         ase.Atoms: The updated structure.
     """
     if 'uuid' in structure.info:
-        if 'lineage' not in structure.info:
-            structure.info['lineage'] = []
-        structure.info['lineage'].append(structure.info['uuid'])
+        # Create a new list for lineage to avoid sharing it with parent structures
+        lineage = list(structure.info.get('lineage', []))
+        lineage.append(structure.info['uuid'])
+        structure.info['lineage'] = lineage
 
     structure.info['uuid'] = str(uuid.uuid4())
     return structure
