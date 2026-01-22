@@ -81,7 +81,7 @@ class DistanceFilter(FilterBase):
         Return True if structure satifies minimum distance criteria.
 
         Args:
-            structure (ase.Atoms): structure to check
+            structure (:class:`ase.Atoms`): structure to check
 
         Returns:
             `False`: at least on bond is shorter than the sum of given cutoff radii of the respective elements
@@ -127,7 +127,7 @@ class AspectFilter(FilterBase):
         """Return True if structure's cell has an agreeable aspect ratio.
 
         Args:
-            structure (ase.Atoms): structure to check
+            structure (:class:`ase.Atoms`): structure to check
 
         Returns:
             `True`: lattice's aspect ratio is below or equal `:attr:`.maximum_aspect_ratio`.
@@ -146,7 +146,7 @@ class VolumeFilter(FilterBase):
         """Return True if structure's volume is within range.
 
         Args:
-            structure (ase.Atoms): structure to check
+            structure (:class:`ase.Atoms`): structure to check
 
         Returns:
             `True`: volume per atom is smaller or equal than `:attr:.maximum_volume_per_atom`.
