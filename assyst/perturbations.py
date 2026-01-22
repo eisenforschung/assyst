@@ -122,17 +122,18 @@ def apply_perturbations(
         filters = [filters]
     perturbations = list(perturbations)
 
+    perturbations = [
+        p if isinstance(p, PerturbationABC) else FunctionPerturbation(p)
+        for p in perturbations
+    ]
+
     for structure in structures:
         for mod in perturbations:
             try:
                 for _ in range(retries):
-                    m = structure.copy()
-                    old_uuid = m.info.get("uuid")
-                    m = mod(m)
+                    m = mod(structure.copy())
                     if m is None:
                         continue
-                    if m.info.get("uuid") == old_uuid:
-                        update_uuid(m)
 
                     if all(f(m) for f in filters):
                         yield m
@@ -199,19 +200,41 @@ class Stretch(PerturbationABC):
 
 
 @dataclass(frozen=True)
+class FunctionPerturbation(PerturbationABC):
+    """Wrap a simple function into a PerturbationABC."""
+
+    func: Perturbation
+
+    def __call__(self, structure: Atoms) -> Atoms:
+        # call super to update uuid
+        structure = super().__call__(structure)
+        return self.func(structure)
+
+    def __str__(self):
+        return str(self.func)
+
+
+@dataclass(frozen=True)
 class Series(PerturbationABC):
     """Apply some perturbations in sequence."""
 
     perturbations: tuple[Perturbation, ...]
 
-    def __call__(self, structure: Atoms) -> Atoms:
+    def __post_init__(self):
+        object.__setattr__(
+            self,
+            "perturbations",
+            tuple(
+                p if isinstance(p, PerturbationABC) else FunctionPerturbation(p)
+                for p in self.perturbations
+            ),
+        )
+
+    def __call__(self, structure: Atoms) -> Atoms | None:
         for mod in self.perturbations:
-            old_uuid = structure.info.get("uuid")
             structure = mod(structure)
             if structure is None:
-                raise ValueError("A perturbation in the series returned None.")
-            if structure.info.get("uuid") == old_uuid:
-                update_uuid(structure)
+                return None
         return structure
 
     def __str__(self):
@@ -227,16 +250,17 @@ class RandomChoice(PerturbationABC):
     chance: float
     "Probability to pick choice b"
 
-    def __call__(self, structure: Atoms) -> Atoms:
-        old_uuid = structure.info.get("uuid")
-        if np.random.rand() > self.chance:
-            res = self.choice_a(structure)
-        else:
-            res = self.choice_b(structure)
+    def __post_init__(self):
+        if not isinstance(self.choice_a, PerturbationABC):
+            object.__setattr__(self, "choice_a", FunctionPerturbation(self.choice_a))
+        if not isinstance(self.choice_b, PerturbationABC):
+            object.__setattr__(self, "choice_b", FunctionPerturbation(self.choice_b))
 
-        if res is not None and res.info.get("uuid") == old_uuid:
-            update_uuid(res)
-        return res
+    def __call__(self, structure: Atoms) -> Atoms | None:
+        if np.random.rand() > self.chance:
+            return self.choice_a(structure)
+        else:
+            return self.choice_b(structure)
 
     def __str__(self):
         return str(self.choice_a) + "|" + str(self.choice_b)

@@ -106,3 +106,27 @@ def test_no_initial_uuid():
     s_perturbed = r(s)
     assert s_perturbed.info["uuid"] is not None
     assert "lineage" not in s_perturbed.info
+
+def test_all_inplace_functions_via_apply_perturbations():
+    from assyst.perturbations import rattle, stretch, element_scaled_rattle
+    s = Atoms("Cu2", positions=[[0,0,0], [1,1,1]], cell=[3,3,3], pbc=True)
+    s.info["uuid"] = "orig"
+
+    # rattle
+    perturbed = list(apply_perturbations([s], [lambda atoms: rattle(atoms, 0.1)]))
+    assert len(perturbed) == 1
+    assert perturbed[0].info["uuid"] != "orig"
+    assert perturbed[0].info["lineage"] == ["orig"]
+
+    # stretch
+    perturbed = list(apply_perturbations([s], [lambda atoms: stretch(atoms, 0.1, 0.1)]))
+    assert len(perturbed) == 1
+    assert perturbed[0].info["uuid"] != "orig"
+    assert perturbed[0].info["lineage"] == ["orig"]
+
+    # element_scaled_rattle
+    ref = {"Cu": 2.5}
+    perturbed = list(apply_perturbations([s], [lambda atoms: element_scaled_rattle(atoms, 0.1, ref)]))
+    assert len(perturbed) == 1
+    assert perturbed[0].info["uuid"] != "orig"
+    assert perturbed[0].info["lineage"] == ["orig"]
