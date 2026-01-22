@@ -28,9 +28,9 @@ def element_scaled_rattle(structure: Atoms, sigma: float, reference: dict[str, f
     Operates IN PLACE!
 
     Args:
-        structure (:class:`.ase.Atoms`): structure to perturb
-        sigma (float): relative standard deviation
-        reference (dict of str to float): reference length per element
+        structure (:class:`ase.Atoms`): structure to perturb
+        sigma (:class:`float`): relative standard deviation
+        reference (:class:`dict` of :class:`str` to :class:`float`): reference length per element
 
     Raises:
         ValueError: if len(structure) == 1, create a super cell first before calling again
@@ -106,13 +106,13 @@ def apply_perturbations(
     If a perturbation raises ValueError it is ignored.
 
     Args:
-        structures: Atomic structures to perturb.
-        perturbations: Functions that modify structures.
-        filters: Functions to filter valid results (optional).
-        retries: Max attempts per perturbation (default: 10).
+        structures: :class:`collections.abc.Iterable` of :class:`ase.Atoms` to perturb.
+        perturbations: :class:`collections.abc.Iterable` of :class:`~.Perturbation` that modify structures.
+        filters: :class:`collections.abc.Iterable` of :class:`~assyst.filters.Filter` to filter valid results (optional).
+        retries: :class:`int`, max attempts per perturbation (default: 10).
 
     Yields:
-        Perturbed structure that passes all filters.
+        :class:`ase.Atoms`: perturbed structure that passes all filters.
     """
     if filters is None:
         filters = []

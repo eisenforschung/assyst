@@ -46,10 +46,10 @@ def volume_histogram(structures: list[Atoms], **kwargs):
         structures (list of :class:`ase.Atoms`):
             structures to plot
         **kwargs:
-            passed through to `matplotlib.pyplot.hist`
+            passed through to :func:`matplotlib.pyplot.hist`
 
     Returns:
-        Return value of `matplotlib.pyplot.hist`"""
+        Return value of :func:`matplotlib.pyplot.hist`"""
     return plt.hist(_volume(structures), **kwargs)
 
 
@@ -60,10 +60,10 @@ def size_histogram(structures: list[Atoms], **kwargs):
         structures (list of :class:`ase.Atoms`):
             structures to plot
         **kwargs:
-            passed through to `matplotlib.pyplot.hist`
+            passed through to :func:`matplotlib.pyplot.hist`
 
     Returns:
-        Return value of `matplotlib.pyplot.hist`"""
+        Return value of :func:`matplotlib.pyplot.hist`"""
     return plt.hist(list(map(len, structures)), **kwargs)
 
 
@@ -78,7 +78,7 @@ def concentration_histogram(
         elements (iterable of str):
             which element concentrations to plot, by default all present
         **kwargs:
-            passed through to `matplotlib.pyplot.bar`"""
+            passed through to :func:`matplotlib.pyplot.bar`"""
     conc = _concentration(structures, elements=elements)
     conc_step = np.diff(
         sorted(np.unique(np.concatenate([np.unique(c) for c in conc.values()])))
@@ -111,10 +111,10 @@ def distance_histogram(
         reduce (callable from array of floats to float):
             applied to the neighbor distances per structure, and should reduce a single scalar that is binned
         **kwargs:
-            passed through to `matplotlib.pyplot.hist`
+            passed through to :func:`matplotlib.pyplot.hist`
 
     Returns:
-        Return value of `matplotlib.pyplot.hist`"""
+        Return value of :func:`matplotlib.pyplot.hist`"""
     kwargs.setdefault("bins", 100)
     _preset = {
         "min": np.min,
@@ -161,15 +161,15 @@ def energy_histogram(
 ):
     """Plot energy per atom histogram.
 
-    Requires that :class:`ase.calculators.SinglePointCalculator` are attached to the atoms, either from a relaxation
-    for final training set calculation.
+    Requires that :class:`ase.calculators.singlepoint.SinglePointCalculator` are attached to the atoms, either from a
+    relaxation for final training set calculation.
 
     Args:
         structures (list of :class:`ase.Atoms`): structures to plot
         **kwargs: pass through to :func:`matplotlib.pyplot.hist`
 
     Returns:
-        Return value of `matplotlib.pyplot.hist`"""
+        Return value of :func:`matplotlib.pyplot.hist`"""
     kwargs.setdefault("bins", 100)
     E = _energy(structures)
     return plt.hist(E, **kwargs)
@@ -178,8 +178,8 @@ def energy_histogram(
 def energy_volume(structures: list[Atoms], **kwargs):
     """Plot energy per atom versus volume per atom.
 
-    Requires that :class:`ase.calculators.SinglePointCalculator` are attached to the atoms, either from a relaxation
-    for final training set calculation.
+    Requires that :class:`ase.calculators.singlepoint.SinglePointCalculator` are attached to the atoms, either from a
+    relaxation for final training set calculation.
 
     Args:
         structure: list[Atoms],
