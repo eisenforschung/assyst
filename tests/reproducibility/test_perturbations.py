@@ -1,41 +1,7 @@
 import numpy as np
 import pytest
-from assyst.crystals import pyxtal, sample_space_groups, Formulas
-from assyst.perturbations import rattle, stretch, Rattle, Stretch, RandomChoice
+from assyst.perturbations import rattle, element_scaled_rattle, stretch, Rattle, ElementScaledRattle, Stretch, RandomChoice
 from ase import Atoms
-
-def test_pyxtal_reproducibility():
-    species = ("Al",)
-    num_ions = (4,)
-    group = 225
-
-    # Same seed should produce same structures
-    s1 = pyxtal(group, species, num_ions, rng=42)
-    s2 = pyxtal(group, species, num_ions, rng=42)
-    assert np.allclose(s1.positions, s2.positions)
-
-    # Different seed should produce different structures (most likely)
-    s3 = pyxtal(group, species, num_ions, rng=43)
-    assert not np.allclose(s1.positions, s3.positions)
-
-def test_pyxtal_generator_progression():
-    species = ("Al",)
-    num_ions = (4,)
-    group = 225
-    rng = np.random.default_rng(42)
-
-    # Passing the same generator should produce different structures in subsequent calls
-    s1 = pyxtal(group, species, num_ions, rng=rng)
-    s2 = pyxtal(group, species, num_ions, rng=rng)
-    assert not np.allclose(s1.positions, s2.positions)
-
-def test_sample_space_groups_reproducibility():
-    formulas = Formulas(({'Al': 4},))
-    spacegroups = [225]
-
-    at1 = list(sample_space_groups(formulas, spacegroups, rng=42))[0]
-    at2 = list(sample_space_groups(formulas, spacegroups, rng=42))[0]
-    assert np.allclose(at1.positions, at2.positions)
 
 def test_rattle_reproducibility():
     at = Atoms('Al4', positions=[[0,0,0], [1,1,1], [2,2,2], [3,3,3]], cell=[4,4,4], pbc=True)
@@ -45,6 +11,18 @@ def test_rattle_reproducibility():
 
     at2 = at.copy()
     rattle(at2, sigma=0.1, rng=42)
+
+    assert np.allclose(at1.positions, at2.positions)
+
+def test_element_scaled_rattle_reproducibility():
+    at = Atoms('Al4', positions=[[0,0,0], [1,1,1], [2,2,2], [3,3,3]], cell=[4,4,4], pbc=True)
+    reference = {"Al": 1.0}
+
+    at1 = at.copy()
+    element_scaled_rattle(at1, sigma=0.1, reference=reference, rng=42)
+
+    at2 = at.copy()
+    element_scaled_rattle(at2, sigma=0.1, reference=reference, rng=42)
 
     assert np.allclose(at1.positions, at2.positions)
 
@@ -67,6 +45,13 @@ def test_perturbation_classes_reproducibility():
     r2 = Rattle(sigma=0.1, rng=42)
     at1 = r1(at.copy())
     at2 = r2(at.copy())
+    assert np.allclose(at1.positions, at2.positions)
+
+    # ElementScaledRattle class
+    esr1 = ElementScaledRattle(sigma=0.1, reference={"Al": 1.0}, rng=42)
+    esr2 = ElementScaledRattle(sigma=0.1, reference={"Al": 1.0}, rng=42)
+    at1 = esr1(at.copy())
+    at2 = esr2(at.copy())
     assert np.allclose(at1.positions, at2.positions)
 
     # Stretch class
