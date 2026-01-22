@@ -49,7 +49,7 @@ red.
 The final step is labelling the structures with high quality DFT, which is outside of the scope of this package.
 
 .. _schematic:
-.. figure:: img/AssystSchematic.svg
+.. figure:: img/AssystSchematicTraced.svg
    :alt: ASSYST workflow schematic
 
    ASSYST workflow steps. Reproduced from `Poul et al. <https://doi.org/10.1038/s41524-025-01669-4>`_ under
