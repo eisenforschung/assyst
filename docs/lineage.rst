@@ -36,20 +36,4 @@ Similarly, the :meth:`.Relax.relax` method generates a new UUID for the relaxed 
 Example
 -------
 
-.. code-block:: python
-
-    from assyst.crystals import pyxtal
-    from assyst.perturbations import Rattle
-
-    # 1. Generate initial structure
-    atoms = pyxtal(1, species=['Cu'], num_ions=[1])
-    print(f"Initial UUID: {atoms.info['uuid']}")
-    print(f"Seed: {atoms.info['seed']}")
-    print(f"Lineage: {atoms.info.get('lineage', [])}")
-
-    # 2. Apply perturbation
-    rattle = Rattle(sigma=0.1)
-    perturbed = rattle(atoms.copy())
-    print(f"Perturbed UUID: {perturbed.info['uuid']}")
-    print(f"Seed: {perturbed.info['seed']}")
-    print(f"Lineage: {perturbed.info['lineage']}")
+For a practical demonstration of how these fields are updated, please refer to the :doc:`Lineage Notebook <notebooks/Lineage>`.
