@@ -136,6 +136,34 @@ class TestPerturbations(unittest.TestCase):
         perturbed_structures = list(apply_perturbations(structures, perturbations))
         self.assertEqual(len(perturbed_structures), 0)
 
+    def test_apply_perturbations_retries_on_value_error(self):
+        """Test that apply_perturbations retries when ValueError is raised."""
+        class FailingPerturbation:
+            def __init__(self, fail_count):
+                self.fail_count = fail_count
+                self.calls = 0
+
+            def __call__(self, atoms):
+                self.calls += 1
+                if self.calls <= self.fail_count:
+                    raise ValueError("Failing as requested")
+                return atoms
+
+        structure = self.structure.copy()
+
+        # Test a range of failures and retries
+        for fail_count, retries, expected_results, expected_calls in [
+            (0, 10, 1, 1),   # Succeeds first time
+            (3, 10, 1, 4),   # Succeeds after 3 failures
+            (9, 10, 1, 10),  # Succeeds on the last retry
+            (10, 10, 0, 10), # Fails all retries
+            (15, 10, 0, 10), # Fails more than available retries
+        ]:
+            pert = FailingPerturbation(fail_count=fail_count)
+            results = list(apply_perturbations([structure], [pert], retries=retries))
+            self.assertEqual(len(results), expected_results, f"Failed for fail_count={fail_count}, retries={retries}")
+            self.assertEqual(pert.calls, expected_calls, f"Failed calls count for fail_count={fail_count}, retries={retries}")
+
     def test_stretch_strain_distribution(self):
         """Test that stretch applies strain within the correct ranges."""
         for _ in range(10):  # Repeat test 10 times with different random values

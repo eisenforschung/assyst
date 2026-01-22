@@ -122,14 +122,14 @@ def apply_perturbations(
 
     for structure in structures:
         for mod in perturbations:
-            try:
-                for _ in range(retries):
+            for _ in range(retries):
+                try:
                     m = mod(structure.copy())
                     if all(f(m) for f in filters):
                         yield m
                         break
-            except ValueError:
-                continue
+                except ValueError:
+                    continue
 
 
 @dataclass(frozen=True)
