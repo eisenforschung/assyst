@@ -161,8 +161,8 @@ def energy_histogram(
 ):
     """Plot energy per atom histogram.
 
-    Requires that :class:`ase.calculators.SinglePointCalculator` are attached to the atoms, either from a relaxation
-    for final training set calculation.
+    Requires that :class:`ase.calculators.singlepoint.SinglePointCalculator` are attached to the atoms, either from a
+    relaxation for final training set calculation.
 
     Args:
         structures (list of :class:`ase.Atoms`): structures to plot
@@ -178,8 +178,8 @@ def energy_histogram(
 def energy_volume(structures: list[Atoms], **kwargs):
     """Plot energy per atom versus volume per atom.
 
-    Requires that :class:`ase.calculators.SinglePointCalculator` are attached to the atoms, either from a relaxation
-    for final training set calculation.
+    Requires that :class:`ase.calculators.singlepoint.SinglePointCalculator` are attached to the atoms, either from a
+    relaxation for final training set calculation.
 
     Args:
         structure: list[Atoms],
