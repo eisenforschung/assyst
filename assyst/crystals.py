@@ -6,6 +6,7 @@ from itertools import product, islice
 from warnings import catch_warnings, warn
 from typing import Self, Iterable, Iterator, Literal, overload, Union
 
+import numpy as np
 from .filters import DistanceFilter
 from .utils import update_uuid
 
@@ -30,9 +31,10 @@ def pyxtal(
     group: Union[int, list[int]],
     species: tuple[str],
     num_ions: tuple[int],
-    dim: Literal[1, 2, 3] = 3,
+    dim: Literal[0, 1, 2, 3] = 3,
     repeat: int = 1,
     allow_exceptions: bool = True,
+    rng: Union[int, np.random.Generator, None] = None,
     **kwargs,
 ) -> Union[Atoms, list[dict]]:
     """
@@ -44,8 +46,8 @@ def pyxtal(
         dim=1 => 1 -  75 (rod groups)
         dim=0 => 1 -  58 (point groups)
 
-    When `group` is passed as a list of integers or `repeat>1`, generate multiple structures and return them in a list
-    of dicts containing the keys `atoms`, `symmetry` and `repeat` for the ASE structure, the symmetry group
+    When `group` is passed as a :class:`list` of :class:`int` or `repeat>1`, generate multiple structures and return them in a :class:`list`
+    of :class:`dict` containing the keys `atoms`, `symmetry` and `repeat` for the ASE structure, the symmetry group
     number and which iteration it is, respectively.
 
     Args:
@@ -53,13 +55,14 @@ def pyxtal(
         species (tuple of str): which species to include, defines the stoichiometry together with `num_ions`
         num_ions (tuple of int): how many of each species to include, defines the stoichiometry together with `species`
         dim (int): dimensionality of the symmetry group, 0 is point groups, 1 is rod groups, 2 is layer groups and 3 is space groups
-        repeat (int): how many random structures to generate
-        allow_exceptions (bool): when generating multiple structures, silence errors when the requested stoichiometry and symmetry group are incompatible
+        repeat (:class:`int`): how many random structures to generate
+        allow_exceptions (:class:`bool`): when generating multiple structures, silence errors when the requested stoichiometry and symmetry group are incompatible
+        rng (:class:`int`, :class:`numpy.random.Generator`): seed or random number generator
         **kwargs: passed to `pyxtal.pyxtal` function verbatim
 
     Returns:
-        :class:`~.Atoms`: the generated structure, if repeat==1 and only one symmetry group is requested
-        list of dict of all generated structures, if repeat>1 or multiple symmetry groups are requested
+        :class:`ase.Atoms`: the generated structure, if repeat==1 and only one symmetry group is requested
+        :class:`list` of :class:`dict` of all generated structures, if repeat>1 or multiple symmetry groups are requested
 
     Raises:
         ValueError: if `species` and `num_ions` are not of the same length
@@ -73,11 +76,13 @@ def pyxtal(
         )
     stoich = "".join(f"{s}{n}" for s, n in zip(species, num_ions))
 
+    _rng = np.random.default_rng(rng)
+
     def generate(group):
         s = _pyxtal()
         try:
             s.from_random(
-                dim=dim, group=group, species=species, numIons=num_ions, **kwargs
+                dim=dim, group=group, species=species, numIons=num_ions, random_state=_rng, **kwargs
             )
         except Comp_CompatibilityError:
             if not allow_exceptions:
@@ -235,12 +240,13 @@ def sample_space_groups(
     tolerance: (
         Literal["metallic", "atomic", "molecular", "vdW"] | DistanceFilter | dict
     ) = "metallic",
+    rng: Union[int, np.random.Generator, None] = None,
 ) -> Iterator[Atoms]:
     """
     Create symmetric random structures.
 
     Args:
-        formulas (Formulas or iterable of dicts from str to int): list of chemical formulas
+        formulas (:class:`.Formulas` or :class:`collections.abc.Iterable` of :class:`dict` from :class:`str` to :class:`int`): :class:`list` of chemical formulas
         spacegroups (list of int): which space groups to generate
         min_atoms (int): do not generate structures smaller than this
         max_atoms (int): do not generate structures larger than this
@@ -249,12 +255,13 @@ def sample_space_groups(
             samples no longer from space groups, but from the subperiodic layer, rod, or point groups.
         tolerance (str, dict of elements to radii):
             specifies minimum allowed distances between atoms in generated structures;
-            if str then it should be one values understood by :class:`pyxtal.tolerace.Tol_matrix`;
+            if str then it should be one values understood by :class:`pyxtal.tolerance.Tol_matrix`;
             if dict each value gives the minimum *radius* allowed for an atom, whether a given distance is allowed then
             depends on the sum of the radii of the respective elements
+        rng (:class:`int`, :class:`numpy.random.Generator`): seed or random number generator
 
     Yields:
-        `Atoms`: random symmetric crystal structures
+        :class:`ase.Atoms`: random symmetric crystal structures
     """
 
     if not 0 <= dim <= 3:
@@ -307,7 +314,7 @@ def sample_space_groups(
             return atoms
 
         with catch_warnings(category=UserWarning, action="ignore"):
-            px = pyxtal(spacegroups, elements, num_atoms, dim=dim, tm=tm)
+            px = pyxtal(spacegroups, elements, num_atoms, dim=dim, tm=tm, rng=rng)
             yield from islice(map(pop, px), max_structures)
             if max_structures is not None:
                 max_structures -= len(px)

@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from ase import Atoms
-from typing import Iterable, Callable, Self, Iterator
+from typing import Iterable, Callable, Self, Iterator, Union
 from dataclasses import dataclass
 import numpy as np
 
@@ -10,17 +10,30 @@ from .filters import Filter
 from .utils import update_uuid
 
 
-def rattle(structure: Atoms, sigma: float) -> Atoms:
+def rattle(
+    structure: Atoms, sigma: float, rng: Union[int, np.random.Generator, None] = None
+) -> Atoms:
     """Randomly displace positions with gaussian noise.
 
     Operates INPLACE."""
     if len(structure) == 1:
         raise ValueError("Can only rattle structures larger than one atom.")
-    structure.rattle(stdev=sigma, rng=np.random)
+
+    if isinstance(rng, int):
+        structure.rattle(stdev=sigma, seed=rng)
+    else:
+        if rng is None:
+            rng = np.random
+        structure.rattle(stdev=sigma, rng=rng)
     return structure
 
 
-def element_scaled_rattle(structure: Atoms, sigma: float, reference: dict[str, float]) -> Atoms:
+def element_scaled_rattle(
+    structure: Atoms,
+    sigma: float,
+    reference: dict[str, float],
+    rng: Union[int, np.random.Generator, None] = None,
+) -> Atoms:
     """Randomly displace positions with gaussian noise relative to an elemental reference length.
 
     Operates like :func:`.rattle` but uses a standard deviation derived from the relative `sigma` and the `reference`,
@@ -29,9 +42,10 @@ def element_scaled_rattle(structure: Atoms, sigma: float, reference: dict[str, f
     Operates IN PLACE!
 
     Args:
-        structure (:class:`.ase.Atoms`): structure to perturb
-        sigma (float): relative standard deviation
-        reference (dict of str to float): reference length per element
+        structure (:class:`ase.Atoms`): structure to perturb
+        sigma (:class:`float`): relative standard deviation
+        reference (:class:`dict` of :class:`str` to :class:`float`): reference length per element
+        rng (:class:`int`, :class:`numpy.random.Generator`): seed or random number generator
 
     Raises:
         ValueError: if len(structure) == 1, create a super cell first before calling again
@@ -46,24 +60,31 @@ def element_scaled_rattle(structure: Atoms, sigma: float, reference: dict[str, f
             sigma[i] *= reference[sym]
         except KeyError:
             raise ValueError(f"No value for element {sym} provided in argument `reference`!") from None
-    return rattle(structure, sigma.reshape(-1, 1))
+    return rattle(structure, sigma.reshape(-1, 1), rng=rng)
 
 
 def _ensure_perturbation(p: "Perturbation") -> "PerturbationABC":
     return p if isinstance(p, PerturbationABC) else FunctionPerturbation(p)
 
 
-def stretch(structure: Atoms, hydro: float, shear: float, minimum_strain=1e-3) -> Atoms:
+def stretch(
+    structure: Atoms,
+    hydro: float,
+    shear: float,
+    minimum_strain=1e-3,
+    rng: Union[int, np.random.Generator, None] = None,
+) -> Atoms:
     """Randomly stretch cell with uniform noise.
 
     Ensures at least `minimum_strain` strain to avoid structures very close to their original structures.
     These don't offer a lot of new information and can also confuse VASP's symmetry analyzer.
 
     Operates INPLACE."""
+    _rng = np.random.default_rng(rng)
 
     def get_strains(max_strain, size):
-        signs = np.random.choice([-1, 1], size=size)
-        magnitudes = np.random.uniform(minimum_strain, max_strain, size=size)
+        signs = _rng.choice([-1, 1], size=size)
+        magnitudes = _rng.uniform(minimum_strain, max_strain, size=size)
         return signs * magnitudes
 
     strain = np.zeros((3, 3))
@@ -112,13 +133,13 @@ def apply_perturbations(
     If a perturbation raises ValueError it is ignored.
 
     Args:
-        structures: Atomic structures to perturb.
-        perturbations: Functions that modify structures.
-        filters: Functions to filter valid results (optional).
-        retries: Max attempts per perturbation (default: 10).
+        structures: :class:`collections.abc.Iterable` of :class:`ase.Atoms` to perturb.
+        perturbations: :class:`collections.abc.Iterable` of :class:`~.Perturbation` that modify structures.
+        filters: :class:`collections.abc.Iterable` of :class:`~assyst.filters.Filter` to filter valid results (optional).
+        retries: :class:`int`, max attempts per perturbation (default: 10).
 
     Yields:
-        Perturbed structure that passes all filters.
+        :class:`ase.Atoms`: perturbed structure that passes all filters.
     """
     if filters is None:
         filters = []
@@ -150,12 +171,16 @@ class Rattle(PerturbationABC):
     sigma: float
     create_supercells: bool = False
     "Create minimal 2x2x2 super cells when applied to structures of only one atom."
+    rng: Union[int, np.random.Generator, None] = None
+
+    def __post_init__(self):
+        object.__setattr__(self, "rng", np.random.default_rng(self.rng))
 
     def __call__(self, structure: Atoms):
         if self.create_supercells and len(structure) == 1:
             structure = structure.repeat(2)
         structure = super().__call__(structure)
-        return rattle(structure, self.sigma)
+        return rattle(structure, self.sigma, rng=self.rng)
 
     def __str__(self):
         return f"rattle({self.sigma})"
@@ -173,12 +198,16 @@ class ElementScaledRattle(PerturbationABC):
     reference: dict[str, float]
     create_supercells: bool = False
     "Create minimal 2x2x2 super cells when applied to structures of only one atom."
+    rng: Union[int, np.random.Generator, None] = None
+
+    def __post_init__(self):
+        object.__setattr__(self, "rng", np.random.default_rng(self.rng))
 
     def __call__(self, structure: Atoms):
         if self.create_supercells and len(structure) == 1:
             structure = structure.repeat(2)
         structure = super().__call__(structure)
-        return element_scaled_rattle(structure, self.sigma, self.reference)
+        return element_scaled_rattle(structure, self.sigma, self.reference, rng=self.rng)
 
     def __str__(self):
         return f"scaled_rattle({self.sigma})"
@@ -191,10 +220,14 @@ class Stretch(PerturbationABC):
     hydro: float
     shear: float
     minimum_strain: float = 1e-3
+    rng: Union[int, np.random.Generator, None] = None
+
+    def __post_init__(self):
+        object.__setattr__(self, "rng", np.random.default_rng(self.rng))
 
     def __call__(self, structure: Atoms):
         structure = super().__call__(structure)
-        return stretch(structure, self.hydro, self.shear, self.minimum_strain)
+        return stretch(structure, self.hydro, self.shear, self.minimum_strain, rng=self.rng)
 
     def __str__(self):
         return f"stretch(hydro={self.hydro}, shear={self.shear})"
@@ -247,13 +280,15 @@ class RandomChoice(PerturbationABC):
     choice_b: Perturbation
     chance: float
     "Probability to pick choice b"
+    rng: Union[int, np.random.Generator, None] = None
 
     def __post_init__(self):
+        object.__setattr__(self, "rng", np.random.default_rng(self.rng))
         object.__setattr__(self, "choice_a", _ensure_perturbation(self.choice_a))
         object.__setattr__(self, "choice_b", _ensure_perturbation(self.choice_b))
 
-    def __call__(self, structure: Atoms) -> Atoms | None:
-        if np.random.rand() > self.chance:
+    def __call__(self, structure: Atoms) -> Atoms:
+        if self.rng.random() > self.chance:
             return self.choice_a(structure)
         else:
             return self.choice_b(structure)
