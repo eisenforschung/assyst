@@ -262,11 +262,13 @@ class RandomChoice(PerturbationABC):
 
 __all__ = [
         "rattle",
+        "element_scaled_rattle",
         "stretch",
         "PerturbationABC",
         "Perturbation",
         "apply_perturbations",
         "Rattle",
+        "ElementScaledRattle",
         "Stretch",
         "Series",
         "RandomChoice",
