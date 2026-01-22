@@ -222,7 +222,6 @@ def random_element_structures(draw):
     return structure
 
 
-@settings(deadline=None)
 @given(random_element_structures(), st.floats(min_value=0.01, max_value=10))
 def test_element_scaled_rattle_respects_element_specific_sigma(simple_structure, sigma):
     """

@@ -153,7 +153,7 @@ def apply_perturbations(
                 continue
 
 
-@dataclass
+@dataclass(frozen=True)
 class Rattle(PerturbationABC):
     """Displace atoms by some absolute amount from a normal distribution."""
 
@@ -163,7 +163,20 @@ class Rattle(PerturbationABC):
     rng: Union[int, np.random.Generator, None] = None
 
     def __post_init__(self):
-        self.rng = np.random.default_rng(self.rng)
+        object.__setattr__(self, "rng", np.random.default_rng(self.rng))
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state["rng"] = self.rng.bit_generator.state
+        return state
+
+    def __setstate__(self, state):
+        for key, value in state.items():
+            if key == "rng":
+                rng = np.random.default_rng()
+                rng.bit_generator.state = value
+                value = rng
+            object.__setattr__(self, key, value)
 
     def __call__(self, structure: Atoms):
         if self.create_supercells and len(structure) == 1:
@@ -175,7 +188,7 @@ class Rattle(PerturbationABC):
         return f"rattle({self.sigma})"
 
 
-@dataclass
+@dataclass(frozen=True)
 class ElementScaledRattle(PerturbationABC):
     """Displace atoms by some amount from a normal distribution.
 
@@ -190,7 +203,20 @@ class ElementScaledRattle(PerturbationABC):
     rng: Union[int, np.random.Generator, None] = None
 
     def __post_init__(self):
-        self.rng = np.random.default_rng(self.rng)
+        object.__setattr__(self, "rng", np.random.default_rng(self.rng))
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state["rng"] = self.rng.bit_generator.state
+        return state
+
+    def __setstate__(self, state):
+        for key, value in state.items():
+            if key == "rng":
+                rng = np.random.default_rng()
+                rng.bit_generator.state = value
+                value = rng
+            object.__setattr__(self, key, value)
 
     def __call__(self, structure: Atoms):
         if self.create_supercells and len(structure) == 1:
@@ -202,7 +228,7 @@ class ElementScaledRattle(PerturbationABC):
         return f"scaled_rattle({self.sigma})"
 
 
-@dataclass
+@dataclass(frozen=True)
 class Stretch(PerturbationABC):
     """Apply random cell perturbation."""
 
@@ -212,7 +238,20 @@ class Stretch(PerturbationABC):
     rng: Union[int, np.random.Generator, None] = None
 
     def __post_init__(self):
-        self.rng = np.random.default_rng(self.rng)
+        object.__setattr__(self, "rng", np.random.default_rng(self.rng))
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state["rng"] = self.rng.bit_generator.state
+        return state
+
+    def __setstate__(self, state):
+        for key, value in state.items():
+            if key == "rng":
+                rng = np.random.default_rng()
+                rng.bit_generator.state = value
+                value = rng
+            object.__setattr__(self, key, value)
 
     def __call__(self, structure: Atoms):
         structure = super().__call__(structure)
@@ -237,7 +276,7 @@ class Series(PerturbationABC):
         return "+".join(str(mod) for mod in self.perturbations)
 
 
-@dataclass
+@dataclass(frozen=True)
 class RandomChoice(PerturbationABC):
     """Apply either of two alternatives randomly."""
 
@@ -248,7 +287,20 @@ class RandomChoice(PerturbationABC):
     rng: Union[int, np.random.Generator, None] = None
 
     def __post_init__(self):
-        self.rng = np.random.default_rng(self.rng)
+        object.__setattr__(self, "rng", np.random.default_rng(self.rng))
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state["rng"] = self.rng.bit_generator.state
+        return state
+
+    def __setstate__(self, state):
+        for key, value in state.items():
+            if key == "rng":
+                rng = np.random.default_rng()
+                rng.bit_generator.state = value
+                value = rng
+            object.__setattr__(self, key, value)
 
     def __call__(self, structure: Atoms) -> Atoms:
         if self.rng.random() > self.chance:

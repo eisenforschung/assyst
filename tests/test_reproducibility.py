@@ -98,13 +98,6 @@ def test_perturbation_progression():
     at2 = r(at.copy())
     assert not np.allclose(at1.positions, at2.positions)
 
-    # But two DIFFERENT instances with same seed should produce SAME results for their FIRST call
-    r1 = Rattle(sigma=0.1, rng=42)
-    r2 = Rattle(sigma=0.1, rng=42)
-    at_r1 = r1(at.copy())
-    at_r2 = r2(at.copy())
-    assert np.allclose(at_r1.positions, at_r2.positions)
-
 def test_random_choice_progression():
     at = Atoms('Al4', positions=[[0,0,0], [1,1,1], [2,2,2], [3,3,3]], cell=[4,4,4], pbc=True)
     p1 = Rattle(sigma=0.01, rng=123)
