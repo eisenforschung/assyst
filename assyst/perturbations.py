@@ -192,19 +192,6 @@ class ElementScaledRattle(PerturbationABC):
     def __post_init__(self):
         object.__setattr__(self, "rng", np.random.default_rng(self.rng))
 
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        state["rng"] = self.rng.bit_generator.state
-        return state
-
-    def __setstate__(self, state):
-        for key, value in state.items():
-            if key == "rng":
-                rng = np.random.default_rng()
-                rng.bit_generator.state = value
-                value = rng
-            object.__setattr__(self, key, value)
-
     def __call__(self, structure: Atoms):
         if self.create_supercells and len(structure) == 1:
             structure = structure.repeat(2)
@@ -226,19 +213,6 @@ class Stretch(PerturbationABC):
 
     def __post_init__(self):
         object.__setattr__(self, "rng", np.random.default_rng(self.rng))
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        state["rng"] = self.rng.bit_generator.state
-        return state
-
-    def __setstate__(self, state):
-        for key, value in state.items():
-            if key == "rng":
-                rng = np.random.default_rng()
-                rng.bit_generator.state = value
-                value = rng
-            object.__setattr__(self, key, value)
 
     def __call__(self, structure: Atoms):
         structure = super().__call__(structure)
@@ -275,19 +249,6 @@ class RandomChoice(PerturbationABC):
 
     def __post_init__(self):
         object.__setattr__(self, "rng", np.random.default_rng(self.rng))
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        state["rng"] = self.rng.bit_generator.state
-        return state
-
-    def __setstate__(self, state):
-        for key, value in state.items():
-            if key == "rng":
-                rng = np.random.default_rng()
-                rng.bit_generator.state = value
-                value = rng
-            object.__setattr__(self, key, value)
 
     def __call__(self, structure: Atoms) -> Atoms:
         if self.rng.random() > self.chance:

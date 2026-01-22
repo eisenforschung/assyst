@@ -3,7 +3,7 @@ from unittest.mock import patch
 from math import inf
 
 import pytest
-from hypothesis import given, strategies as st, settings
+from hypothesis import given, strategies as st
 import numpy as np
 from ase import Atoms
 from ase.build import bulk

@@ -1,11 +1,13 @@
 import pickle
 import numpy as np
+from hypothesis import given, strategies as st
 from assyst.perturbations import Rattle, Stretch, RandomChoice
 from ase import Atoms
 
-def test_pickling_rattle():
+@given(st.floats(min_value=0.01, max_value=1.0), st.integers(min_value=0, max_value=1000))
+def test_pickling_rattle(sigma, seed):
     at = Atoms('Al4', positions=[[0,0,0], [1,1,1], [2,2,2], [3,3,3]], cell=[4,4,4], pbc=True)
-    r = Rattle(sigma=0.1, rng=42)
+    r = Rattle(sigma=sigma, rng=seed)
 
     # Progress RNG a bit
     r(at.copy())
@@ -20,9 +22,10 @@ def test_pickling_rattle():
 
     assert np.allclose(at1.positions, at2.positions)
 
-def test_pickling_stretch():
+@given(st.floats(min_value=0.01, max_value=0.5), st.floats(min_value=0.01, max_value=0.5), st.integers(min_value=0, max_value=1000))
+def test_pickling_stretch(hydro, shear, seed):
     at = Atoms('Al4', positions=[[0,0,0], [1,1,1], [2,2,2], [3,3,3]], cell=[4,4,4], pbc=True)
-    s = Stretch(hydro=0.1, shear=0.1, rng=42)
+    s = Stretch(hydro=hydro, shear=shear, rng=seed)
 
     # Progress RNG a bit
     s(at.copy())
@@ -37,11 +40,12 @@ def test_pickling_stretch():
 
     assert np.allclose(at1.cell, at2.cell)
 
-def test_pickling_random_choice():
+@given(st.floats(min_value=0.0, max_value=1.0), st.integers(min_value=0, max_value=1000))
+def test_pickling_random_choice(chance, seed):
     at = Atoms('Al4', positions=[[0,0,0], [1,1,1], [2,2,2], [3,3,3]], cell=[4,4,4], pbc=True)
-    p1 = Rattle(sigma=0.01, rng=123)
-    p2 = Rattle(sigma=0.5, rng=456)
-    rc = RandomChoice(p1, p2, chance=0.5, rng=42)
+    p1 = Rattle(sigma=0.01, rng=seed)
+    p2 = Rattle(sigma=0.5, rng=seed+1)
+    rc = RandomChoice(p1, p2, chance=chance, rng=seed+2)
 
     # Progress RNG a bit
     rc(at.copy())
