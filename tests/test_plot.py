@@ -2,7 +2,18 @@ import unittest
 from unittest.mock import patch, MagicMock
 import numpy as np
 from ase import Atoms
-from assyst.plot import _volume, _energy, _concentration, volume_histogram, size_histogram, concentration_histogram, distance_histogram, energy_volume
+from assyst.plot import (
+    _volume,
+    _energy,
+    _concentration,
+    volume_histogram,
+    size_histogram,
+    concentration_histogram,
+    distance_histogram,
+    radial_distribution,
+    energy_histogram,
+    energy_volume,
+)
 
 try:
     import matscipy
@@ -64,7 +75,24 @@ class TestPlotFunctions(unittest.TestCase):
     @unittest.skipIf(matscipy is None, "matscipy not installed")
     @patch('matplotlib.pyplot.hist')
     def test_distance_histogram(self, mock_hist):
-        distance_histogram(self.structures)
+        distance_histogram(self.structures, reduce="min")
+        mock_hist.assert_called_once()
+
+        distance_histogram(self.structures, reduce="mean")
+        distance_histogram(self.structures, reduce=None)
+
+    @unittest.skipIf(matscipy is None, "matscipy not installed")
+    @patch('matplotlib.pyplot.hist')
+    def test_radial_distribution(self, mock_hist):
+        radial_distribution(self.structures)
+        mock_hist.assert_called_once()
+
+    @patch('matplotlib.pyplot.hist')
+    def test_energy_histogram(self, mock_hist):
+        s = Atoms('H', cell=[10,10,10])
+        s.calc = MagicMock()
+        s.calc.get_potential_energy.return_value = -1.0
+        energy_histogram([s])
         mock_hist.assert_called_once()
 
     @patch('matplotlib.pyplot.scatter')
