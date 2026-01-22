@@ -44,7 +44,7 @@ def element_scaled_rattle(
         structure (:class:`ase.Atoms`): structure to perturb
         sigma (:class:`float`): relative standard deviation
         reference (:class:`dict` of :class:`str` to :class:`float`): reference length per element
-        rng (int, numpy.random.Generator): seed or random number generator
+        rng (:class:`int`, :class:`numpy.random.Generator`): seed or random number generator
 
     Raises:
         ValueError: if len(structure) == 1, create a super cell first before calling again
@@ -164,19 +164,6 @@ class Rattle(PerturbationABC):
 
     def __post_init__(self):
         object.__setattr__(self, "rng", np.random.default_rng(self.rng))
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        state["rng"] = self.rng.bit_generator.state
-        return state
-
-    def __setstate__(self, state):
-        for key, value in state.items():
-            if key == "rng":
-                rng = np.random.default_rng()
-                rng.bit_generator.state = value
-                value = rng
-            object.__setattr__(self, key, value)
 
     def __call__(self, structure: Atoms):
         if self.create_supercells and len(structure) == 1:

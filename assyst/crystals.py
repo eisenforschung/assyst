@@ -54,9 +54,9 @@ def pyxtal(
         species (tuple of str): which species to include, defines the stoichiometry together with `num_ions`
         num_ions (tuple of int): how many of each species to include, defines the stoichiometry together with `species`
         dim (int): dimensionality of the symmetry group, 0 is point groups, 1 is rod groups, 2 is layer groups and 3 is space groups
-        repeat (int): how many random structures to generate
-        allow_exceptions (bool): when generating multiple structures, silence errors when the requested stoichiometry and symmetry group are incompatible
-        rng (int, numpy.random.Generator): seed or random number generator
+        repeat (:class:`int`): how many random structures to generate
+        allow_exceptions (:class:`bool`): when generating multiple structures, silence errors when the requested stoichiometry and symmetry group are incompatible
+        rng (:class:`int`, :class:`numpy.random.Generator`): seed or random number generator
         **kwargs: passed to `pyxtal.pyxtal` function verbatim
 
     Returns:
@@ -256,7 +256,7 @@ def sample_space_groups(
             if str then it should be one values understood by :class:`pyxtal.tolerance.Tol_matrix`;
             if dict each value gives the minimum *radius* allowed for an atom, whether a given distance is allowed then
             depends on the sum of the radii of the respective elements
-        rng (int, numpy.random.Generator): seed or random number generator
+        rng (:class:`int`, :class:`numpy.random.Generator`): seed or random number generator
 
     Yields:
         :class:`ase.Atoms`: random symmetric crystal structures
