@@ -49,6 +49,10 @@ def element_scaled_rattle(structure: Atoms, sigma: float, reference: dict[str, f
     return rattle(structure, sigma.reshape(-1, 1))
 
 
+def _ensure_perturbation(p: "Perturbation") -> "PerturbationABC":
+    return p if isinstance(p, PerturbationABC) else FunctionPerturbation(p)
+
+
 def stretch(structure: Atoms, hydro: float, shear: float, minimum_strain=1e-3) -> Atoms:
     """Randomly stretch cell with uniform noise.
 
@@ -122,10 +126,7 @@ def apply_perturbations(
         filters = [filters]
     perturbations = list(perturbations)
 
-    perturbations = [
-        p if isinstance(p, PerturbationABC) else FunctionPerturbation(p)
-        for p in perturbations
-    ]
+    perturbations = [_ensure_perturbation(p) for p in perturbations]
 
     for structure in structures:
         for mod in perturbations:
@@ -224,10 +225,7 @@ class Series(PerturbationABC):
         object.__setattr__(
             self,
             "perturbations",
-            tuple(
-                p if isinstance(p, PerturbationABC) else FunctionPerturbation(p)
-                for p in self.perturbations
-            ),
+            tuple(_ensure_perturbation(p) for p in self.perturbations),
         )
 
     def __call__(self, structure: Atoms) -> Atoms | None:
@@ -251,10 +249,8 @@ class RandomChoice(PerturbationABC):
     "Probability to pick choice b"
 
     def __post_init__(self):
-        if not isinstance(self.choice_a, PerturbationABC):
-            object.__setattr__(self, "choice_a", FunctionPerturbation(self.choice_a))
-        if not isinstance(self.choice_b, PerturbationABC):
-            object.__setattr__(self, "choice_b", FunctionPerturbation(self.choice_b))
+        object.__setattr__(self, "choice_a", _ensure_perturbation(self.choice_a))
+        object.__setattr__(self, "choice_b", _ensure_perturbation(self.choice_b))
 
     def __call__(self, structure: Atoms) -> Atoms | None:
         if np.random.rand() > self.chance:
