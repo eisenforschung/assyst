@@ -4,14 +4,7 @@ Lineage Tracking
 ASSYST automatically tracks the history of structures as they are generated and modified through the workflow.
 This is achieved using UUIDs (Universally Unique Identifiers) stored in the structure's ``info`` dictionary.
 
-Keys in Atoms.info
-------------------
-
-Every structure managed by ASSYST will contain the following keys in its ``info`` attribute:
-
-* ``uuid``: A unique identifier for the current structure.
-* ``seed``: The UUID of the initial structure from which this structure was derived.
-* ``lineage``: A list of UUIDs of all parent structures, in the order they were generated.
+For a quick reference of all metadata keys, see :doc:`metadata`.
 
 Workflow Integration
 --------------------
