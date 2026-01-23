@@ -1,4 +1,4 @@
-assyst package
+API assyst package
 ==============
 
 Submodules
