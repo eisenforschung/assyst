@@ -1,13 +1,32 @@
 import pickle
 import numpy as np
 from hypothesis import given, strategies as st
-from assyst.perturbations import Rattle, Stretch, RandomChoice
+from assyst.perturbations import Rattle, ElementScaledRattle, Stretch, Series, RandomChoice
 from ase import Atoms
 
 @given(st.floats(min_value=0.01, max_value=1.0), st.integers(min_value=0, max_value=1000), st.integers(min_value=1, max_value=10))
 def test_pickling_rattle(sigma, seed, n_steps):
     at = Atoms('Al4', positions=[[0,0,0], [1,1,1], [2,2,2], [3,3,3]], cell=[4,4,4], pbc=True)
     r = Rattle(sigma=sigma, rng=seed)
+
+    # Progress RNG
+    for _ in range(n_steps):
+        r(at.copy())
+
+    # Pickle and unpickle
+    p = pickle.dumps(r)
+    r2 = pickle.loads(p)
+
+    # Should produce same next perturbation
+    at1 = r(at.copy())
+    at2 = r2(at.copy())
+
+    assert np.allclose(at1.positions, at2.positions)
+
+@given(st.floats(min_value=0.01, max_value=1.0), st.integers(min_value=0, max_value=1000), st.integers(min_value=1, max_value=10))
+def test_pickling_element_scaled_rattle(sigma, seed, n_steps):
+    at = Atoms('Al4', positions=[[0,0,0], [1,1,1], [2,2,2], [3,3,3]], cell=[4,4,4], pbc=True)
+    r = ElementScaledRattle(sigma=sigma, reference={'Al': 1.0}, rng=seed)
 
     # Progress RNG
     for _ in range(n_steps):
@@ -40,6 +59,21 @@ def test_pickling_stretch(hydro, shear, seed, n_steps):
     at1 = s(at.copy())
     at2 = s2(at.copy())
 
+    assert np.allclose(at1.cell, at2.cell)
+
+def test_pickling_series():
+    at = Atoms('Al4', positions=[[0,0,0], [1,1,1], [2,2,2], [3,3,3]], cell=[4,4,4], pbc=True)
+    r = Rattle(sigma=0.1, rng=42)
+    s = Stretch(hydro=0.1, shear=0.1, rng=43)
+    ser = Series((r, s))
+
+    p = pickle.dumps(ser)
+    ser2 = pickle.loads(p)
+
+    at1 = ser(at.copy())
+    at2 = ser2(at.copy())
+
+    assert np.allclose(at1.positions, at2.positions)
     assert np.allclose(at1.cell, at2.cell)
 
 @given(st.floats(min_value=0.0, max_value=1.0), st.integers(min_value=0, max_value=1000), st.integers(min_value=1, max_value=10))
