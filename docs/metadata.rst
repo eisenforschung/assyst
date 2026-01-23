@@ -1,4 +1,4 @@
-Metadata and Lineage
+Metadata
 ====================
 
 ASSYST tracks several metadata keys in the ``info`` attribute of the :class:`ase.Atoms` structures it generates and modifies.
@@ -20,8 +20,8 @@ Symmetry
 
 When structures are generated using :func:`assyst.crystals.sample_space_groups` or :func:`assyst.crystals.pyxtal`, the following symmetry-related keys are added:
 
-* ``symmetry``: The requested symmetry group number (e.g., space group 225).
-* ``requested spacegroup``: An alias for ``symmetry``.
+* ``requested spacegroup``: The requested symmetry group number (e.g., space group 225).
+* ``symmetry``: An alias for ``requested spacegroup``.
 * ``spacegroup``: The actual symmetry group number of the generated structure, which may be higher than the requested one.
 * ``repeat``: The iteration index when multiple structures are generated for the same symmetry group.
 

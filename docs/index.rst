@@ -63,6 +63,6 @@ The final step is labelling the structures with high quality DFT, which is outsi
    Home <self>
    installation
    overview
-   assyst
    metadata
    notebooks
+   assyst
