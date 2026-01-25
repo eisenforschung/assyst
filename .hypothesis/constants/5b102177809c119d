@@ -1,0 +1,4 @@
+# file: /app/assyst/plot.py
+# hypothesis_version: 6.151.0
+
+[6.0, 100, 1000, '# Atoms', '#$\\,$Neighbours', '#$\\,$Structures', 'Concentration', 'Energy [eV/atom]', 'Radial distribution', 'bins', 'd', 'distance_histogram', 'edge', 'energy_histogram', 'energy_volume', 'log', 'markersize', 'mean', 'min', 'radial_distribution', 's', 'size_histogram', 'volume_histogram', 'width']

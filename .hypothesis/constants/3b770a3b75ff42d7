@@ -1,0 +1,4 @@
+# file: /app/assyst/relax.py
+# hypothesis_version: 6.151.0
+
+[0.0, 0.001, 100, '/dev/null', 'CellRelax', 'FullRelax', 'LBFGS', 'Relax', 'SymmetryRelax', 'VolumeRelax', 'relax']

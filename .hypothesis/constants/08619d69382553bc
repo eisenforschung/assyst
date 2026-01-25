@@ -1,0 +1,4 @@
+# file: /app/assyst/phases.py
+# hypothesis_version: 6.151.0
+
+[1e-06, 1e-05, 0.01, 'ConcentrationJump', 'Phase', 'T', 'c', 'mu']

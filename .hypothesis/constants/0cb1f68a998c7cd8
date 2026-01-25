@@ -1,0 +1,4 @@
+# file: /app/assyst/utils.py
+# hypothesis_version: 6.151.0
+
+['lineage', 'seed', 'uuid']

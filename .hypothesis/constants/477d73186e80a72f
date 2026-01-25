@@ -1,0 +1,4 @@
+# file: /app/assyst/filters.py
+# hypothesis_version: 6.151.0
+
+[5.0, 'AndFilter', 'AspectFilter', 'CalculatorFilter', 'DistanceFilter', 'EnergyFilter', 'Filter', 'FilterBase', 'ForceFilter', 'OrFilter', 'VolumeFilter', 'atomic', 'error', 'ignore', 'ijd', 'metallic', 'molecular', 'vdW']
