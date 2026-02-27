@@ -1,0 +1,75 @@
+Metadata-Version: 2.4
+Name: assyst
+Version: 0.1.dev1+g16f571898
+Summary: Reference implentation of the Automated Small Symmetric Structure Training method.
+Author-email: Marvin Poul <pmrv@posteo.de>
+Project-URL: Repository, https://github.com/eisenforschung/assyst
+Classifier: Programming Language :: Python :: 3
+Classifier: Operating System :: OS Independent
+Requires-Python: <3.14,>=3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: pyxtal<1.2.0,>=1
+Requires-Dist: tqdm<5,>=4
+Requires-Dist: ase<4,>=3
+Requires-Dist: matplotlib<4,>=3
+Requires-Dist: numpy<3,>1
+Requires-Dist: pyiron_snippets<2,>=1
+Provides-Extra: test
+Requires-Dist: pytest; extra == "test"
+Requires-Dist: hypothesis; extra == "test"
+Provides-Extra: doc
+Requires-Dist: sphinx; extra == "doc"
+Requires-Dist: furo; extra == "doc"
+Requires-Dist: myst-nb; extra == "doc"
+Provides-Extra: coverage
+Requires-Dist: pytest; extra == "coverage"
+Requires-Dist: hypothesis; extra == "coverage"
+Requires-Dist: pytest-cov; extra == "coverage"
+Provides-Extra: grace
+Requires-Dist: tensorpotential<0.5.8,>=0.5.1; extra == "grace"
+Provides-Extra: plotneighborlist
+Requires-Dist: matscipy<2,>=1; extra == "plotneighborlist"
+Provides-Extra: notebooks
+Requires-Dist: tensorpotential<0.5.8,>=0.5.1; extra == "notebooks"
+Requires-Dist: pandas<4,>=2.2; extra == "notebooks"
+Dynamic: license-file
+
+[![DOI](https://zenodo.org/badge/997271420.svg)](https://doi.org/10.5281/zenodo.15744358) [![Documentation Status](https://readthedocs.org/projects/assyst/badge/?version=stable)](https://assyst.readthedocs.io/stable/?badge=stable) [![codecov](https://codecov.io/gh/pmrv/assyst/graph/badge.svg?token=NIEJ01UMJF)](https://codecov.io/gh/pmrv/assyst)
+
+# ASSYST or _Automated Small SYmmetric Structure Training_
+
+A minimal reference implementation of ASSYST method to generate transferable training data for machine learning
+potentials.
+
+ASSYST is the Automated Small Symmetric Structure Training, a training protocol, aimed at providing comprehensive,
+transferable training sets for machine learning interatomic potentials (MLIP) automatically. A detailed explanation and
+verification of the method can be found in our papers.
+[1](https://doi.org/10.1038/s41524-025-01669-4)[2](https://doi.org/10.1103/PhysRevB.107.104103) ASSYST gives up the notion of fitting potentials to
+individual phases or structures and instead tries to deliver a training set spanning the full potential energy surface
+(PES) of a material.
+
+This software package is a minimal implementation of this idea, designed to be as flexible as possible without assuming
+either a specific MLIP, reference data, or workflow manager in mind. It is built on
+[ASE](https://ase-lib.org/index.html) and can use any of its calculators. It also assumes that you bring your own
+reference energies and forces. For a ready-to-run implementation that targets Atomic Cluster Expansion and Moment Tensor
+Potentials fit to Density Functional Theory (DFT) data check out pyiron_potentialfit.
+
+![ASSYST schema](docs/img/AssystSchematicTraced.svg)
+
+## Citation
+
+Please use the following citation when referencing the method in your work.
+
+```
+@article{poul2025automated,
+  title={Automated generation of structure datasets for machine learning potentials and alloys},
+  volume={11},
+  DOI={10.1038/s41524-025-01669-4},
+  number={1},
+  journal={npj Computational Materials},
+  author={Poul, Marvin and Huber, Liam and Neugebauer, J\"org},
+  year={2025},
+  month={Jun}
+}
+```
