@@ -164,17 +164,21 @@ def apply_perturbations(
                 continue
 
 
+class RngMixin:
+    """Mixin to handle RNG initialization."""
+
+    def __post_init__(self):
+        object.__setattr__(self, "rng", np.random.default_rng(self.rng))
+
+
 @dataclass(frozen=True)
-class Rattle(PerturbationABC):
+class Rattle(RngMixin, PerturbationABC):
     """Displace atoms by some absolute amount from a normal distribution."""
 
     sigma: float
     create_supercells: bool = False
     "Create minimal 2x2x2 super cells when applied to structures of only one atom."
     rng: Union[int, np.random.Generator, None] = None
-
-    def __post_init__(self):
-        object.__setattr__(self, "rng", np.random.default_rng(self.rng))
 
     def __call__(self, structure: Atoms):
         if self.create_supercells and len(structure) == 1:
@@ -187,7 +191,7 @@ class Rattle(PerturbationABC):
 
 
 @dataclass(frozen=True)
-class ElementScaledRattle(PerturbationABC):
+class ElementScaledRattle(RngMixin, PerturbationABC):
     """Displace atoms by some amount from a normal distribution.
 
     Operates like :class:`.Rattle` but uses a standard deviation derived from the relative `sigma` and the `reference`,
@@ -200,9 +204,6 @@ class ElementScaledRattle(PerturbationABC):
     "Create minimal 2x2x2 super cells when applied to structures of only one atom."
     rng: Union[int, np.random.Generator, None] = None
 
-    def __post_init__(self):
-        object.__setattr__(self, "rng", np.random.default_rng(self.rng))
-
     def __call__(self, structure: Atoms):
         if self.create_supercells and len(structure) == 1:
             structure = structure.repeat(2)
@@ -214,16 +215,13 @@ class ElementScaledRattle(PerturbationABC):
 
 
 @dataclass(frozen=True)
-class Stretch(PerturbationABC):
+class Stretch(RngMixin, PerturbationABC):
     """Apply random cell perturbation."""
 
     hydro: float
     shear: float
     minimum_strain: float = 1e-3
     rng: Union[int, np.random.Generator, None] = None
-
-    def __post_init__(self):
-        object.__setattr__(self, "rng", np.random.default_rng(self.rng))
 
     def __call__(self, structure: Atoms):
         structure = super().__call__(structure)
@@ -273,7 +271,7 @@ class Series(PerturbationABC):
 
 
 @dataclass(frozen=True)
-class RandomChoice(PerturbationABC):
+class RandomChoice(RngMixin, PerturbationABC):
     """Apply either of two alternatives randomly."""
 
     choice_a: Perturbation
@@ -283,7 +281,7 @@ class RandomChoice(PerturbationABC):
     rng: Union[int, np.random.Generator, None] = None
 
     def __post_init__(self):
-        object.__setattr__(self, "rng", np.random.default_rng(self.rng))
+        super().__post_init__()
         object.__setattr__(self, "choice_a", _ensure_perturbation(self.choice_a))
         object.__setattr__(self, "choice_b", _ensure_perturbation(self.choice_b))
 
