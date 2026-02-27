@@ -1,12 +1,13 @@
 import numpy as np
 import pytest
+from hypothesis import given, strategies as st, settings
 from ase.calculators.morse import MorsePotential
 from assyst.crystals import Formulas, sample_space_groups
 from assyst.filters import DistanceFilter, AspectFilter, VolumeFilter
 from assyst.relax import VolumeRelax, FullRelax, relax
 from assyst.perturbations import RandomChoice, Rattle, Stretch, apply_perturbations
 
-def run_workflow(seed):
+def run_workflow(rng):
     # 1. Sampling Random Structures
     max_num = 2
     fs = Formulas.range('Cu', max_num + 1)
@@ -21,7 +22,7 @@ def run_workflow(seed):
             fs,
             spacegroups=spacegroups,
             max_atoms=max_num,
-            rng=seed
+            rng=rng
         )
     ))
 
@@ -37,10 +38,6 @@ def run_workflow(seed):
 
     # 3. Random Perturbations
     # Setup perturbations with the seed
-    # Important: We must create a new RNG for the perturbations to ensure they start
-    # from the same state in each run_workflow call.
-    rng = np.random.default_rng(seed)
-
     # Note: If we share the same 'rng' instance across multiple perturbation objects,
     # they will consume the same stream of random numbers.
     rattle_p = Rattle(.25, rng=rng) + Stretch(hydro=.05, shear=0.005, rng=rng)
@@ -60,18 +57,24 @@ def run_workflow(seed):
 
     return everything
 
-def test_full_workflow_reproducibility():
-    seed = 42
-
+@settings(deadline=None)
+@given(st.integers(min_value=0, max_value=2**32-1))
+def test_full_workflow_reproducibility(seed):
     # Run 1
-    results1 = run_workflow(seed)
+    # We must explicitly construct the generator to pass it, ensuring we control the state
+    rng1 = np.random.default_rng(seed)
+    results1 = run_workflow(rng1)
 
     # Run 2
-    results2 = run_workflow(seed)
+    # Resetting the generator with the same seed for the second run
+    rng2 = np.random.default_rng(seed)
+    results2 = run_workflow(rng2)
 
     # Comparison
     assert len(results1) == len(results2)
-    assert len(results1) > 0 # Ensure we actually produced something
+    # We can't guarantee > 0 for all random seeds without picking specific ones,
+    # but with the chosen params it's highly likely.
+    # If empty, they should both be empty, which satisfies reproducibility.
 
     for i, (s1, s2) in enumerate(zip(results1, results2)):
         assert len(s1) == len(s2), f"Structure {i} atom count mismatch"

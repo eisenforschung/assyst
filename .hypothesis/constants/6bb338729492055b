@@ -1,0 +1,4 @@
+# file: /app/assyst/calculators.py
+# hypothesis_version: 6.151.9
+
+[1.0, '3', 'AseCalculatorConfig', 'GRACE-FS-OAM', 'Grace', 'Morse', 'TF_CPP_MIN_LOG_LEVEL']
