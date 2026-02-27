@@ -39,6 +39,37 @@ def _distance(
     return [neighbor_list("d", s, float(rmax)) for s in structures]
 
 
+def _plot_histogram(
+    structures: Iterable[Atoms],
+    extractor: Callable[[Iterable[Atoms]], Iterable[float]],
+    xlabel: str,
+    ylabel: str,
+    **kwargs
+):
+    """Helper function to plot histograms.
+
+    Args:
+        structures (iterable of :class:`ase.Atoms`):
+            structures to plot
+        extractor (callable):
+            function to extract data from structures
+        xlabel (str):
+            label for x-axis
+        ylabel (str):
+            label for y-axis
+        **kwargs:
+            passed through to :func:`matplotlib.pyplot.hist`
+
+    Returns:
+        Return value of :func:`matplotlib.pyplot.hist`
+    """
+    data = extractor(structures)
+    res = plt.hist(data, **kwargs)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    return res
+
+
 def volume_histogram(structures: list[Atoms], **kwargs):
     """Plot histogram of per-atom volumes.
 
@@ -51,10 +82,13 @@ def volume_histogram(structures: list[Atoms], **kwargs):
     Returns:
 
         Return value of :func:`matplotlib.pyplot.hist`"""
-    res = plt.hist(_volume(structures), **kwargs)
-    plt.xlabel(r"Volume [$\mathrm{\AA}^3/\mathrm{atom}$]")
-    plt.ylabel(r"#$\,$Structures")
-    return res
+    return _plot_histogram(
+        structures,
+        _volume,
+        r"Volume [$\mathrm{\AA}^3/\mathrm{atom}$]",
+        r"#$\,$Structures",
+        **kwargs
+    )
 
 
 def size_histogram(structures: list[Atoms], **kwargs):
@@ -68,10 +102,13 @@ def size_histogram(structures: list[Atoms], **kwargs):
 
     Returns:
         Return value of :func:`matplotlib.pyplot.hist`"""
-    res = plt.hist(list(map(len, structures)), **kwargs)
-    plt.xlabel("# Atoms")
-    plt.ylabel(r"#$\,$Structures")
-    return res
+    return _plot_histogram(
+        structures,
+        lambda s: list(map(len, s)),
+        "# Atoms",
+        r"#$\,$Structures",
+        **kwargs
+    )
 
 
 def concentration_histogram(
@@ -135,19 +172,18 @@ def distance_histogram(
     }
 
     if reduce is None:
-        data = np.concatenate(
-            [neighbor_list("d", s, float(rmax)) for s in structures]
-        )
+        def extractor(s):
+            return np.concatenate(
+                [neighbor_list("d", struct, float(rmax)) for struct in s]
+            )
         ylabel = r"#$\,$Neighbours"
     else:
         reduce_func = _preset.get(reduce, reduce)
-        data = [reduce_func(neighbor_list("d", s, float(rmax))) for s in structures]
+        def extractor(s):
+            return [reduce_func(neighbor_list("d", struct, float(rmax))) for struct in s]
         ylabel = r"#$\,$Structures"
 
-    res = plt.hist(data, **kwargs)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    return res
+    return _plot_histogram(structures, extractor, xlabel, ylabel, **kwargs)
 
 
 def radial_distribution(
@@ -198,11 +234,13 @@ def energy_histogram(
     Returns:
         Return value of :func:`matplotlib.pyplot.hist`"""
     kwargs.setdefault("bins", 100)
-    E = _energy(structures)
-    res = plt.hist(E, **kwargs)
-    plt.xlabel(r"Energy [eV/atom]")
-    plt.ylabel(r"#$\,$Structures")
-    return res
+    return _plot_histogram(
+        structures,
+        _energy,
+        r"Energy [eV/atom]",
+        r"#$\,$Structures",
+        **kwargs
+    )
 
 
 def energy_volume(structures: list[Atoms], **kwargs):
