@@ -9,14 +9,6 @@ def atoms():
 
 def test_update_uuid_no_existing_uuid(atoms):
     """Test update_uuid when structure has no UUID."""
-    # Ensure clean state
-    if 'uuid' in atoms.info:
-        del atoms.info['uuid']
-    if 'lineage' in atoms.info:
-        del atoms.info['lineage']
-    if 'seed' in atoms.info:
-        del atoms.info['seed']
-
     updated_atoms = update_uuid(atoms)
 
     assert 'uuid' in updated_atoms.info
