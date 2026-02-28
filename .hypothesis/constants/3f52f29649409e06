@@ -1,4 +1,0 @@
-# file: /app/assyst/perturbations.py
-# hypothesis_version: 6.151.9
-
-[0.001, '+', 'ElementScaledRattle', 'Perturbation', 'PerturbationABC', 'RandomChoice', 'Rattle', 'Series', 'Stretch', 'apply_perturbations', 'choice_a', 'choice_b', 'perturbation', 'perturbations', 'rattle', 'rng', 'stretch', '|']
