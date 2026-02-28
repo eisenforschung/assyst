@@ -143,9 +143,10 @@ def apply_perturbations(
     """
     if filters is None:
         filters = []
-    if not isinstance(filters, Iterable):
+    elif not isinstance(filters, Iterable):
         filters = [filters]
-    perturbations = list(perturbations)
+    else:
+        filters = list(filters)
 
     perturbations = [_ensure_perturbation(p) for p in perturbations]
 
