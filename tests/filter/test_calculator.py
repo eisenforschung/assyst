@@ -64,3 +64,29 @@ class TestCalculatorFilters(unittest.TestCase):
         forces = np.array([[0.5, 0.0, 0.0]])
         structure.calc = SinglePointCalculator(structure, forces=forces)
         self.assertTrue(filter(structure)) # force 0.5 < 1.0
+
+    def test_energy_filter_error_handling(self):
+        energy_filter = EnergyFilter(max_energy=1.0, missing='error')
+        structure = Atoms('Cu')
+
+        # Test missing calculator
+        with self.assertRaises(ValueError):
+            energy_filter(structure)
+
+        # Test invalid calculator type
+        structure.calc = "dummy"
+        with self.assertRaises(ValueError):
+            energy_filter(structure)
+
+    def test_force_filter_error_handling(self):
+        force_filter = ForceFilter(max_force=1.0, missing='error')
+        structure = Atoms('Cu')
+
+        # Test missing calculator
+        with self.assertRaises(ValueError):
+            force_filter(structure)
+
+        # Test invalid calculator type
+        structure.calc = "dummy"
+        with self.assertRaises(ValueError):
+            force_filter(structure)
