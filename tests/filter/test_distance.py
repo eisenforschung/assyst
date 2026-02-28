@@ -6,6 +6,7 @@ from ase import Atoms
 from assyst.filters import DistanceFilter
 from pyxtal.tolerance import Tol_matrix
 from ase.data import atomic_numbers
+from tests.strategies.strategies import elements
 
 
 class TestDistanceFilter(unittest.TestCase):
@@ -84,10 +85,8 @@ class TestDistanceFilter(unittest.TestCase):
 
 
 radii = st.floats(1, allow_nan=False, allow_infinity=False)
-elements = st.sampled_from(list(atomic_numbers.keys())[1:106]) # pyxtal tol somehow only supports until element 105
 
-
-@given(radii, radii, elements, elements)
+@given(radii, radii, elements(), elements())
 def test_to_tol_matrix(ra, rb, a, b):
     """to_tol_matrix returns a correct Tol_matrix object."""
     radii = {a: ra, b: rb}
