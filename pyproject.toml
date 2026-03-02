@@ -38,9 +38,9 @@ dependencies = [
 test = ["pytest", "hypothesis"]
 doc = ["sphinx", "furo", "myst-nb"]
 coverage = ["pytest", "hypothesis", "pytest-cov"]
-grace = ["tensorpotential>=0.5.1,<0.5.8"]
+grace = ["tensorpotential>=0.5.1,<0.5.9"]
 plotneighborlist = ["matscipy>=1,<2"]
-notebooks = ["tensorpotential>=0.5.1,<0.5.8", "pandas>=2.2,<4",]
+notebooks = ["tensorpotential>=0.5.1,<0.5.9", "pandas>=2.2,<4",]
 
 [project.urls]
 Repository = "https://github.com/eisenforschung/assyst"
