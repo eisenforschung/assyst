@@ -10,6 +10,7 @@ from ase.build import bulk
 from ase.data import atomic_numbers
 
 from assyst.perturbations import rattle, element_scaled_rattle, stretch, Rattle, Stretch, Series, RandomChoice, apply_perturbations
+from tests.strategies.strategies import random_element_structures
 
 
 class TestPerturbations(unittest.TestCase):
@@ -210,16 +211,6 @@ def test_element_scaled_rattle_missing_reference_raises():
     bad_reference = {"Cu": 1.0}   # No entry for Fe
     with pytest.raises(ValueError, match="No value for element Fe"):
         element_scaled_rattle(structure.copy(), sigma=0.2, reference=bad_reference)
-
-
-@st.composite
-def random_element_structures(draw):
-    """Return structures with random elements inside"""
-    structure = bulk("Cu", cubic=True).repeat(3)
-    elements = st.lists(st.sampled_from(list(atomic_numbers.keys())[1:106]),
-                        min_size=len(structure), max_size=len(structure))
-    structure.symbols[:] = draw(elements)
-    return structure
 
 
 @given(random_element_structures(), st.floats(min_value=0.01, max_value=10))

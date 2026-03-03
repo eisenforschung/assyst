@@ -2,16 +2,9 @@ from ase import Atoms
 from ase.cell import Cell
 from assyst.filters import VolumeFilter
 
-# TODO unify duplicated code
 from hypothesis import given, strategies as st
 from pyxtal.lattice import generate_cellpara
-
-
-@st.composite
-def cells(draw):
-    ltype = st.sampled_from(["monoclinic", "triclinic", "orthorhombic", "tetragonal", "hexagonal", "trigonal", "cubic"])
-    volume = st.floats(min_value=5, max_value=100, allow_nan=False, allow_infinity=False)
-    return Cell.fromcellpar(generate_cellpara(draw(ltype), draw(volume)))
+from tests.strategies.strategies import cells
 
 
 @given(cells(), st.floats(0, exclude_min=True))
