@@ -1,5 +1,5 @@
-API assyst package
-==============
+API Reference
+=============
 
 Submodules
 ----------

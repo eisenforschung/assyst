@@ -65,4 +65,10 @@ The final step is labelling the structures with high quality DFT, which is outsi
    overview
    metadata
    notebooks
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: API Reference:
+
    assyst
