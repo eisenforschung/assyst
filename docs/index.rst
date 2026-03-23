@@ -71,4 +71,9 @@ The final step is labelling the structures with high quality DFT, which is outsi
    :hidden:
    :caption: API Reference:
 
-   assyst
+   api/crystals
+   api/relax
+   api/perturbations
+   api/filters
+   api/calculators
+   api/plot
