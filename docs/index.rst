@@ -48,6 +48,10 @@ This is illustrated in :ref:`below <schematic>`, with the steps 1-3 arranged on 
 red.
 The final step is labelling the structures with high quality DFT, which is outside of the scope of this package.
 
+ASSYST automatically assigns each structure a unique identifier and records its full derivation history as it passes
+through the workflow steps above.
+See :doc:`metadata` for an overview of what is tracked.
+
 .. _schematic:
 .. figure:: img/AssystSchematicTraced.svg
    :alt: ASSYST workflow schematic
@@ -63,8 +67,14 @@ The final step is labelling the structures with high quality DFT, which is outsi
    Home <self>
    installation
    overview
-   metadata
    notebooks
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Developer Notes:
+
+   metadata
 
 .. toctree::
    :maxdepth: 2
