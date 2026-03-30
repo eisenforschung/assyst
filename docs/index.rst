@@ -81,4 +81,4 @@ See :doc:`metadata` for an overview of what is tracked.
    :hidden:
    :caption: API Reference:
 
-   assyst
+   api/index
