@@ -25,6 +25,13 @@ class TestRelax(unittest.TestCase):
         mock_run.assert_called_once()
         self.assertIsInstance(relaxed_structure.calc, SinglePointCalculator)
 
+    @patch('ase.optimize.BFGS.run')
+    def test_relax_bfgs(self, mock_run):
+        relaxer = Relax(algorithm="BFGS")
+        relaxed_structure = relaxer.relax(self.structure)
+        mock_run.assert_called_once()
+        self.assertIsInstance(relaxed_structure.calc, SinglePointCalculator)
+
     @patch('ase.optimize.LBFGS.run')
     def test_cell_relax(self, mock_run):
         relaxer = CellRelax()
