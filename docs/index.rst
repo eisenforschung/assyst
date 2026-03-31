@@ -75,6 +75,7 @@ See :doc:`metadata` for an overview of what is tracked.
    :caption: Developer Notes:
 
    metadata
+   custom_relaxer
 
 .. toctree::
    :maxdepth: 2
