@@ -244,6 +244,51 @@ def energy_histogram(
     )
 
 
+def energy_distance(
+    structures: list[Atoms],
+    rmax: float = 6.0,
+    reduce: Literal["min", "mean"] | Callable[[Iterable[float]], float] = "min",
+    **kwargs,
+):
+    """Plot energy per atom versus neighbor distance.
+
+    Requires that :class:`ase.calculators.singlepoint.SinglePointCalculator` are attached to the atoms, either from a
+    relaxation for final training set calculation.
+
+    Args:
+        structures (list of :class:`ase.Atoms`):
+            structures to plot
+        rmax (float):
+            maximum cutoff to consider neighborhood
+        reduce (callable from array of floats to float):
+            applied to the neighbor distances per structure to reduce them to a
+            single scalar; ``"min"`` and ``"mean"`` are recognized as shortcuts
+        **kwargs:
+            passed through to :func:`matplotlib.pyplot.scatter` or
+            :func:`matplotlib.pyplot.hexbin`"""
+    _preset = {
+        "min": np.min,
+        "mean": np.mean,
+    }
+    labels = {
+        "min": r"Minimum distance [$\mathrm{\AA}$]",
+        "mean": r"Mean distance [$\mathrm{\AA}$]",
+    }
+    xlabel = labels.get(reduce, r"Distance [$\mathrm{\AA}$]")
+    reduce_func = _preset.get(reduce, reduce)
+    D = [reduce_func(neighbor_list("d", s, float(rmax))) for s in structures]
+    E = _energy(structures)
+    structures = list(structures)
+    if len(structures) < 1000:
+        if "s" not in kwargs and "markersize" not in kwargs:
+            kwargs["markersize"] = 5
+        plt.scatter(D, E, **kwargs)
+    else:
+        plt.hexbin(D, E, **kwargs, bins="log")
+    plt.xlabel(xlabel)
+    plt.ylabel(r"Energy [eV/atom]")
+
+
 def energy_volume(structures: list[Atoms], **kwargs):
     """Plot energy per atom versus volume per atom.
 
@@ -275,5 +320,6 @@ __all__ = [
         "distance_histogram",
         "radial_distribution",
         "energy_histogram",
+        "energy_distance",
         "energy_volume",
 ]

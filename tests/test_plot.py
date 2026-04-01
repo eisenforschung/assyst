@@ -12,6 +12,7 @@ from assyst.plot import (
     distance_histogram,
     radial_distribution,
     energy_histogram,
+    energy_distance,
     energy_volume,
 )
 
@@ -94,6 +95,33 @@ class TestPlotFunctions(unittest.TestCase):
         s.calc.get_potential_energy.return_value = -1.0
         energy_histogram([s])
         mock_hist.assert_called_once()
+
+    @unittest.skipIf(matscipy is None, "matscipy not installed")
+    @patch('matplotlib.pyplot.scatter')
+    def test_energy_distance_scatter(self, mock_scatter):
+        s = Atoms('H2', positions=[[0, 0, 0], [1, 0, 0]], cell=[10, 10, 10])
+        s.calc = MagicMock()
+        s.calc.get_potential_energy.return_value = -2.0
+        energy_distance([s], reduce="min")
+        mock_scatter.assert_called_once()
+
+    @unittest.skipIf(matscipy is None, "matscipy not installed")
+    @patch('matplotlib.pyplot.scatter')
+    def test_energy_distance_mean(self, mock_scatter):
+        s = Atoms('H2', positions=[[0, 0, 0], [1, 0, 0]], cell=[10, 10, 10])
+        s.calc = MagicMock()
+        s.calc.get_potential_energy.return_value = -2.0
+        energy_distance([s], reduce="mean")
+        mock_scatter.assert_called_once()
+
+    @unittest.skipIf(matscipy is None, "matscipy not installed")
+    @patch('matplotlib.pyplot.hexbin')
+    def test_energy_distance_hexbin(self, mock_hexbin):
+        s = Atoms('H2', positions=[[0, 0, 0], [1, 0, 0]], cell=[10, 10, 10])
+        s.calc = MagicMock()
+        s.calc.get_potential_energy.return_value = -2.0
+        energy_distance([s] * 1001, reduce="min")
+        mock_hexbin.assert_called_once()
 
     @patch('matplotlib.pyplot.scatter')
     def test_energy_volume_scatter(self, mock_scatter):
