@@ -251,8 +251,10 @@ def energy_volume(structures: list[Atoms], **kwargs):
     relaxation for final training set calculation.
 
     Args:
-        structure: list[Atoms],
-            structures to plot"""
+        structures (list of :class:`ase.Atoms`):
+            structures to plot
+        **kwargs:
+            passed through to :func:`matplotlib.pyplot.scatter` or :func:`matplotlib.pyplot.hexbin`"""
     V = _volume(structures)
     E = _energy(structures)
     structures = list(structures)
