@@ -83,6 +83,14 @@ class TestPlotFunctions(unittest.TestCase):
 
     @unittest.skipIf(matscipy is None, "matscipy not installed")
     @patch('matplotlib.pyplot.hist')
+    def test_distance_histogram_no_neighbors(self, mock_hist):
+        # Single-atom structure has no neighbors; should not raise
+        no_neighbors = Atoms('H', positions=[[0, 0, 0]], cell=[10, 10, 10])
+        distance_histogram([no_neighbors] + self.structures, reduce="min")
+        distance_histogram([no_neighbors] + self.structures, reduce="mean")
+
+    @unittest.skipIf(matscipy is None, "matscipy not installed")
+    @patch('matplotlib.pyplot.hist')
     def test_radial_distribution(self, mock_hist):
         radial_distribution(self.structures)
         mock_hist.assert_called_once()
