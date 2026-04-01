@@ -175,7 +175,7 @@ class Formulas(Sequence):
 
         Args:
             elements (:class:`str` or :class:`collections.abc.Iterable` of :class:`str`): element symbol(s) to generate formulas for
-            *range_args: passed to the builtin :func:`range` (skipping zero); e.g. ``(3)`` gives counts 1, 2
+            *range_args: passed to the builtin :func:`range`; e.g. ``(1, 3)`` gives counts 1, 2
         """
         if isinstance(elements, str):
             return cls(tuple({elements: i} for i in range(*range_args)))
