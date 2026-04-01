@@ -15,7 +15,13 @@ def rattle(
 ) -> Atoms:
     """Randomly displace positions with gaussian noise.
 
-    Operates INPLACE."""
+    Operates INPLACE.
+
+    Args:
+        structure (:class:`ase.Atoms`): structure to perturb
+        sigma (:class:`float`): standard deviation of the gaussian noise
+        rng (:class:`int`, :class:`numpy.random.Generator`): seed or random number generator
+    """
     if len(structure) == 1:
         raise ValueError("Can only rattle structures larger than one atom.")
 
@@ -79,7 +85,15 @@ def stretch(
     Ensures at least `minimum_strain` strain to avoid structures very close to their original structures.
     These don't offer a lot of new information and can also confuse VASP's symmetry analyzer.
 
-    Operates INPLACE."""
+    Operates INPLACE.
+
+    Args:
+        structure (:class:`ase.Atoms`): structure to perturb
+        hydro (:class:`float`): maximum hydrostatic (diagonal) strain magnitude
+        shear (:class:`float`): maximum shear (off-diagonal) strain magnitude
+        minimum_strain (:class:`float`): minimum strain magnitude to ensure structures differ from the original
+        rng (:class:`int`, :class:`numpy.random.Generator`): seed or random number generator
+    """
     _rng = np.random.default_rng(rng)
 
     def get_strains(max_strain, size):

@@ -171,7 +171,12 @@ class Formulas(Sequence):
     def range(cls, elements: str | Iterable[str], *range_args) -> Self:
         """Creates formulas with number of atoms as given by the builtin `range`.
 
-        Multiple elements are combined as the outer product."""
+        Multiple elements are combined as the outer product.
+
+        Args:
+            elements (:class:`str` or :class:`collections.abc.Iterable` of :class:`str`): element symbol(s) to generate formulas for
+            *range_args: passed to the builtin :func:`range`; e.g. ``(1, 3)`` gives counts 1, 2
+        """
         if isinstance(elements, str):
             return cls(tuple({elements: i} for i in range(*range_args)))
         formulas = [cls.range(e, *range_args) for e in elements]
@@ -221,7 +226,12 @@ class Formulas(Sequence):
         return len(self.atoms)
 
     def trim(self, min_atoms: int = 1, max_atoms: int | None = None) -> Self:
-        """Returns a copy of itself with formulas with lesser or more atoms than given limits removed."""
+        """Returns a copy of itself with formulas with lesser or more atoms than given limits removed.
+
+        Args:
+            min_atoms (:class:`int`): minimum total number of atoms per formula (default: 1)
+            max_atoms (:class:`int` or None): maximum total number of atoms per formula; if None, no upper limit is applied
+        """
         if max_atoms is not None:
             return type(self)(
                 tuple(f for f in self if min_atoms <= sum(f.values()) <= max_atoms)
