@@ -181,7 +181,12 @@ def distance_histogram(
     else:
         reduce_func = _preset.get(reduce, reduce)
         def extractor(s):
-            return [reduce_func(neighbor_list("d", struct, float(rmax))) for struct in s]
+            distances = []
+            for struct in s:
+                d = neighbor_list("d", struct, float(rmax))
+                if len(d) > 0:
+                    distances.append(reduce_func(d))
+            return distances
         ylabel = r"#$\,$Structures"
 
     return _plot_histogram(structures, extractor, xlabel, ylabel, **kwargs)
