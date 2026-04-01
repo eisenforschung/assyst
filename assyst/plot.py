@@ -153,7 +153,8 @@ def distance_histogram(
         rmax (float):
             maximum cutoff to consider neighborhood
         reduce (callable from array of floats to float):
-            applied to the neighbor distances per structure, and should reduce a single scalar that is binned
+            applied to the neighbor distances per structure, and should reduce a single scalar that is binned; 
+            if `None` plot all atomic distances concatenated
         **kwargs:
             passed through to :func:`matplotlib.pyplot.hist`
 
