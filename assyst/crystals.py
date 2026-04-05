@@ -21,7 +21,8 @@ def _get_real_spacegroup(s):
     """Use pyxtal to sniff spacegroup of generated crystals.
 
     The pyxtal object does not update the space group after a call to from_random, but keeps the requested one around.
-    Since the generated atoms may actually be of higher symmetry, reinitialize here to make sure what we've got."""
+    Since the generated atoms may actually be of higher symmetry, reinitialize here to make sure what we've got.
+    """
     p = _pyxtal()
     p.from_seed(s)
     return p.group.number
@@ -82,7 +83,12 @@ def pyxtal(
         s = _pyxtal()
         try:
             s.from_random(
-                dim=dim, group=group, species=species, numIons=num_ions, random_state=_rng, **kwargs
+                dim=dim,
+                group=group,
+                species=species,
+                numIons=num_ions,
+                random_state=_rng,
+                **kwargs,
             )
         except Comp_CompatibilityError:
             if not allow_exceptions:
@@ -111,10 +117,15 @@ def pyxtal(
                 if s is None:
                     failed_groups.append(g)
                     continue
-                structures.append({
-                    "atoms": s, "symmetry": g, "repeat": i,
-                    "requested spacegroup": g, "spacegroup": _get_real_spacegroup(s),
-                })
+                structures.append(
+                    {
+                        "atoms": s,
+                        "symmetry": g,
+                        "repeat": i,
+                        "requested spacegroup": g,
+                        "spacegroup": _get_real_spacegroup(s),
+                    }
+                )
         if len(failed_groups) > 0:
             warn(
                 f"Groups [{', '.join(map(str, failed_groups))}] could not be generated with stoichiometry {stoich}!",
@@ -197,9 +208,7 @@ class Formulas(Sequence):
         assert self.elements.isdisjoint(
             other.elements
         ), "Can only or stoichiometries of different elements!"
-        s: tuple[dict[str, int], ...] = ()
-        for me, you in zip(self.atoms, other.atoms):
-            s += (me | you,)
+        s = tuple(me | you for me, you in zip(self.atoms, other.atoms))
         return type(self)(s)
 
     def __mul__(self, other: Self) -> Self:
@@ -209,9 +218,7 @@ class Formulas(Sequence):
         assert self.elements.isdisjoint(
             other.elements
         ), "Can only multiply stoichiometries of different elements!"
-        s: tuple[dict[str, int], ...] = ()
-        for me, you in product(self.atoms, other.atoms):
-            s += (me | you,)
+        s = tuple(me | you for me, you in product(self.atoms, other.atoms))
         return type(self)(s)
 
     # Sequence Impl'
@@ -333,7 +340,7 @@ def sample_space_groups(
 
 
 __all__ = [
-        "pyxtal",
-        "Formulas",
-        "sample_space_groups",
+    "pyxtal",
+    "Formulas",
+    "sample_space_groups",
 ]
