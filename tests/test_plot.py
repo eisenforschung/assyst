@@ -189,18 +189,18 @@ class TestCellShapePlots(unittest.TestCase):
             Atoms('Fe', cell=[2.5, 3.5, 6.0], pbc=True),
         ]
 
-    @patch('matplotlib.pyplot.hist')
+    @patch('seaborn.histplot')
     @patch('matplotlib.pyplot.legend')
-    def test_lattice_parameter_histogram(self, mock_legend, mock_hist):
+    def test_lattice_parameter_histogram(self, mock_legend, mock_histplot):
         lattice_parameter_histogram(self.structures)
-        self.assertEqual(mock_hist.call_count, 3)
+        self.assertEqual(mock_histplot.call_count, 3)
         mock_legend.assert_called_once()
 
-    @patch('matplotlib.pyplot.hist')
+    @patch('seaborn.histplot')
     @patch('matplotlib.pyplot.legend')
-    def test_lattice_angle_histogram(self, mock_legend, mock_hist):
+    def test_lattice_angle_histogram(self, mock_legend, mock_histplot):
         lattice_angle_histogram(self.structures)
-        self.assertEqual(mock_hist.call_count, 3)
+        self.assertEqual(mock_histplot.call_count, 3)
         mock_legend.assert_called_once()
 
     @patch('matplotlib.pyplot.hist')

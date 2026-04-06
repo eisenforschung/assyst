@@ -41,30 +41,47 @@ def _distance(
 
 def _plot_histogram(
     structures: Iterable[Atoms],
-    extractor: Callable[[Iterable[Atoms]], Iterable[float]],
+    extractor: Callable[[Iterable[Atoms]], Iterable[float] | dict[str, Iterable[float]]],
     xlabel: str,
     ylabel: str,
     **kwargs
 ):
     """Helper function to plot histograms.
 
+    If the extractor returns a :class:`dict`, one histogram per key is plotted
+    using :func:`seaborn.histplot` with the keys as labels and a legend is added
+    automatically.  Otherwise :func:`matplotlib.pyplot.hist` is called with the
+    returned data.
+
     Args:
         structures (iterable of :class:`ase.Atoms`):
             structures to plot
         extractor (callable):
-            function to extract data from structures
+            function to extract data from structures; may return a dict mapping
+            labels to arrays of values, in which case multiple histograms are
+            plotted
         xlabel (str):
             label for x-axis
         ylabel (str):
             label for y-axis
         **kwargs:
-            passed through to :func:`matplotlib.pyplot.hist`
+            passed through to :func:`matplotlib.pyplot.hist` or
+            :func:`seaborn.histplot`
 
     Returns:
-        Return value of :func:`matplotlib.pyplot.hist`
+        Return value of :func:`matplotlib.pyplot.hist`, or ``None`` when a dict
+        is returned by the extractor.
     """
     data = extractor(structures)
-    res = plt.hist(data, **kwargs)
+    if isinstance(data, dict):
+        import seaborn as sns
+        ax = plt.gca()
+        for label, values in data.items():
+            sns.histplot(values, label=label, ax=ax, **kwargs)
+        plt.legend()
+        res = None
+    else:
+        res = plt.hist(data, **kwargs)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     return res
@@ -341,19 +358,15 @@ def lattice_parameter_histogram(structures: list[Atoms], **kwargs):
         structures (list of :class:`ase.Atoms`):
             structures to plot
         **kwargs:
-            passed through to :func:`matplotlib.pyplot.hist`
+            passed through to :func:`seaborn.histplot`
     """
-    params = _lattice_parameters(structures)
-    for label, values in params.items():
-        _plot_histogram(
-            structures,
-            lambda s, v=values: v,
-            r"Lattice parameter [$\mathrm{\AA}$]",
-            r"#$\,$Structures",
-            label=label,
-            **kwargs
-        )
-    plt.legend()
+    return _plot_histogram(
+        structures,
+        _lattice_parameters,
+        r"Lattice parameter [$\mathrm{\AA}$]",
+        r"#$\,$Structures",
+        **kwargs,
+    )
 
 
 def lattice_angle_histogram(structures: list[Atoms], **kwargs):
@@ -363,19 +376,15 @@ def lattice_angle_histogram(structures: list[Atoms], **kwargs):
         structures (list of :class:`ase.Atoms`):
             structures to plot
         **kwargs:
-            passed through to :func:`matplotlib.pyplot.hist`
+            passed through to :func:`seaborn.histplot`
     """
-    angles = _lattice_angles(structures)
-    for label, values in angles.items():
-        _plot_histogram(
-            structures,
-            lambda s, v=values: v,
-            r"Lattice angle [°]",
-            r"#$\,$Structures",
-            label=label,
-            **kwargs
-        )
-    plt.legend()
+    return _plot_histogram(
+        structures,
+        _lattice_angles,
+        r"Lattice angle [°]",
+        r"#$\,$Structures",
+        **kwargs,
+    )
 
 
 def aspect_ratio_histogram(structures: list[Atoms], **kwargs):
