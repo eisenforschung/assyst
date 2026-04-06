@@ -6,6 +6,7 @@ from collections import Counter, defaultdict
 from ase import Atoms
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 
 from assyst.neighbors import neighbor_list
 
@@ -74,7 +75,6 @@ def _plot_histogram(
     """
     data = extractor(structures)
     if isinstance(data, dict):
-        import seaborn as sns
         ax = plt.gca()
         for label, values in data.items():
             sns.histplot(values, label=label, ax=ax, **kwargs)
