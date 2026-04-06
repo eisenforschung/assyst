@@ -11,14 +11,6 @@ import os
 
 from ase.calculators.calculator import Calculator
 from ase.calculators.morse import MorsePotential
-from pyiron_snippets.import_alarm import ImportAlarm
-
-with ImportAlarm(
-    "grace-tensorpotential required; install with "
-    "'conda install -c conda-forge grace-tensorpotential' or 'pip install tensorpotential'",
-    raise_exception=True,
-) as grace_alarm:
-    from tensorpotential.calculator import grace_fm
 
 
 class AseCalculatorConfig(ABC):
@@ -46,8 +38,14 @@ class Grace(AseCalculatorConfig):
     model: str = "GRACE-FS-OAM"
 
     @lru_cache(maxsize=1)
-    @grace_alarm
     def get_calculator(self) -> Calculator:
+        try:
+            from tensorpotential.calculator import grace_fm
+        except ImportError:
+            raise ImportError(
+                "grace-tensorpotential required; install with "
+                "'conda install -c conda-forge grace-tensorpotential' or 'pip install tensorpotential'"
+            )
         # disable tensorflow warnings noise
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
         return grace_fm(self.model)
