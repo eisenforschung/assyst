@@ -345,10 +345,15 @@ def lattice_parameter_histogram(structures: list[Atoms], **kwargs):
     """
     params = _lattice_parameters(structures)
     for label, values in params.items():
-        plt.hist(values, label=label, **kwargs)
+        _plot_histogram(
+            structures,
+            lambda s, v=values: v,
+            r"Lattice parameter [$\mathrm{\AA}$]",
+            r"#$\,$Structures",
+            label=label,
+            **kwargs
+        )
     plt.legend()
-    plt.xlabel(r"Lattice parameter [$\mathrm{\AA}$]")
-    plt.ylabel(r"#$\,$Structures")
 
 
 def lattice_angle_histogram(structures: list[Atoms], **kwargs):
@@ -362,10 +367,15 @@ def lattice_angle_histogram(structures: list[Atoms], **kwargs):
     """
     angles = _lattice_angles(structures)
     for label, values in angles.items():
-        plt.hist(values, label=label, **kwargs)
+        _plot_histogram(
+            structures,
+            lambda s, v=values: v,
+            r"Lattice angle [°]",
+            r"#$\,$Structures",
+            label=label,
+            **kwargs
+        )
     plt.legend()
-    plt.xlabel(r"Lattice angle [°]")
-    plt.ylabel(r"#$\,$Structures")
 
 
 def aspect_ratio_histogram(structures: list[Atoms], **kwargs):
