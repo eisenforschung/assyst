@@ -6,6 +6,9 @@ from assyst.plot import (
     _volume,
     _energy,
     _concentration,
+    _lattice_parameters,
+    _lattice_angles,
+    _aspect_ratio,
     volume_histogram,
     size_histogram,
     concentration_histogram,
@@ -14,6 +17,9 @@ from assyst.plot import (
     energy_histogram,
     energy_distance,
     energy_volume,
+    lattice_parameter_histogram,
+    lattice_angle_histogram,
+    aspect_ratio_histogram,
 )
 
 try:
@@ -146,3 +152,58 @@ class TestPlotFunctions(unittest.TestCase):
         s.calc.get_potential_energy.return_value = -1.0
         energy_volume([s] * 1001)
         mock_hexbin.assert_called_once()
+
+
+class TestCellShapeHelpers(unittest.TestCase):
+    def setUp(self):
+        self.s1 = Atoms('Cu', cell=[3.0, 4.0, 5.0], pbc=True)
+        self.s2 = Atoms('Fe', cell=[2.5, 2.5, 6.0], pbc=True)
+        self.structures = [self.s1, self.s2]
+
+    def test_lattice_parameters(self):
+        params = _lattice_parameters(self.structures)
+        self.assertIn('a', params)
+        self.assertIn('b', params)
+        self.assertIn('c', params)
+        np.testing.assert_array_almost_equal(params['a'], [3.0, 2.5])
+        np.testing.assert_array_almost_equal(params['b'], [4.0, 2.5])
+        np.testing.assert_array_almost_equal(params['c'], [5.0, 6.0])
+
+    def test_lattice_angles(self):
+        angles = _lattice_angles(self.structures)
+        self.assertEqual(len(angles), 3)
+        # Orthogonal cells have all angles = 90
+        for values in angles.values():
+            np.testing.assert_array_almost_equal(values, [90.0, 90.0])
+
+    def test_aspect_ratio(self):
+        ratios = _aspect_ratio(self.structures)
+        self.assertAlmostEqual(ratios[0], 5.0 / 3.0)
+        self.assertAlmostEqual(ratios[1], 6.0 / 2.5)
+
+
+class TestCellShapePlots(unittest.TestCase):
+    def setUp(self):
+        self.structures = [
+            Atoms('Cu', cell=[3.0, 4.0, 5.0], pbc=True),
+            Atoms('Fe', cell=[2.5, 3.5, 6.0], pbc=True),
+        ]
+
+    @patch('matplotlib.pyplot.hist')
+    @patch('matplotlib.pyplot.legend')
+    def test_lattice_parameter_histogram(self, mock_legend, mock_hist):
+        lattice_parameter_histogram(self.structures)
+        self.assertEqual(mock_hist.call_count, 3)
+        mock_legend.assert_called_once()
+
+    @patch('matplotlib.pyplot.hist')
+    @patch('matplotlib.pyplot.legend')
+    def test_lattice_angle_histogram(self, mock_legend, mock_hist):
+        lattice_angle_histogram(self.structures)
+        self.assertEqual(mock_hist.call_count, 3)
+        mock_legend.assert_called_once()
+
+    @patch('matplotlib.pyplot.hist')
+    def test_aspect_ratio_histogram(self, mock_hist):
+        aspect_ratio_histogram(self.structures)
+        mock_hist.assert_called_once()

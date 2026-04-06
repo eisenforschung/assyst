@@ -318,6 +318,77 @@ def energy_volume(structures: list[Atoms], **kwargs):
     plt.ylabel(r"Energy [eV/atom]")
 
 
+def _lattice_parameters(structures: Iterable[Atoms]) -> dict[str, np.ndarray]:
+    lengths = np.array([s.cell.lengths() for s in structures])
+    return {"a": lengths[:, 0], "b": lengths[:, 1], "c": lengths[:, 2]}
+
+
+def _lattice_angles(structures: Iterable[Atoms]) -> dict[str, np.ndarray]:
+    angles = np.array([s.cell.angles() for s in structures])
+    return {r"$\alpha$": angles[:, 0], r"$\beta$": angles[:, 1], r"$\gamma$": angles[:, 2]}
+
+
+def _aspect_ratio(structures: Iterable[Atoms]) -> list[float]:
+    return [
+        max(s.cell.lengths()) / min(s.cell.lengths()) for s in structures
+    ]
+
+
+def lattice_parameter_histogram(structures: list[Atoms], **kwargs):
+    """Plot histogram of lattice parameters a, b, and c.
+
+    Args:
+        structures (list of :class:`ase.Atoms`):
+            structures to plot
+        **kwargs:
+            passed through to :func:`matplotlib.pyplot.hist`
+    """
+    params = _lattice_parameters(structures)
+    for label, values in params.items():
+        plt.hist(values, label=label, **kwargs)
+    plt.legend()
+    plt.xlabel(r"Lattice parameter [$\mathrm{\AA}$]")
+    plt.ylabel(r"#$\,$Structures")
+
+
+def lattice_angle_histogram(structures: list[Atoms], **kwargs):
+    """Plot histogram of lattice angles alpha, beta, and gamma.
+
+    Args:
+        structures (list of :class:`ase.Atoms`):
+            structures to plot
+        **kwargs:
+            passed through to :func:`matplotlib.pyplot.hist`
+    """
+    angles = _lattice_angles(structures)
+    for label, values in angles.items():
+        plt.hist(values, label=label, **kwargs)
+    plt.legend()
+    plt.xlabel(r"Lattice angle [°]")
+    plt.ylabel(r"#$\,$Structures")
+
+
+def aspect_ratio_histogram(structures: list[Atoms], **kwargs):
+    """Plot histogram of cell aspect ratios (max / min lattice parameter).
+
+    Args:
+        structures (list of :class:`ase.Atoms`):
+            structures to plot
+        **kwargs:
+            passed through to :func:`matplotlib.pyplot.hist`
+
+    Returns:
+        Return value of :func:`matplotlib.pyplot.hist`
+    """
+    return _plot_histogram(
+        structures,
+        _aspect_ratio,
+        "Aspect ratio (max / min lattice parameter)",
+        r"#$\,$Structures",
+        **kwargs,
+    )
+
+
 __all__ = [
         "volume_histogram",
         "size_histogram",
@@ -327,4 +398,7 @@ __all__ = [
         "energy_histogram",
         "energy_distance",
         "energy_volume",
+        "lattice_parameter_histogram",
+        "lattice_angle_histogram",
+        "aspect_ratio_histogram",
 ]
