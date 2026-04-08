@@ -51,8 +51,9 @@ def _plot_histogram(
 
     If the extractor returns a :class:`dict`, one histogram per key is plotted
     using :func:`seaborn.histplot` with the keys as labels and a legend is added
-    automatically.  Otherwise :func:`matplotlib.pyplot.hist` is called with the
-    returned data.
+    automatically.  All series share a common bin grid (computed from all values
+    combined) and default to ``element='step'``.  Otherwise
+    :func:`matplotlib.pyplot.hist` is called with the returned data.
 
     Args:
         structures (iterable of :class:`ase.Atoms`):
@@ -67,7 +68,7 @@ def _plot_histogram(
             label for y-axis
         **kwargs:
             passed through to :func:`matplotlib.pyplot.hist` or
-            :func:`seaborn.histplot`
+            :func:`seaborn.histplot`; ``bins`` controls binning for both paths
 
     Returns:
         Return value of :func:`matplotlib.pyplot.hist`, or ``None`` when a dict
@@ -76,8 +77,12 @@ def _plot_histogram(
     data = extractor(structures)
     if isinstance(data, dict):
         ax = plt.gca()
+        all_values = np.concatenate(list(data.values()))
+        bins = kwargs.pop('bins', 'auto')
+        bin_edges = np.histogram_bin_edges(all_values, bins=bins)
+        kwargs.setdefault('element', 'step')
         for label, values in data.items():
-            sns.histplot(values, label=label, ax=ax, **kwargs)
+            sns.histplot(values, label=label, ax=ax, bins=bin_edges, **kwargs)
         plt.legend()
         res = None
     else:
