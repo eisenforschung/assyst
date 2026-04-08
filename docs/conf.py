@@ -45,8 +45,11 @@ if os.path.exists(nb_source_dir):
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),
     'numpy': ('https://numpy.org/doc/stable/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/', None),
     'matplotlib': ('https://matplotlib.org/stable/', None),
-    'ase': ('https://wiki.fysik.dtu.dk/ase', None),
+    'ase': ('https://wiki.fysik.dtu.dk/ase/', None),
+    'pyiron_snippets': ('https://pyiron-snippets.readthedocs.io/en/latest/', None),
+    'pyxtal': ('https://pyxtal.readthedocs.io/en/latest/', None),
 }
 
 templates_path = ['_templates']
