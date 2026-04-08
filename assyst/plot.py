@@ -6,8 +6,77 @@ from collections import Counter, defaultdict
 from ase import Atoms
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 
 from assyst.neighbors import neighbor_list
+
+
+def _lattice_parameters(
+    structures: Iterable[Atoms],
+) -> tuple[list[float], list[float], list[float]]:
+    a, b, c = [], [], []
+    for s in structures:
+        lengths = s.cell.lengths()
+        a.append(lengths[0])
+        b.append(lengths[1])
+        c.append(lengths[2])
+    return a, b, c
+
+
+def _lattice_angles(
+    structures: Iterable[Atoms],
+) -> tuple[list[float], list[float], list[float]]:
+    alpha, beta, gamma = [], [], []
+    for s in structures:
+        angles = s.cell.angles()
+        alpha.append(angles[0])
+        beta.append(angles[1])
+        gamma.append(angles[2])
+    return alpha, beta, gamma
+
+
+def _aspect_ratio(structures: Iterable[Atoms]) -> list[float]:
+    return [max(s.cell.lengths()) / min(s.cell.lengths()) for s in structures]
+
+
+def _plot_seaborn_multi_histogram(
+    data_dict: dict[str, list[float]],
+    xlabel: str,
+    ylabel: str,
+    element: str = "step",
+    common_norm: bool = True,
+    **kwargs,
+):
+    """Plot overlapping histograms for multiple observables using seaborn.
+
+    All observables share a common bin grid computed from the full data range.
+
+    Args:
+        data_dict (dict):
+            mapping of label to array of values
+        xlabel (str):
+            label for x-axis
+        ylabel (str):
+            label for y-axis
+        element (str):
+            histogram element type passed to :func:`seaborn.histplot`; default ``"step"``
+        common_norm (bool):
+            if True, normalization is computed across the full dataset; default ``True``
+        **kwargs:
+            passed through to :func:`seaborn.histplot`
+    """
+    all_values = np.concatenate(list(data_dict.values()))
+    labels_arr = np.concatenate([[label] * len(vals) for label, vals in data_dict.items()])
+
+    bins = kwargs.pop("bins", "auto")
+    if isinstance(bins, (str, int)):
+        _, bin_edges = np.histogram(all_values, bins=bins)
+    else:
+        bin_edges = np.asarray(bins)
+
+    sns.histplot(x=all_values, hue=labels_arr, bins=bin_edges, element=element, common_norm=common_norm, **kwargs)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
 
 
 def _volume(structures: Iterable[Atoms]) -> list[float]:
@@ -318,6 +387,68 @@ def energy_volume(structures: list[Atoms], **kwargs):
     plt.ylabel(r"Energy [eV/atom]")
 
 
+def lattice_parameter_histogram(structures: list[Atoms], **kwargs):
+    """Plot histogram of lattice parameters a, b, c.
+
+    Args:
+        structures (list of :class:`ase.Atoms`):
+            structures to plot
+        **kwargs:
+            passed through to :func:`seaborn.histplot`; notably ``element`` (default
+            ``"step"``), ``common_norm`` (default ``True``), and ``bins``
+    """
+    a, b, c = _lattice_parameters(structures)
+    _plot_seaborn_multi_histogram(
+        {"a": a, "b": b, "c": c},
+        r"Lattice parameter [$\mathrm{\AA}$]",
+        r"#$\,$Structures",
+        **kwargs,
+    )
+
+
+def lattice_angle_histogram(structures: list[Atoms], **kwargs):
+    r"""Plot histogram of lattice angles α, β, γ.
+
+    Args:
+        structures (list of :class:`ase.Atoms`):
+            structures to plot
+        **kwargs:
+            passed through to :func:`seaborn.histplot`; notably ``element`` (default
+            ``"step"``), ``common_norm`` (default ``True``), and ``bins``
+    """
+    alpha, beta, gamma = _lattice_angles(structures)
+    _plot_seaborn_multi_histogram(
+        {r"$\alpha$": alpha, r"$\beta$": beta, r"$\gamma$": gamma},
+        r"Lattice angle [°]",
+        r"#$\,$Structures",
+        **kwargs,
+    )
+
+
+def aspect_ratio_histogram(structures: list[Atoms], **kwargs):
+    """Plot histogram of cell aspect ratios.
+
+    The aspect ratio is defined as the ratio of the maximum to minimum lattice
+    parameter, consistent with :class:`assyst.filters.AspectFilter`.
+
+    Args:
+        structures (list of :class:`ase.Atoms`):
+            structures to plot
+        **kwargs:
+            passed through to :func:`matplotlib.pyplot.hist`
+
+    Returns:
+        Return value of :func:`matplotlib.pyplot.hist`
+    """
+    return _plot_histogram(
+        structures,
+        _aspect_ratio,
+        "Aspect ratio",
+        r"#$\,$Structures",
+        **kwargs,
+    )
+
+
 __all__ = [
         "volume_histogram",
         "size_histogram",
@@ -327,4 +458,7 @@ __all__ = [
         "energy_histogram",
         "energy_distance",
         "energy_volume",
+        "lattice_parameter_histogram",
+        "lattice_angle_histogram",
+        "aspect_ratio_histogram",
 ]

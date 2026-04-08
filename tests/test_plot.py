@@ -6,6 +6,9 @@ from assyst.plot import (
     _volume,
     _energy,
     _concentration,
+    _lattice_parameters,
+    _lattice_angles,
+    _aspect_ratio,
     volume_histogram,
     size_histogram,
     concentration_histogram,
@@ -14,6 +17,9 @@ from assyst.plot import (
     energy_histogram,
     energy_distance,
     energy_volume,
+    lattice_parameter_histogram,
+    lattice_angle_histogram,
+    aspect_ratio_histogram,
 )
 
 try:
@@ -146,3 +152,56 @@ class TestPlotFunctions(unittest.TestCase):
         s.calc.get_potential_energy.return_value = -1.0
         energy_volume([s] * 1001)
         mock_hexbin.assert_called_once()
+
+
+class TestCellShapeHelpers(unittest.TestCase):
+    def setUp(self):
+        # orthorhombic cell with a=3, b=4, c=5
+        from ase.cell import Cell
+        cell = Cell.fromcellpar([3, 4, 5, 90, 90, 90])
+        self.s = Atoms('Cu', cell=cell, pbc=True)
+        self.structures = [self.s]
+
+    def test_lattice_parameters(self):
+        a, b, c = _lattice_parameters(self.structures)
+        self.assertAlmostEqual(a[0], 3.0)
+        self.assertAlmostEqual(b[0], 4.0)
+        self.assertAlmostEqual(c[0], 5.0)
+
+    def test_lattice_angles(self):
+        alpha, beta, gamma = _lattice_angles(self.structures)
+        self.assertAlmostEqual(alpha[0], 90.0)
+        self.assertAlmostEqual(beta[0], 90.0)
+        self.assertAlmostEqual(gamma[0], 90.0)
+
+    def test_aspect_ratio(self):
+        ratios = _aspect_ratio(self.structures)
+        self.assertAlmostEqual(ratios[0], 5.0 / 3.0)
+
+
+class TestCellShapePlots(unittest.TestCase):
+    def setUp(self):
+        from ase.cell import Cell
+        cell = Cell.fromcellpar([3, 4, 5, 90, 90, 90])
+        self.structures = [Atoms('Cu', cell=cell, pbc=True)]
+
+    @patch('seaborn.histplot')
+    def test_lattice_parameter_histogram(self, mock_histplot):
+        lattice_parameter_histogram(self.structures)
+        mock_histplot.assert_called_once()
+        _, call_kwargs = mock_histplot.call_args
+        self.assertEqual(call_kwargs.get('element'), 'step')
+        self.assertTrue(call_kwargs.get('common_norm'))
+
+    @patch('seaborn.histplot')
+    def test_lattice_angle_histogram(self, mock_histplot):
+        lattice_angle_histogram(self.structures)
+        mock_histplot.assert_called_once()
+        _, call_kwargs = mock_histplot.call_args
+        self.assertEqual(call_kwargs.get('element'), 'step')
+        self.assertTrue(call_kwargs.get('common_norm'))
+
+    @patch('matplotlib.pyplot.hist')
+    def test_aspect_ratio_histogram(self, mock_hist):
+        aspect_ratio_histogram(self.structures)
+        mock_hist.assert_called_once()
