@@ -134,7 +134,7 @@ Once defined, ``MyEngineRelax`` is a drop-in replacement anywhere
         assyst_relax(
             settings=settings,
             calculator=None,   # calculator is unused by MyEngineRelax.relax
-            structure=my_structures,
+            structures=my_structures,
         )
     )
 
