@@ -6,6 +6,7 @@ from collections import Counter, defaultdict
 from ase import Atoms
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
 
 from assyst.neighbors import neighbor_list
@@ -95,11 +96,12 @@ def _plot_histogram(
 ):
     """Helper function to plot histograms.
 
-    If the extractor returns a :class:`dict`, one histogram per key is plotted
-    using :func:`seaborn.histplot` with the keys as labels and a legend is added
-    automatically.  All series share a common bin grid (computed from all values
-    combined) and default to ``element='step'``.  Otherwise
-    :func:`matplotlib.pyplot.hist` is called with the returned data.
+    If the extractor returns a :class:`dict`, the values are assembled into a
+    long-form :class:`pandas.DataFrame` and plotted with a single
+    :func:`seaborn.histplot` call using the dict keys as ``hue``.  All series
+    share a common bin grid (computed from all values combined) and default to
+    ``element='step'``.  Otherwise :func:`matplotlib.pyplot.hist` is called
+    with the returned data.
 
     Args:
         structures (iterable of :class:`ase.Atoms`):
@@ -122,14 +124,14 @@ def _plot_histogram(
     """
     data = extractor(structures)
     if isinstance(data, dict):
+        df = pd.DataFrame({k: pd.Series(v) for k, v in data.items()})
+        df_long = df.melt(var_name='variable', value_name='value')
         ax = plt.gca()
-        all_values = np.concatenate(list(data.values()))
+        all_values = df_long['value'].dropna().to_numpy()
         bins = kwargs.pop('bins', 'auto')
         bin_edges = np.histogram_bin_edges(all_values, bins=bins)
         kwargs.setdefault('element', 'step')
-        for label, values in data.items():
-            sns.histplot(values, label=label, ax=ax, bins=bin_edges, **kwargs)
-        plt.legend()
+        sns.histplot(data=df_long, x='value', hue='variable', ax=ax, bins=bin_edges, **kwargs)
         res = None
     else:
         res = plt.hist(data, **kwargs)
@@ -190,21 +192,15 @@ def concentration_histogram(
         elements (iterable of str):
             which element concentrations to plot, by default all present
         **kwargs:
-            passed through to :func:`matplotlib.pyplot.bar`"""
-    conc = _concentration(structures, elements=elements)
-    conc_step = np.diff(
-        sorted(np.unique(np.concatenate([np.unique(c) for c in conc.values()])))
-    ).min()
-    kwargs.setdefault("width", conc_step)
-    width = kwargs["width"]
-    kwargs["width"] = width / len(conc)
-    shifts = np.linspace(0, 1, len(conc), endpoint=False)
-    for i, (e, c) in enumerate(conc.items()):
-        x, h = np.unique(c, return_counts=True)
-        plt.bar(x + shifts[i] * width - width / 2, h, label=e, align="edge", **kwargs)
-    plt.legend()
-    plt.xlabel("Concentration")
-    plt.ylabel("#$\\,$Structures")
+            passed through to :func:`seaborn.histplot`
+    """
+    return _plot_histogram(
+        structures,
+        lambda s: _concentration(s, elements=elements),
+        "Concentration",
+        r"#$\,$Structures",
+        **kwargs,
+    )
 
 
 def distance_histogram(

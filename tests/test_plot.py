@@ -104,10 +104,10 @@ class TestPlotFunctions(unittest.TestCase):
         size_histogram(self.structures)
         mock_hist.assert_called_once()
 
-    @patch('matplotlib.pyplot.bar')
-    def test_concentration_histogram(self, mock_bar):
+    @patch('seaborn.histplot')
+    def test_concentration_histogram(self, mock_histplot):
         concentration_histogram(self.structures)
-        mock_bar.assert_called()
+        mock_histplot.assert_called_once()
 
     @unittest.skipIf(matscipy is None, "matscipy not installed")
     @patch('matplotlib.pyplot.hist')
@@ -233,18 +233,14 @@ class TestCellShapePlots(unittest.TestCase):
         ]
 
     @patch('seaborn.histplot')
-    @patch('matplotlib.pyplot.legend')
-    def test_lattice_parameter_histogram(self, mock_legend, mock_histplot):
+    def test_lattice_parameter_histogram(self, mock_histplot):
         lattice_parameter_histogram(self.structures)
-        self.assertEqual(mock_histplot.call_count, 3)
-        mock_legend.assert_called_once()
+        mock_histplot.assert_called_once()
 
     @patch('seaborn.histplot')
-    @patch('matplotlib.pyplot.legend')
-    def test_lattice_angle_histogram(self, mock_legend, mock_histplot):
+    def test_lattice_angle_histogram(self, mock_histplot):
         lattice_angle_histogram(self.structures)
-        self.assertEqual(mock_histplot.call_count, 3)
-        mock_legend.assert_called_once()
+        mock_histplot.assert_called_once()
 
     @patch('matplotlib.pyplot.hist')
     def test_aspect_ratio_histogram(self, mock_hist):
