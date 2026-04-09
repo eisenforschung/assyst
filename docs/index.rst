@@ -68,6 +68,7 @@ See :doc:`metadata` for an overview of what is tracked.
    installation
    overview
    notebooks
+   formulas
    filters
 
 .. toctree::

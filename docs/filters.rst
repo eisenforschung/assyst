@@ -1,5 +1,5 @@
-Filters DSL
-===========
+Filtering Structures
+====================
 
 ASSYST filters are callables that accept an :class:`ase.Atoms` structure and
 return a ``bool``: ``True`` to keep the structure, ``False`` to drop it.
