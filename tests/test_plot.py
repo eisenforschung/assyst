@@ -9,6 +9,8 @@ from assyst.plot import (
     _lattice_parameters,
     _lattice_angles,
     _aspect_ratio,
+    _reduce_distances,
+    _distance_xlabel,
     volume_histogram,
     size_histogram,
     concentration_histogram,
@@ -59,6 +61,34 @@ class TestPlotHelpers(unittest.TestCase):
         concentrations = _concentration(self.structures, elements=['H'])
         self.assertTrue('H' in concentrations)
         self.assertFalse('O' in concentrations)
+
+class TestReduceDistances(unittest.TestCase):
+    @unittest.skipIf(matscipy is None, "matscipy not installed")
+    def test_reduce_min(self):
+        s = Atoms('H2', positions=[[0, 0, 0], [1, 0, 0]], cell=[10, 10, 10])
+        result = _reduce_distances([s], rmax=6.0, reduce="min")
+        self.assertEqual(len(result), 1)
+        self.assertAlmostEqual(result[0], 1.0)
+
+    @unittest.skipIf(matscipy is None, "matscipy not installed")
+    def test_reduce_skips_no_neighbors(self):
+        no_neighbors = Atoms('H', positions=[[0, 0, 0]], cell=[10, 10, 10])
+        s = Atoms('H2', positions=[[0, 0, 0], [1, 0, 0]], cell=[10, 10, 10])
+        result = _reduce_distances([no_neighbors, s], rmax=6.0, reduce="min")
+        self.assertEqual(len(result), 1)
+
+    @unittest.skipIf(matscipy is None, "matscipy not installed")
+    def test_reduce_none_concatenates(self):
+        s = Atoms('H2', positions=[[0, 0, 0], [1, 0, 0]], cell=[10, 10, 10])
+        result = _reduce_distances([s], rmax=6.0, reduce=None)
+        self.assertGreater(len(result), 0)
+
+    def test_distance_xlabel_presets(self):
+        self.assertIn("Minimum", _distance_xlabel("min"))
+        self.assertIn("Mean", _distance_xlabel("mean"))
+        self.assertIn("Distance", _distance_xlabel(None))
+        self.assertIn("Distance", _distance_xlabel(lambda x: x[0]))
+
 
 class TestPlotFunctions(unittest.TestCase):
     def setUp(self):
@@ -136,6 +166,19 @@ class TestPlotFunctions(unittest.TestCase):
         s.calc.get_potential_energy.return_value = -2.0
         energy_distance([s] * 1001, reduce="min")
         mock_hexbin.assert_called_once()
+
+    @unittest.skipIf(matscipy is None, "matscipy not installed")
+    @patch('matplotlib.pyplot.scatter')
+    def test_energy_distance_no_neighbors(self, mock_scatter):
+        # Structures with no neighbors should be silently skipped
+        no_neighbors = Atoms('H', positions=[[0, 0, 0]], cell=[10, 10, 10])
+        no_neighbors.calc = MagicMock()
+        no_neighbors.calc.get_potential_energy.return_value = -1.0
+        s = Atoms('H2', positions=[[0, 0, 0], [1, 0, 0]], cell=[10, 10, 10])
+        s.calc = MagicMock()
+        s.calc.get_potential_energy.return_value = -2.0
+        energy_distance([no_neighbors, s], reduce="min")
+        mock_scatter.assert_called_once()
 
     @patch('matplotlib.pyplot.scatter')
     def test_energy_volume_scatter(self, mock_scatter):

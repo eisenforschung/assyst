@@ -40,6 +40,52 @@ def _distance(
     return [neighbor_list("d", s, float(rmax)) for s in structures]
 
 
+_DISTANCE_LABELS = {
+    "min": r"Minimum distance [$\mathrm{\AA}$]",
+    "mean": r"Mean distance [$\mathrm{\AA}$]",
+}
+
+
+def _distance_xlabel(
+    reduce: Literal["min", "mean"] | Callable[[Iterable[float]], float] | None,
+) -> str:
+    return _DISTANCE_LABELS.get(reduce, r"Distance [$\mathrm{\AA}$]")
+
+
+def _reduce_distances(
+    structures: Iterable[Atoms],
+    rmax: float,
+    reduce: Literal["min", "mean"] | Callable[[Iterable[float]], float] | None,
+) -> list[float]:
+    """Compute neighbor distances, optionally reduced per structure.
+
+    Args:
+        structures (iterable of :class:`ase.Atoms`):
+            structures to process
+        rmax (float):
+            neighbor cutoff radius
+        reduce (callable, "min", "mean", or None):
+            if ``None``, return all neighbor distances concatenated; otherwise
+            apply the reducer per structure and return one value per structure,
+            skipping structures with no neighbors within *rmax*
+
+    Returns:
+        list of floats (or :class:`numpy.ndarray` when *reduce* is ``None``)
+    """
+    _preset = {"min": np.min, "mean": np.mean}
+    if reduce is None:
+        return np.concatenate(
+            [neighbor_list("d", s, float(rmax)) for s in structures]
+        )
+    reduce_func = _preset.get(reduce, reduce)
+    distances = []
+    for s in structures:
+        d = neighbor_list("d", s, float(rmax))
+        if len(d) > 0:
+            distances.append(reduce_func(d))
+    return distances
+
+
 def _plot_histogram(
     structures: Iterable[Atoms],
     extractor: Callable[[Iterable[Atoms]], Iterable[float] | dict[str, Iterable[float]]],
@@ -175,7 +221,7 @@ def distance_histogram(
         rmax (float):
             maximum cutoff to consider neighborhood
         reduce (callable from array of floats to float):
-            applied to the neighbor distances per structure, and should reduce a single scalar that is binned; 
+            applied to the neighbor distances per structure, and should reduce a single scalar that is binned;
             if `None` plot all atomic distances concatenated
         **kwargs:
             passed through to :func:`matplotlib.pyplot.hist`
@@ -183,35 +229,15 @@ def distance_histogram(
     Returns:
         Return value of :func:`matplotlib.pyplot.hist`"""
     kwargs.setdefault("bins", 100)
-    labels = {
-        "min": r"Minimum distance [$\mathrm{\AA}$]",
-        "mean": r"Mean distance [$\mathrm{\AA}$]",
-    }
-    xlabel = labels.get(reduce, r"Distance [$\mathrm{\AA}$]")
-
-    _preset = {
-        "min": np.min,
-        "mean": np.mean,
-    }
-
-    if reduce is None:
-        def extractor(s):
-            return np.concatenate(
-                [neighbor_list("d", struct, float(rmax)) for struct in s]
-            )
-        ylabel = r"#$\,$Neighbours"
-    else:
-        reduce_func = _preset.get(reduce, reduce)
-        def extractor(s):
-            distances = []
-            for struct in s:
-                d = neighbor_list("d", struct, float(rmax))
-                if len(d) > 0:
-                    distances.append(reduce_func(d))
-            return distances
-        ylabel = r"#$\,$Structures"
-
-    return _plot_histogram(structures, extractor, xlabel, ylabel, **kwargs)
+    xlabel = _distance_xlabel(reduce)
+    ylabel = r"#$\,$Neighbours" if reduce is None else r"#$\,$Structures"
+    return _plot_histogram(
+        structures,
+        lambda s: _reduce_distances(s, rmax, reduce),
+        xlabel,
+        ylabel,
+        **kwargs,
+    )
 
 
 def radial_distribution(
@@ -289,23 +315,20 @@ def energy_distance(
             maximum cutoff to consider neighborhood
         reduce (callable from array of floats to float):
             applied to the neighbor distances per structure to reduce them to a
-            single scalar; ``"min"`` and ``"mean"`` are recognized as shortcuts
+            single scalar; ``"min"`` and ``"mean"`` are recognized as shortcuts;
+            structures with no neighbors within *rmax* are silently skipped
         **kwargs:
             passed through to :func:`matplotlib.pyplot.scatter` or
             :func:`matplotlib.pyplot.hexbin`"""
-    _preset = {
-        "min": np.min,
-        "mean": np.mean,
-    }
-    labels = {
-        "min": r"Minimum distance [$\mathrm{\AA}$]",
-        "mean": r"Mean distance [$\mathrm{\AA}$]",
-    }
-    xlabel = labels.get(reduce, r"Distance [$\mathrm{\AA}$]")
-    reduce_func = _preset.get(reduce, reduce)
-    D = [reduce_func(neighbor_list("d", s, float(rmax))) for s in structures]
-    E = _energy(structures)
+    xlabel = _distance_xlabel(reduce)
     structures = list(structures)
+    D = _reduce_distances(structures, rmax, reduce)
+    # Keep only structures that contributed to D (those with at least one neighbor)
+    with_neighbors = [
+        s for s in structures
+        if len(neighbor_list("d", s, float(rmax))) > 0
+    ]
+    E = _energy(with_neighbors)
     if len(structures) < 1000:
         if "s" not in kwargs and "markersize" not in kwargs:
             kwargs["markersize"] = 5
