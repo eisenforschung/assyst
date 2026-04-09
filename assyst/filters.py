@@ -9,6 +9,7 @@ from collections import defaultdict
 from dataclasses import dataclass, KW_ONLY
 from itertools import combinations_with_replacement, product
 from math import nan, inf
+from numbers import Number
 from typing import Callable, Literal
 
 from ase import Atoms
@@ -67,6 +68,11 @@ class DistanceFilter(FilterBase):
     Setting a radius to NaN allows all bonds involving this atom."""
 
     radii: dict[str, float]
+
+    def __post_init__(self):
+        if isinstance(self.radii, Number):
+            r = self.radii
+            self.radii = defaultdict(lambda: r)
 
     @staticmethod
     def _element_wise_dist(structure: Atoms) -> dict[tuple[str, str], float]:

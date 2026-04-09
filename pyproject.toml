@@ -30,6 +30,8 @@ dependencies = [
     "tqdm>=4,<5",
     "ase>=3,<4",
     "matplotlib>=3,<4",
+    "seaborn>=0.13,<1",
+    "pandas>=2,<4",
     "numpy>1,<3",
     "pyiron_snippets>=1,<2",
 ]
