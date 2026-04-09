@@ -11,7 +11,7 @@ from ase.calculators.calculator import Calculator
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.constraints import FixAtoms, FixSymmetry
 from ase.filters import FrechetCellFilter
-from ase.optimize import BFGS, LBFGS
+from ase.optimize import BFGS, LBFGS, CellAwareBFGS
 
 import numpy as np
 
