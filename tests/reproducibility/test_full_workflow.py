@@ -47,7 +47,7 @@ def run_workflow(rng):
 
     mods = [rattle_p, stretch_p] # apply each once
 
-    random = list(apply_perturbations(allmin, mods, filters=[DistanceFilter({'Cu': 1})]))
+    random = list(apply_perturbations(mods, filters=[DistanceFilter({'Cu': 1})], structures=allmin))
 
     # 4. Final Combination and Filtering
     # Note: Calculating energies again would require attaching calculator to random structures
