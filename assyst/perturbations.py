@@ -137,20 +137,21 @@ Perturbation = Callable[[Atoms], Atoms] | PerturbationABC
 
 
 def apply_perturbations(
-    structures: Iterable[Atoms],
     perturbations: Iterable[Perturbation],
     filters: Iterable[Filter] | Filter | None = None,
     retries: int = 10,
+    *,
+    structures: Iterable[Atoms],
 ) -> Iterator[Atoms]:
     """Apply a list of perturbations to each structure and yield the result of each perturbation separately.
 
     If a perturbation raises ValueError it is ignored.
 
     Args:
-        structures: :class:`collections.abc.Iterable` of :class:`ase.Atoms` to perturb.
         perturbations: :class:`collections.abc.Iterable` of :class:`~.Perturbation` that modify structures.
         filters: :class:`collections.abc.Iterable` of :class:`~assyst.filters.Filter` to filter valid results (optional).
         retries: :class:`int`, max attempts per perturbation (default: 10).
+        structures: :class:`collections.abc.Iterable` of :class:`ase.Atoms` to perturb.
 
     Yields:
         :class:`ase.Atoms`: perturbed structure that passes all filters.

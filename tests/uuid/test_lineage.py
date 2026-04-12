@@ -18,7 +18,7 @@ def test_full_workflow_lineage():
 
     # 2. Perturb
     perturbations = [Series((Rattle(0.1), Stretch(0.1, 0.1)))]
-    perturbed = list(apply_perturbations([s1], perturbations))
+    perturbed = list(apply_perturbations(perturbations, structures=[s1]))
     assert len(perturbed) == 1
     s2 = perturbed[0]
 
@@ -85,7 +85,7 @@ def test_apply_perturbations_with_function():
     s.info["uuid"] = "orig"
 
     # Using the raw rattle function in apply_perturbations
-    perturbed = list(apply_perturbations([s], [lambda atoms: rattle(atoms, 0.1)]))
+    perturbed = list(apply_perturbations([lambda atoms: rattle(atoms, 0.1)], structures=[s]))
     assert len(perturbed) == 1
     assert perturbed[0].info["uuid"] != "orig"
     assert perturbed[0].info["lineage"] == ["orig"]
@@ -137,20 +137,20 @@ def test_all_inplace_functions_via_apply_perturbations():
     s.info["uuid"] = "orig"
 
     # rattle
-    perturbed = list(apply_perturbations([s], [lambda atoms: rattle(atoms, 0.1)]))
+    perturbed = list(apply_perturbations([lambda atoms: rattle(atoms, 0.1)], structures=[s]))
     assert len(perturbed) == 1
     assert perturbed[0].info["uuid"] != "orig"
     assert perturbed[0].info["lineage"] == ["orig"]
 
     # stretch
-    perturbed = list(apply_perturbations([s], [lambda atoms: stretch(atoms, 0.1, 0.1)]))
+    perturbed = list(apply_perturbations([lambda atoms: stretch(atoms, 0.1, 0.1)], structures=[s]))
     assert len(perturbed) == 1
     assert perturbed[0].info["uuid"] != "orig"
     assert perturbed[0].info["lineage"] == ["orig"]
 
     # element_scaled_rattle
     ref = {"Cu": 2.5}
-    perturbed = list(apply_perturbations([s], [lambda atoms: element_scaled_rattle(atoms, 0.1, ref)]))
+    perturbed = list(apply_perturbations([lambda atoms: element_scaled_rattle(atoms, 0.1, ref)], structures=[s]))
     assert len(perturbed) == 1
     assert perturbed[0].info["uuid"] != "orig"
     assert perturbed[0].info["lineage"] == ["orig"]
