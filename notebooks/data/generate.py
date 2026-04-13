@@ -32,7 +32,7 @@ stretch = RandomChoice(hydro, shear, .7)
 mods = 1*[rattle] + 1*[stretch]
 
 f = VolumeFilter(300) & DistanceFilter({'Cu': 1., 'Zn': 1.}) & AspectFilter(6)
-rattle = list(apply_perturbations(mods, filters=f, structures=allmin))
+rattle = list(apply_perturbations(allmin, mods, filters=f))
 structures = list(filter(f, structures + volmin + allmin + rattle))
 
 for s in structures:

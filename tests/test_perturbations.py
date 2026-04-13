@@ -117,7 +117,7 @@ class TestPerturbations(unittest.TestCase):
         structures = [self.structure.copy() for _ in range(3)]
         perturbations = [Rattle(sigma=0.1), Stretch(hydro=0.1, shear=0.1)]
 
-        perturbed_structures = list(apply_perturbations(perturbations, structures=structures))
+        perturbed_structures = list(apply_perturbations(structures, perturbations))
 
         self.assertEqual(len(perturbed_structures), 6)  # 3 structures * 2 perturbations
 
@@ -129,7 +129,7 @@ class TestPerturbations(unittest.TestCase):
         # This filter should always return False
         false_filter = lambda s: False
 
-        perturbed_structures = list(apply_perturbations(perturbations, filters=false_filter, structures=structures))
+        perturbed_structures = list(apply_perturbations(structures, perturbations, filters=false_filter))
         self.assertEqual(len(perturbed_structures), 0)
 
     def test_apply_perturbations_value_error(self):
@@ -138,7 +138,7 @@ class TestPerturbations(unittest.TestCase):
         perturbations = [Rattle(sigma=0.1, create_supercells=False)]  # This will raise ValueError
 
         # The ValueError from Rattle should be caught, and no structures should be yielded.
-        perturbed_structures = list(apply_perturbations(perturbations, structures=structures))
+        perturbed_structures = list(apply_perturbations(structures, perturbations))
         self.assertEqual(len(perturbed_structures), 0)
 
     def test_stretch_strain_distribution(self):

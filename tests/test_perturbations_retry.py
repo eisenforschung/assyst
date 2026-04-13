@@ -8,7 +8,7 @@ def test_filter_retry_success():
     # Filter fails 3 times, then succeeds.
     ff = Mock(side_effect=[False, False, False, True])
     identity = lambda s: s
-    results = list(apply_perturbations([identity], filters=[ff], retries=10, structures=[structure]))
+    results = list(apply_perturbations([structure], [identity], filters=[ff], retries=10))
     assert len(results) == 1
     assert ff.call_count == 4
 
@@ -18,7 +18,7 @@ def test_filter_retry_failure():
     # Filter always fails
     ff = Mock(return_value=False)
     identity = lambda s: s
-    results = list(apply_perturbations([identity], filters=[ff], retries=10, structures=[structure]))
+    results = list(apply_perturbations([structure], [identity], filters=[ff], retries=10))
     assert len(results) == 0
     assert ff.call_count == 10
 
@@ -27,7 +27,7 @@ def test_value_error_no_retry():
     structure = Atoms('H2', positions=[[0, 0, 0], [0.74, 0, 0]], cell=[10, 10, 10])
     fp = Mock(side_effect=ValueError("Intentional ValueError"))
 
-    results = list(apply_perturbations([fp], retries=10, structures=[structure]))
+    results = list(apply_perturbations([structure], [fp], retries=10))
     assert len(results) == 0
     assert fp.call_count == 1
 
@@ -39,6 +39,6 @@ def test_mixed_no_retry_on_value_error():
     # Filter always fails
     ff = Mock(return_value=False)
 
-    results = list(apply_perturbations([fp], filters=[ff], retries=10, structures=[structure]))
+    results = list(apply_perturbations([structure], [fp], filters=[ff], retries=10))
     assert len(results) == 0
     assert fp.call_count == 2
