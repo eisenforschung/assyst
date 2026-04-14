@@ -2,7 +2,7 @@
 
 # ASSYST or _Automated Small SYmmetric Structure Training_
 
-A minimal reference implementation of ASSYST method to generate transferable training data for machine learning
+A flexible reference implementation of the ASSYST method to generate transferable training data for machine learning
 potentials.
 
 ASSYST is the Automated Small Symmetric Structure Training, a training protocol, aimed at providing comprehensive,

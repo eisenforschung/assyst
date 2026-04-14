@@ -17,8 +17,8 @@ verification of the method can be found in our papers. `[1]
 notion of fitting potentials to individual phases or structures and instead tries to deliver a
 training set spanning the full potential energy surface (PES) of a material.
 
-This software package is a minimal implementation of this idea, designed to be as flexible as possible without assuming
-either a specific MLIP, reference data, or workflow manager in mind.
+This software package is the reference implementation of this idea, designed to be as flexible as possible without
+assuming either a specific MLIP, reference data, or workflow manager in mind.
 It is built on `ASE <https://ase-lib.org/index.html>`_ and can use any of its calculators.
 It also assumes that you bring your own reference energies and forces.
 For a ready-to-run implementation that targets Atomic Cluster Expansion and Moment Tensor Potentials fit to Density
@@ -39,12 +39,12 @@ The training strategy to achieve this splits in three steps:
 2. locating energetically favorable pockets in the PES by relaxing the initially generated sets of structures in
 :ref:`assyst.relax <relax>`, this can be done in multiple steps;
 
-3. Exploring the direct neighborhood of these pockets by perturbing the relaxation configurations again in
+3. exploring the direct neighborhood of these pockets by perturbing the relaxation configurations again in
 :ref:`assyst.perturbations <perturbations>`.
 
-4. The first steps are then combined and filtered based on configurable criteria to avoid unreasonable structures.
+These three steps are then combined and filtered based on configurable criteria to avoid unreasonable structures.
 
-This is illustrated in :ref:`below <schematic>`, with the steps 1-3 arranged on top in green, and the filtering step 4 in
+This is illustrated in :ref:`below <schematic>`, with the steps 1-3 arranged on top in green, and the filtering step in
 red.
 The final step is labelling the structures with high quality DFT, which is outside of the scope of this package.
 
@@ -67,9 +67,9 @@ See :doc:`metadata` for an overview of what is tracked.
    Home <self>
    installation
    overview
-   notebooks
    formulas
    filters
+   notebooks
 
 .. toctree::
    :maxdepth: 2
