@@ -9,7 +9,7 @@ from ase import Atoms
 from ase.build import bulk
 from ase.data import atomic_numbers
 
-from assyst.perturbations import rattle, element_scaled_rattle, stretch, Rattle, Stretch, Series, RandomChoice, apply_perturbations
+from assyst.perturbations import rattle, element_scaled_rattle, stretch, Rattle, Stretch, Series, RandomChoice, perturb
 from tests.strategies.strategies import random_element_structures
 
 
@@ -112,33 +112,33 @@ class TestPerturbations(unittest.TestCase):
             self.assertIn('stretch(hydro=0.1, shear=0.1)', perturbed_structure_B.info['perturbation'])
             self.assertNotIn('rattle', perturbed_structure_B.info['perturbation'])
 
-    def test_apply_perturbations(self):
-        """Test the apply_perturbations function."""
+    def test_perturb(self):
+        """Test the perturb function."""
         structures = [self.structure.copy() for _ in range(3)]
         perturbations = [Rattle(sigma=0.1), Stretch(hydro=0.1, shear=0.1)]
 
-        perturbed_structures = list(apply_perturbations(structures, perturbations))
+        perturbed_structures = list(perturb(structures, perturbations))
 
         self.assertEqual(len(perturbed_structures), 6)  # 3 structures * 2 perturbations
 
-    def test_apply_perturbations_with_filter(self):
-        """Test the apply_perturbations function with a filter."""
+    def test_perturb_with_filter(self):
+        """Test the perturb function with a filter."""
         structures = [self.structure.copy()]
         perturbations = [Rattle(sigma=0.1)]
 
         # This filter should always return False
         false_filter = lambda s: False
 
-        perturbed_structures = list(apply_perturbations(structures, perturbations, filters=false_filter))
+        perturbed_structures = list(perturb(structures, perturbations, filters=false_filter))
         self.assertEqual(len(perturbed_structures), 0)
 
-    def test_apply_perturbations_value_error(self):
-        """Test that apply_perturbations handles ValueError."""
+    def test_perturb_value_error(self):
+        """Test that perturb handles ValueError."""
         structures = [self.single_atom_structure.copy()]
         perturbations = [Rattle(sigma=0.1, create_supercells=False)]  # This will raise ValueError
 
         # The ValueError from Rattle should be caught, and no structures should be yielded.
-        perturbed_structures = list(apply_perturbations(structures, perturbations))
+        perturbed_structures = list(perturb(structures, perturbations))
         self.assertEqual(len(perturbed_structures), 0)
 
     def test_stretch_strain_distribution(self):

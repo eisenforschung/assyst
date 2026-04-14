@@ -138,7 +138,7 @@ def pyxtal(
 class Formulas(Sequence):
     """Simple helper to generate lists of structure compositions.
 
-    :func:`.sample_space_groups` is the intended consumer and expects an iterable of dictionaries, where each dictionary
+    :func:`.sample` is the intended consumer and expects an iterable of dictionaries, where each dictionary
     maps an element name to the number of atoms of this type in one structure.
     :class:`.Formulas` behaves as if it were such a tuple, but extends the basic python arithmetic operations to make
     building the list a bit simpler.
@@ -247,7 +247,7 @@ class Formulas(Sequence):
             return type(self)(tuple(f for f in self if min_atoms <= sum(f.values())))
 
 
-def sample_space_groups(
+def sample(
     formulas: Formulas | Iterable[dict[str, int]],
     spacegroups: list[int] | tuple[int, ...] | Iterable[int] | None = None,
     min_atoms: int = 1,
@@ -342,5 +342,5 @@ def sample_space_groups(
 __all__ = [
     "pyxtal",
     "Formulas",
-    "sample_space_groups",
+    "sample",
 ]

@@ -12,7 +12,7 @@ Workflow Integration
 Initial Generation
 ~~~~~~~~~~~~~~~~~~
 
-When a structure is first generated using :func:`.pyxtal` (or through :func:`.sample_space_groups`), it is assigned a new UUID.
+When a structure is first generated using :func:`.pyxtal` (or through :func:`.sample`), it is assigned a new UUID.
 At this stage, the ``seed`` is set to the same UUID, and the ``lineage`` is empty.
 
 Perturbations

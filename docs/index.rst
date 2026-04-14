@@ -37,7 +37,7 @@ The training strategy to achieve this splits in three steps:
 :ref:`assyst.crystals <crystals>`;
 
 2. locating energetically favorable pockets in the PES by relaxing the initially generated sets of structures in
-:ref:`assyst.relax <relax>`, this can be done in multiple steps;
+:ref:`assyst.relaxations <relaxations>`, this can be done in multiple steps;
 
 3. exploring the direct neighborhood of these pockets by perturbing the relaxation configurations again in
 :ref:`assyst.perturbations <perturbations>`.

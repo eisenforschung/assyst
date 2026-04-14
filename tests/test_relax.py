@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 from ase import Atoms
 from ase.calculators.singlepoint import SinglePointCalculator
-from assyst.relax import Relax, CellRelax, VolumeRelax, SymmetryRelax, FullRelax, relax
+from assyst.relaxations import Relax, CellRelax, VolumeRelax, SymmetryRelax, FullRelax, relax
 from assyst.calculators import AseCalculatorConfig
 
 class MockCalculator:
@@ -56,7 +56,7 @@ class TestRelax(unittest.TestCase):
         relaxer.relax(self.structure)
         mock_run.assert_called_once()
 
-    @patch('assyst.relax.Relax.relax')
+    @patch('assyst.relaxations.Relax.relax')
     def test_relax_function_with_calc_object(self, mock_relax_method):
         settings = Relax()
         calculator = MockCalculator()
@@ -66,7 +66,7 @@ class TestRelax(unittest.TestCase):
 
         self.assertIs(mock_relax_method.call_args[0][0].calc, calculator)
 
-    @patch('assyst.relax.Relax.relax')
+    @patch('assyst.relaxations.Relax.relax')
     def test_relax_function_with_calc_config(self, mock_relax_method):
         class MockCalcConfig(AseCalculatorConfig):
             def get_calculator(self):
