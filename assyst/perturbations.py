@@ -136,7 +136,7 @@ class PerturbationABC(ABC):
 Perturbation = Callable[[Atoms], Atoms] | PerturbationABC
 
 
-def apply_perturbations(
+def perturb(
     structures: Iterable[Atoms],
     perturbations: Iterable[Perturbation],
     filters: Iterable[Filter] | Filter | None = None,
@@ -316,7 +316,7 @@ __all__ = [
         "stretch",
         "PerturbationABC",
         "Perturbation",
-        "apply_perturbations",
+        "perturb",
         "Rattle",
         "ElementScaledRattle",
         "Stretch",

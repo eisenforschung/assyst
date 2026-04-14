@@ -18,7 +18,7 @@ For more details on how lineage is tracked through the workflow, see :doc:`linea
 Symmetry
 --------
 
-When structures are generated using :func:`assyst.crystals.sample_space_groups` or :func:`assyst.crystals.pyxtal`, the following symmetry-related keys are added:
+When structures are generated using :func:`assyst.crystals.sample` or :func:`assyst.crystals.pyxtal`, the following symmetry-related keys are added:
 
 * ``requested spacegroup``: The requested symmetry group number (e.g., space group 225).
 * ``symmetry``: An alias for ``requested spacegroup``.

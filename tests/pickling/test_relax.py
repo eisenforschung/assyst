@@ -1,5 +1,5 @@
 import pickle
-from assyst.relax import Relax, CellRelax, VolumeRelax, SymmetryRelax, FullRelax
+from assyst.relaxations import Relax, CellRelax, VolumeRelax, SymmetryRelax, FullRelax
 
 def test_pickling_relax_classes():
     for cls in [Relax, CellRelax, VolumeRelax, SymmetryRelax, FullRelax]:

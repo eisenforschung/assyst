@@ -1,8 +1,8 @@
 import pytest
 from ase import Atoms
-from assyst.crystals import sample_space_groups, Formulas, pyxtal
-from assyst.perturbations import apply_perturbations, Rattle, Stretch, Series, rattle
-from assyst.relax import relax, Relax
+from assyst.crystals import sample, Formulas, pyxtal
+from assyst.perturbations import perturb, Rattle, Stretch, Series, rattle
+from assyst.relaxations import relax, Relax
 from assyst.calculators import Morse
 
 def test_full_workflow_lineage():
@@ -18,7 +18,7 @@ def test_full_workflow_lineage():
 
     # 2. Perturb
     perturbations = [Series((Rattle(0.1), Stretch(0.1, 0.1)))]
-    perturbed = list(apply_perturbations([s1], perturbations))
+    perturbed = list(perturb([s1], perturbations))
     assert len(perturbed) == 1
     s2 = perturbed[0]
 
@@ -80,12 +80,12 @@ def test_inplace_function_no_uuid_change():
     assert s.info["uuid"] == "fixed-uuid"
     assert "lineage" not in s.info
 
-def test_apply_perturbations_with_function():
+def test_perturb_with_function():
     s = Atoms("Cu2", positions=[[0,0,0], [1,1,1]], cell=[3,3,3], pbc=True)
     s.info["uuid"] = "orig"
 
-    # Using the raw rattle function in apply_perturbations
-    perturbed = list(apply_perturbations([s], [lambda atoms: rattle(atoms, 0.1)]))
+    # Using the raw rattle function in perturb
+    perturbed = list(perturb([s], [lambda atoms: rattle(atoms, 0.1)]))
     assert len(perturbed) == 1
     assert perturbed[0].info["uuid"] != "orig"
     assert perturbed[0].info["lineage"] == ["orig"]
@@ -131,26 +131,26 @@ def test_lineage_not_shared_with_parent():
     # s2 lineage should NOT be affected by s3 modification
     assert s2.info["lineage"] == ["uuid1"]
 
-def test_all_inplace_functions_via_apply_perturbations():
+def test_all_inplace_functions_via_perturb():
     from assyst.perturbations import rattle, stretch, element_scaled_rattle
     s = Atoms("Cu2", positions=[[0,0,0], [1,1,1]], cell=[3,3,3], pbc=True)
     s.info["uuid"] = "orig"
 
     # rattle
-    perturbed = list(apply_perturbations([s], [lambda atoms: rattle(atoms, 0.1)]))
+    perturbed = list(perturb([s], [lambda atoms: rattle(atoms, 0.1)]))
     assert len(perturbed) == 1
     assert perturbed[0].info["uuid"] != "orig"
     assert perturbed[0].info["lineage"] == ["orig"]
 
     # stretch
-    perturbed = list(apply_perturbations([s], [lambda atoms: stretch(atoms, 0.1, 0.1)]))
+    perturbed = list(perturb([s], [lambda atoms: stretch(atoms, 0.1, 0.1)]))
     assert len(perturbed) == 1
     assert perturbed[0].info["uuid"] != "orig"
     assert perturbed[0].info["lineage"] == ["orig"]
 
     # element_scaled_rattle
     ref = {"Cu": 2.5}
-    perturbed = list(apply_perturbations([s], [lambda atoms: element_scaled_rattle(atoms, 0.1, ref)]))
+    perturbed = list(perturb([s], [lambda atoms: element_scaled_rattle(atoms, 0.1, ref)]))
     assert len(perturbed) == 1
     assert perturbed[0].info["uuid"] != "orig"
     assert perturbed[0].info["lineage"] == ["orig"]

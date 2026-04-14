@@ -5,7 +5,7 @@ assyst
    :maxdepth: 1
 
    crystals
-   relax
+   relaxations
    perturbations
    filters
    calculators

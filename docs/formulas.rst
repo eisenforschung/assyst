@@ -96,23 +96,23 @@ atom-count range:
     large = Formulas.range('Cu', 1, 10) * Formulas.range('Ag', 1, 10)
     small = large.trim(min_atoms=2, max_atoms=8)
 
-Passing to :func:`~assyst.crystals.sample_space_groups`
+Passing to :func:`~assyst.crystals.sample`
 ---------------------------------------------------------
 
-:class:`~assyst.crystals.Formulas` is the expected input to :func:`~assyst.crystals.sample_space_groups`:
+:class:`~assyst.crystals.Formulas` is the expected input to :func:`~assyst.crystals.sample`:
 
 .. code-block:: python
 
-    from assyst.crystals import Formulas, sample_space_groups
+    from assyst.crystals import Formulas, sample
 
     formulas = Formulas.range('Cu', 1, 5) * Formulas.range('Ag', 1, 5)
-    structures = sample_space_groups(formulas)
+    structures = sample(formulas)
 
 Any plain iterable of dicts is also accepted, so you can supply your own list directly without
 using :class:`~assyst.crystals.Formulas` at all:
 
 .. code-block:: python
 
-    structures = sample_space_groups([{'Cu': 2, 'Ag': 1}, {'Cu': 3, 'Ag': 1}])
+    structures = sample([{'Cu': 2, 'Ag': 1}, {'Cu': 3, 'Ag': 1}])
 
 See :doc:`api/crystals` for the full API reference.

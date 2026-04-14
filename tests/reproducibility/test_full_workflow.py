@@ -2,10 +2,10 @@ import numpy as np
 import pytest
 from hypothesis import given, strategies as st, settings
 from ase.calculators.morse import MorsePotential
-from assyst.crystals import Formulas, sample_space_groups
+from assyst.crystals import Formulas, sample
 from assyst.filters import DistanceFilter, AspectFilter, VolumeFilter
-from assyst.relax import VolumeRelax, FullRelax, relax
-from assyst.perturbations import RandomChoice, Rattle, Stretch, apply_perturbations
+from assyst.relaxations import VolumeRelax, FullRelax, relax
+from assyst.perturbations import RandomChoice, Rattle, Stretch, perturb
 
 def run_workflow(rng):
     # 1. Sampling Random Structures
@@ -18,7 +18,7 @@ def run_workflow(rng):
 
     spg = list(filter(
         AspectFilter(6),
-        sample_space_groups(
+        sample(
             fs,
             spacegroups=spacegroups,
             max_atoms=max_num,
@@ -47,7 +47,7 @@ def run_workflow(rng):
 
     mods = [rattle_p, stretch_p] # apply each once
 
-    random = list(apply_perturbations(allmin, mods, filters=[DistanceFilter({'Cu': 1})]))
+    random = list(perturb(allmin, mods, filters=[DistanceFilter({'Cu': 1})]))
 
     # 4. Final Combination and Filtering
     # Note: Calculating energies again would require attaching calculator to random structures

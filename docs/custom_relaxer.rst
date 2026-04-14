@@ -4,13 +4,13 @@ Custom Relaxers
 ASSYST's relaxation step is designed to be extensible.
 If your preferred energy/force engine does not expose an ASE-compatible
 :class:`ase.calculators.calculator.Calculator`, you can still plug it into
-the workflow by subclassing :class:`assyst.relax.Relax` and overriding the
-:meth:`~assyst.relax.Relax.relax` method.
+the workflow by subclassing :class:`assyst.relaxations.Relax` and overriding the
+:meth:`~assyst.relaxations.Relax.relax` method.
 
 When to subclass ``Relax``
 --------------------------
 
-The built-in :meth:`~assyst.relax.Relax.relax` implementation drives
+The built-in :meth:`~assyst.relaxations.Relax.relax` implementation drives
 minimization through ASE's LBFGS optimizer and therefore requires an ASE
 calculator to be attached to the :class:`~ase.Atoms` object.
 A custom subclass is the right tool when:
@@ -42,7 +42,7 @@ optimisation to a hypothetical external library ``myengine``.
     from ase import Atoms
     from ase.calculators.singlepoint import SinglePointCalculator
 
-    from assyst.relax import Relax
+    from assyst.relaxations import Relax
     from assyst.utils import update_uuid
 
 
@@ -87,7 +87,7 @@ optimisation to a hypothetical external library ``myengine``.
         """Relax structures using ``myengine``'s native geometry optimiser.
 
         Inherits ``max_steps`` and ``force_tolerance`` from
-        :class:`~assyst.relax.Relax`.
+        :class:`~assyst.relaxations.Relax`.
         """
 
         def relax(self, structure: Atoms) -> Atoms:
@@ -122,11 +122,11 @@ Using the custom relaxer in the workflow
 ----------------------------------------
 
 Once defined, ``MyEngineRelax`` is a drop-in replacement anywhere
-:class:`~assyst.relax.Relax` is accepted:
+:class:`~assyst.relaxations.Relax` is accepted:
 
 .. code-block:: python
 
-    from assyst.relax import relax as assyst_relax
+    from assyst.relaxations import relax as assyst_relax
 
     settings = MyEngineRelax(max_steps=200, force_tolerance=5e-4)
 
@@ -140,7 +140,7 @@ Once defined, ``MyEngineRelax`` is a drop-in replacement anywhere
 
 .. note::
 
-    The top-level :func:`assyst.relax.relax` function attaches an ASE
+    The top-level :func:`assyst.relaxations.relax` function attaches an ASE
     calculator to each structure before calling ``settings.relax``.  If your
     custom ``relax`` method does not need an ASE calculator you can pass
     ``calculator=None`` *and* iterate over the structures directly, bypassing
