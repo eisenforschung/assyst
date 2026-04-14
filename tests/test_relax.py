@@ -62,7 +62,7 @@ class TestRelax(unittest.TestCase):
         calculator = MockCalculator()
         structures = [self.structure]
 
-        list(relax(settings, calculator, structures))
+        list(relax(structures, settings, calculator))
 
         self.assertIs(mock_relax_method.call_args[0][0].calc, calculator)
 
@@ -76,6 +76,6 @@ class TestRelax(unittest.TestCase):
         calculator_config = MockCalcConfig()
         structures = [self.structure]
 
-        list(relax(settings, calculator_config, structures))
+        list(relax(structures, settings, calculator_config))
 
         self.assertIsInstance(mock_relax_method.call_args[0][0].calc, MockCalculator)

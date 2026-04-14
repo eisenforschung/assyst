@@ -33,8 +33,8 @@ def run_workflow(rng):
     volset = VolumeRelax(max_steps=5, force_tolerance=1e-2) # reduced steps for speed
     allset = FullRelax(max_steps=5, force_tolerance=1e-2)   # reduced steps for speed
 
-    volmin = list(relax(volset, reference, spg))
-    allmin = list(relax(allset, reference, volmin))
+    volmin = list(relax(spg, volset, reference))
+    allmin = list(relax(volmin, allset, reference))
 
     # 3. Random Perturbations
     # Setup perturbations with the seed
