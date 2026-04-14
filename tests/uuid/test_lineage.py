@@ -33,7 +33,7 @@ def test_full_workflow_lineage():
 
     # 3. Relax
     calc = Morse()
-    relaxed = list(relax(Relax(max_steps=2), calc, [s2]))
+    relaxed = list(relax([s2], Relax(max_steps=2), calc))
     assert len(relaxed) == 1
     s3 = relaxed[0]
 

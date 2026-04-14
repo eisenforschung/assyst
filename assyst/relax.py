@@ -104,18 +104,18 @@ class FullRelax(Relax):
 
 
 def relax(
+    structures: Iterable[Atoms],
     settings: Relax,
     calculator: AseCalculatorConfig | Calculator,
-    structures: Iterable[Atoms],
 ) -> Iterator[Atoms]:
     """Relax structures according the given relaxation settings.
 
     Output structures have the final energy and force attached as ase's SinglePointCalculator.
 
     Args:
+        structures (:class:`collections.abc.Iterable` of :class:`ase.Atoms`): the structures to minimize
         settings (:class:`.Relax`): the kind of relaxation to perform (position, volume, etc.)
         calculator (:class:`.AseCalculatorConfig` or :class:`ase.calculators.calculator.Calculator`): the energy/force engine to use
-        structures (:class:`collections.abc.Iterable` of :class:`ase.Atoms`): the structures to minimize
 
     Yields:
         :class:`ase.Atoms`: the corresponding relaxed configuration to each input structure

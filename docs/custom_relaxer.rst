@@ -132,9 +132,9 @@ Once defined, ``MyEngineRelax`` is a drop-in replacement anywhere
 
     relaxed_structures = list(
         assyst_relax(
+            structures=my_structures,
             settings=settings,
             calculator=None,   # calculator is unused by MyEngineRelax.relax
-            structures=my_structures,
         )
     )
 
