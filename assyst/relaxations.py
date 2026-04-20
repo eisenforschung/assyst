@@ -11,7 +11,7 @@ from ase.calculators.calculator import Calculator
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.constraints import FixAtoms, FixSymmetry
 from ase.filters import FrechetCellFilter
-from ase.optimize import BFGS, LBFGS, CellAwareBFGS
+from ase.optimize import BFGS, FIRE, LBFGS, CellAwareBFGS
 
 import numpy as np
 
@@ -24,7 +24,7 @@ class Relax:
 
     max_steps: int = 100
     force_tolerance: float = 1e-3
-    algorithm: Literal["LBFGS", "BFGS"] = "LBFGS"
+    algorithm: Literal["LBFGS", "BFGS", "FIRE"] = "LBFGS"
 
     def apply_filter_and_constraints(self, structure: Atoms):
         """Hook to allow subclasses to add filters and constraints."""
@@ -46,7 +46,7 @@ class Relax:
         structure = structure.copy()
         update_uuid(structure)
         structure.calc = calc
-        optimizer_cls = {"LBFGS": LBFGS, "BFGS": BFGS}[self.algorithm]
+        optimizer_cls = {"LBFGS": LBFGS, "BFGS": BFGS, "FIRE": FIRE}[self.algorithm]
         optimizer = optimizer_cls(self.apply_filter_and_constraints(structure), logfile="/dev/null")
         optimizer.run(fmax=self.force_tolerance, steps=self.max_steps)
         structure.calc = None
