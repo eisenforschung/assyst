@@ -24,7 +24,7 @@ def _get_real_spacegroup(s):
     Since the generated atoms may actually be of higher symmetry, reinitialize here to make sure what we've got.
     """
     p = _pyxtal()
-    p.from_seed(s)
+    p.from_seed(s.copy())
     return p.group.number
 
 
