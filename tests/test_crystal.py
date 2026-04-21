@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 from hypothesis import given, strategies as st, settings
 from ase import Atoms
 
-from assyst.crystals import Formulas, sample_space_groups, _get_real_spacegroup
+from assyst.crystals import Formulas, sample, _get_real_spacegroup
 
 
 class TestFormulas(unittest.TestCase):
@@ -99,7 +99,7 @@ class TestSampleSpaceGroups(unittest.TestCase):
         mock_atoms, mock_pyxtal.side_effect = make_pyxtal_mock_side_effect(5)
 
         f = Formulas.range("Cu", 1, 3)
-        results = list(sample_space_groups(f, max_structures=3))
+        results = list(sample(f, max_structures=3))
 
         self.assertEqual(len(results), 3, msg="Should not generate more than max_structures=3")
 
@@ -110,7 +110,7 @@ class TestSampleSpaceGroups(unittest.TestCase):
         # Define 3 compositions: Cu1, Cu2, Cu3
         formulas = Formulas.range("Cu", 1, 4)  # 3 compositions
 
-        results = list(sample_space_groups(formulas, max_structures=10))
+        results = list(sample(formulas, max_structures=10))
 
         # We should get 3 results (since 1 per composition)
         self.assertEqual(len(results), 3, msg="Expected one structure per composition")
@@ -135,23 +135,23 @@ class TestSampleSpaceGroups(unittest.TestCase):
         mock_atoms, mock_pyxtal.side_effect = make_pyxtal_mock_side_effect()
 
         formulas = Formulas.range("Cu", 1, 10)
-        results = list(sample_space_groups(formulas, min_atoms=5))
+        results = list(sample(formulas, min_atoms=5))
 
         with self.subTest("unary"):
             for call in mock_pyxtal.call_args_list:
                 self.assertLessEqual(5, sum(call.args[2]),
-                    "sample_space_groups tried to call pyxtal with more atoms than it should have."
+                    "sample tried to call pyxtal with more atoms than it should have."
                 )
 
         mock_pyxtal.reset_mock()
 
         formulas = Formulas.range("Cu", 10) * Formulas.range("Ag", 10)
-        list(sample_space_groups(formulas, min_atoms=5))
+        list(sample(formulas, min_atoms=5))
 
         with self.subTest("binary"):
             for call in mock_pyxtal.call_args_list:
                 self.assertLessEqual(5, sum(call.args[2]),
-                    "sample_space_groups tried to call pyxtal with more atoms than it should have."
+                    "sample tried to call pyxtal with more atoms than it should have."
                 )
 
     @patch("assyst.crystals.pyxtal")
@@ -159,74 +159,74 @@ class TestSampleSpaceGroups(unittest.TestCase):
         mock_atoms, mock_pyxtal.side_effect = make_pyxtal_mock_side_effect()
 
         formulas = Formulas.range("Cu", 1, 10)
-        list(sample_space_groups(formulas, max_atoms=5))
+        list(sample(formulas, max_atoms=5))
 
         with self.subTest("unary"):
             for call in mock_pyxtal.call_args_list:
                 self.assertLessEqual(sum(call.args[2]), 5,
-                    "sample_space_groups tried to call pyxtal with more atoms than it should have."
+                    "sample tried to call pyxtal with more atoms than it should have."
                 )
 
         mock_pyxtal.reset_mock()
 
         formulas = Formulas.range("Cu", 10) * Formulas.range("Ag", 10)
-        list(sample_space_groups(formulas, max_atoms=5))
+        list(sample(formulas, max_atoms=5))
 
         with self.subTest("binary"):
             for call in mock_pyxtal.call_args_list:
                 self.assertLessEqual(sum(call.args[2]), 5,
-                    "sample_space_groups tried to call pyxtal with more atoms than it should have."
+                    "sample tried to call pyxtal with more atoms than it should have."
                 )
 
 
 class TestSampleSpaceGroupsArguments(unittest.TestCase):
     def test_invalid_dim(self):
         with self.assertRaises(ValueError):
-            list(sample_space_groups(Formulas.range("Cu", 1, 2), dim=4))
+            list(sample(Formulas.range("Cu", 1, 2), dim=4))
 
     def test_invalid_spacegroups(self):
         with self.assertRaises(ValueError):
-            list(sample_space_groups(Formulas.range("Cu", 1, 2), spacegroups=[0, 1]))
+            list(sample(Formulas.range("Cu", 1, 2), spacegroups=[0, 1]))
         with self.assertRaises(ValueError):
-            list(sample_space_groups(Formulas.range("Cu", 1, 2), spacegroups=[231]))
+            list(sample(Formulas.range("Cu", 1, 2), spacegroups=[231]))
 
     def test_invalid_tolerance(self):
         with self.assertRaises(ValueError):
-            list(sample_space_groups(Formulas.range("Cu", 1, 2), tolerance="invalid"))
+            list(sample(Formulas.range("Cu", 1, 2), tolerance="invalid"))
 
     @patch("assyst.crystals.pyxtal")
     def test_empty_stoichiometry(self, mock_pyxtal):
         mock_atoms, mock_pyxtal.side_effect = make_pyxtal_mock_side_effect()
         formulas = Formulas(atoms=({},))
-        results = list(sample_space_groups(formulas))
+        results = list(sample(formulas))
         self.assertEqual(len(results), 0)
         mock_pyxtal.assert_not_called()
 
     @patch("assyst.crystals.pyxtal")
     def test_empty_dict_tolerance(self, mock_pyxtal):
         mock_atoms, mock_pyxtal.side_effect = make_pyxtal_mock_side_effect()
-        list(sample_space_groups(Formulas.range("Cu", 1, 2), tolerance={}))
+        list(sample(Formulas.range("Cu", 1, 2), tolerance={}))
         self.assertIsNone(mock_pyxtal.call_args.kwargs['tm'])
 
     @patch("assyst.crystals.pyxtal")
     def test_distance_filter_tolerance(self, mock_pyxtal):
         from assyst.filters import DistanceFilter
         mock_atoms, mock_pyxtal.side_effect = make_pyxtal_mock_side_effect()
-        list(sample_space_groups(Formulas.range("Cu", 1, 2), tolerance=DistanceFilter({'Cu': 1.0})))
+        list(sample(Formulas.range("Cu", 1, 2), tolerance=DistanceFilter({'Cu': 1.0})))
         self.assertIsNotNone(mock_pyxtal.call_args.kwargs['tm'])
 
 
 @settings(deadline=None, max_examples=50)
 @given(st.integers(1, 230))
 def test_spacegroup_info(group):
-    """sample_space_groups() should add two fields to Atoms.info describing the requested and actual space group for
+    """sample() should add two fields to Atoms.info describing the requested and actual space group for
     each structure."""
-    for atoms in sample_space_groups([{"Cu": 4}], [group]):
+    for atoms in sample([{"Cu": 4}], [group]):
         assert "requested spacegroup" in atoms.info and "spacegroup" in atoms.info, \
-            "sample_space_groups() does not supply spacegroup metadata!"
+            "sample() does not supply spacegroup metadata!"
         assert atoms.info["requested spacegroup"] == group \
             and atoms.info["spacegroup"] == _get_real_spacegroup(atoms), \
-            "sample_space_groups() supplies wrong spacegroup metadata!"
+            "sample() supplies wrong spacegroup metadata!"
 
 
 if __name__ == "__main__":
