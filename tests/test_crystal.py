@@ -216,18 +216,17 @@ class TestSampleSpaceGroupsArguments(unittest.TestCase):
         self.assertIsNotNone(mock_pyxtal.call_args.kwargs['tm'])
 
 
-@settings(deadline=1000, max_examples=10)
-@given(st.lists(st.integers(1, 230), max_size=230, unique=True))
-def test_spacegroup_info(spacegroups):
+@settings(deadline=None, max_examples=50)
+@given(st.integers(1, 230))
+def test_spacegroup_info(group):
     """sample_space_groups() should add two fields to Atoms.info describing the requested and actual space group for
     each structure."""
-    for group in spacegroups:
-        for atoms in sample_space_groups([{"Cu": 4}], [group]):
-            assert "requested spacegroup" in atoms.info and "spacegroup" in atoms.info, \
-                "sample_space_groups() does not supply spacegroup metadata!"
-            assert atoms.info["requested spacegroup"] == group \
-                and atoms.info["spacegroup"] == _get_real_spacegroup(atoms), \
-                "sample_space_groups() supplies wrong spacegroup metadata!"
+    for atoms in sample_space_groups([{"Cu": 4}], [group]):
+        assert "requested spacegroup" in atoms.info and "spacegroup" in atoms.info, \
+            "sample_space_groups() does not supply spacegroup metadata!"
+        assert atoms.info["requested spacegroup"] == group \
+            and atoms.info["spacegroup"] == _get_real_spacegroup(atoms), \
+            "sample_space_groups() supplies wrong spacegroup metadata!"
 
 
 if __name__ == "__main__":

@@ -21,7 +21,7 @@ def _get_real_spacegroup(s):
     The pyxtal object does not update the space group after a call to from_random, but keeps the requested one around.
     Since the generated atoms may actually be of higher symmetry, reinitialize here to make sure what we've got."""
     p = _pyxtal()
-    p.from_seed(s)
+    p.from_seed(s.copy())
     return p.group.number
 
 
