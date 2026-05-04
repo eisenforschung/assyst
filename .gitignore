@@ -1,0 +1,7 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# setuptools-scm generated version file
+assyst/_version.py
