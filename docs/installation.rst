@@ -22,6 +22,9 @@ Optional Dependencies
 ASSYST requires some ASE calculators to perform structure relaxations, but is agnostic to which specifically.
 The example notebooks use either builtin ASE calculators or the
 `Graph Atomic Cluster Expansion <https://gracemaker.readthedocs.io/en/latest/>`_.
+These are only required to simulate acquiring reference data.
+If you will use DFT or other simulation engines as training data, you won't need them.
+
 When using pip, you can install the necessary packages with the ``grace`` optional dependency
 
 .. code-block:: bash
