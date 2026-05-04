@@ -1,6 +1,8 @@
 Installation
 ============
 
+`assyst` requires at least python 3.11 and has been tested on CPython.
+
 Install via PyPI
 
 .. code-block:: bash
