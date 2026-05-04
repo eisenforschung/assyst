@@ -97,8 +97,10 @@ def stretch(
     _rng = np.random.default_rng(rng)
 
     def get_strains(max_strain, size):
+        if max_strain <= 0.0:
+            return np.zeros(size)
         signs = _rng.choice([-1, 1], size=size)
-        magnitudes = _rng.uniform(minimum_strain, max_strain, size=size)
+        magnitudes = _rng.uniform(min(minimum_strain, max_strain), max_strain, size=size)
         return signs * magnitudes
 
     strain = np.zeros((3, 3))
