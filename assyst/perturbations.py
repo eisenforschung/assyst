@@ -100,6 +100,7 @@ def stretch(
         if max_strain <= 0.0:
             return np.zeros(size)
         signs = _rng.choice([-1, 1], size=size)
+        # clamp lower bound so the range is valid when minimum_strain > max_strain
         magnitudes = _rng.uniform(min(minimum_strain, max_strain), max_strain, size=size)
         return signs * magnitudes
 
