@@ -13,6 +13,14 @@ set.
 :doc:`notebooks/Lineage` shows some technical details that trace structures as they flow through the workflow, if you
 are interested in optimizing or debuging particular structures.
 
+:doc:`notebooks/Relaxations` walks through the different relaxation modes available in :mod:`assyst.relaxations`
+(positions only, volume only, cell shape, symmetry-preserving, full), including how to apply pressure and switch
+optimizer algorithms.
+
+:doc:`notebooks/Perturbations` show cases the perturbations available in :mod:`assyst.perturbations` for generating
+off-equilibrium training structures: gaussian rattling, element-scaled rattling, random cell stretching, and how to
+compose them in series or pick between alternatives at random.
+
 
 
 .. toctree::
@@ -22,5 +30,7 @@ are interested in optimizing or debuging particular structures.
 
    notebooks/Quickstart/Crystals.ipynb
    notebooks/SimpleUnary.ipynb
+   notebooks/Relaxations.ipynb
+   notebooks/Perturbations.ipynb
    notebooks/PlotGallery.ipynb
    notebooks/Lineage.ipynb
