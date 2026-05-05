@@ -20,7 +20,7 @@ import numpy as np
 class Relax:
     """Minimize energy with respect to internal positions.
 
-    Also used as a base class for all other relaxation."""
+    Also used as a base class for all other relaxation classes."""
 
     max_steps: int = 100
     force_tolerance: float = 1e-3

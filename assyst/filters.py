@@ -84,14 +84,14 @@ class DistanceFilter(FilterBase):
 
     def __call__(self, structure: Atoms) -> bool:
         """
-        Return True if structure satifies minimum distance criteria.
+        Return True if structure satisfies minimum distance criteria.
 
         Args:
             structure (:class:`ase.Atoms`): structure to check
 
         Returns:
-            `False`: at least on bond is shorter than the sum of given cutoff radii of the respective elements
-            `True`: all bonds are than the sum of given cutoff radii of the respective elements
+            `False`: at least one bond is shorter than the sum of given cutoff radii of the respective elements
+            `True`: all bonds are longer than the sum of given cutoff radii of the respective elements
         """
         pair = self._element_wise_dist(structure)
         for ei, ej in combinations_with_replacement(structure.symbols.species(), 2):
