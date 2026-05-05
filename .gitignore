@@ -1,7 +1,7 @@
-__pycache__/
-*.py[cod]
-*.egg-info/
 assyst/_version.py
 build/
 dist/
+*.egg-info/
 .ipynb_checkpoints/
+__pycache__/
+*.py[cod]

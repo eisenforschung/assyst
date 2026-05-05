@@ -2,7 +2,8 @@ Notebooks
 =========
 
 These are introduction workflows using `assyst`.
-In :doc:`notebooks/SimpleUnary` we construct a full training set from start to finish and fit a small, linear MLIP to it.
+In :doc:`notebooks/SimpleUnary` we construct a full training set from start to finish and then in
+:doc:`notebooks/ACEFitting` fit a small, linear MLIP to it.
 This show cases all required steps in creating a running MLIP.
 
 :doc:`notebooks/Quickstart/Crystals` is a more detailed explanation how to construct chemical sampling in your training
@@ -30,6 +31,7 @@ compose them in series or pick between alternatives at random.
 
    notebooks/Quickstart/Crystals.ipynb
    notebooks/SimpleUnary.ipynb
+   notebooks/ACEFitting.ipynb
    notebooks/Relaxations.ipynb
    notebooks/Perturbations.ipynb
    notebooks/PlotGallery.ipynb
