@@ -172,7 +172,7 @@ class Formulas(Sequence):
 
     @property
     def elements(self) -> set[str]:
-        """Set of elements present in elements."""
+        """Set of elements present in all formula units."""
         e: set[str] = set()
         for s in self.atoms:
             e = e.union(s.keys())
