@@ -7,5 +7,6 @@ Notebooks
 
    notebooks/Quickstart/Crystals.ipynb
    notebooks/SimpleUnary.ipynb
+   notebooks/ACEFitting.ipynb
    notebooks/PlotGallery.ipynb
    notebooks/Lineage.ipynb
