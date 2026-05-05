@@ -150,3 +150,7 @@ Once defined, ``MyEngineRelax`` is a drop-in replacement anywhere
 
         relaxer = MyEngineRelax()
         relaxed_structures = [relaxer.relax(s) for s in my_structures]
+
+    No metadata is lost by this approach, provided your ``relax`` implementation
+    follows the contract above (in particular, the
+    :func:`~assyst.utils.update_uuid` call).
