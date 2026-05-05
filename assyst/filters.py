@@ -144,9 +144,13 @@ class AspectFilter(FilterBase):
 
 @dataclass
 class VolumeFilter(FilterBase):
-    """Filters structures by volume."""
+    """Filters structures by volume per atom (Å³/atom).
+
+    Keeps structures whose volume per atom does not exceed ``maximum_volume_per_atom``.
+    """
 
     maximum_volume_per_atom: float
+    """Upper bound on volume per atom in Å³/atom."""
 
     def __call__(self, structure: Atoms) -> bool:
         """Return True if structure's volume is within range.
@@ -166,7 +170,11 @@ class CalculatorFilter(FilterBase):
 
     _: KW_ONLY
     missing: Literal["error", "ignore"] = "error"
-    """What to do when a structure has no (correct) calculator attached."""
+    """Behaviour when a structure has no :class:`~ase.calculators.singlepoint.SinglePointCalculator` attached.
+
+    ``"error"`` (default): raise :exc:`ValueError`.
+    ``"ignore"``: silently pass the structure through (return ``True``).
+    """
 
     def _check(self, structure: Atoms) -> bool:
         match self.missing:
@@ -186,10 +194,15 @@ class CalculatorFilter(FilterBase):
 
 @dataclass
 class EnergyFilter(CalculatorFilter):
-    """Filters structures by energy per atom."""
+    """Filters structures by energy per atom (eV/atom).
+
+    Keeps structures whose energy per atom falls within ``[min_energy, max_energy]``.
+    """
 
     min_energy: float = -inf
+    """Lower bound on energy per atom in eV/atom (default: −∞)."""
     max_energy: float = +inf
+    """Upper bound on energy per atom in eV/atom (default: +∞)."""
 
     def __call__(self, structure: Atoms) -> bool:
         if not self._check(structure):
@@ -203,9 +216,13 @@ class EnergyFilter(CalculatorFilter):
 
 @dataclass
 class ForceFilter(CalculatorFilter):
-    """Filters structures by maximum force magnitude."""
+    """Filters structures by maximum atomic force magnitude (eV/Å).
+
+    Keeps structures where no atom experiences a force larger than ``max_force``.
+    """
 
     max_force: float = +inf
+    """Maximum allowed force magnitude in eV/Å (default: +∞)."""
 
     def __call__(self, structure: Atoms) -> bool:
         if not self._check(structure):
