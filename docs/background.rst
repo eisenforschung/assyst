@@ -1,6 +1,9 @@
 Background
 ==========
 
+Unlike molecular dynamics-based methods, which sample configurations along thermodynamic paths from a starting structure, this approach generates initial structures by random parametrization of crystallographic symmetry groups, requiring no pre-existing interatomic potential.
+The training set thereby covers broad regions of the potential energy surface independently of any specific target phase or thermal condition.
+
 The training strategy to achieve this splits in three steps:
 
 1. the exploration of the PES with randomly generated, but symmetric, periodic crystals in 

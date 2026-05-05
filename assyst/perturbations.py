@@ -1,5 +1,6 @@
 """Classes to apply (random) perturbations to structures."""
 
+import warnings
 from abc import ABC, abstractmethod
 from ase import Atoms
 from typing import Iterable, Callable, Self, Iterator, Union
@@ -97,8 +98,18 @@ def stretch(
     _rng = np.random.default_rng(rng)
 
     def get_strains(max_strain, size):
+        if max_strain <= 0.0:
+            return np.zeros(size)
+        if 0 < max_strain < minimum_strain:
+            warnings.warn(
+                f"max_strain ({max_strain}) is smaller than minimum_strain ({minimum_strain}); "
+                "minimum_strain floor cannot be enforced and will be ignored.",
+                UserWarning,
+                stacklevel=3,
+            )
         signs = _rng.choice([-1, 1], size=size)
-        magnitudes = _rng.uniform(minimum_strain, max_strain, size=size)
+        # clamp lower bound so the range is valid when minimum_strain > max_strain
+        magnitudes = _rng.uniform(min(minimum_strain, max_strain), max_strain, size=size)
         return signs * magnitudes
 
     strain = np.zeros((3, 3))

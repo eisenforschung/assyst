@@ -36,7 +36,6 @@ We are open for any contributions!
    Home <self>
    installation
    background
-   workflow
    formulas
    filters
    notebooks
