@@ -28,6 +28,26 @@ Development happens on `Github <https://github.com/eisenforschung/assyst>`_, fee
 request for additional features.
 We are open for any contributions!
 
+Quick Start
+-----------
+
+Create a minimally viable training set in just 5 lines of python!
+
+.. code-block:: python
+
+   from assyst.crystals import Formulas, sample
+   from assyst.relaxations import FullRelax, relax
+   from assyst.perturbations import Rattle, perturb
+   from assyst.calculators import Morse
+
+   formulas = Formulas.range("Cu", 1, 5)
+   structures = list(sample(formulas))
+
+   calc = Morse()
+   relaxed = list(relax(structures, FullRelax(), calc))
+   training_set = list(perturb(relaxed, [Rattle(sigma=0.1)]))
+
+
 .. toctree::
    :maxdepth: 2
    :hidden:
