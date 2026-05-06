@@ -35,6 +35,14 @@ instances::
 The ``&`` operator short-circuits: the right-hand filter is only evaluated if
 the left-hand filter returns ``True``.
 
+``|`` builds a filter that accepts structures passing *either* condition —
+useful for mixing strict geometry filters with a relaxed energy fallback::
+
+    from assyst.filters import DistanceFilter, EnergyFilter
+
+    lenient = DistanceFilter({"Fe": 1.1}) | EnergyFilter(max_energy=-0.5)
+    good = list(filter(lenient, structures))
+
 Available filter classes
 ------------------------
 
