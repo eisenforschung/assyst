@@ -142,15 +142,43 @@ class AspectFilter(FilterBase):
         return c / a <= self.maximum_aspect_ratio
 
 
-@dataclass
+@dataclass(init=False)
 class VolumeFilter(FilterBase):
     """Filters structures by volume per atom (Å³/atom).
 
-    Keeps structures whose volume per atom does not exceed ``maximum_volume_per_atom``.
+    Keeps structures whose volume per atom falls within
+    ``[minimum_volume_per_atom, maximum_volume_per_atom]``.
+
+    Constructor follows :func:`range`-style semantics: a single positional
+    argument is the upper bound, two positional arguments are
+    ``(minimum, maximum)``.
     """
 
-    maximum_volume_per_atom: float
-    """Upper bound on volume per atom in Å³/atom."""
+    minimum_volume_per_atom: float = 0.0
+    """Lower bound on volume per atom in Å³/atom (default: 0)."""
+    maximum_volume_per_atom: float = +inf
+    """Upper bound on volume per atom in Å³/atom (default: +∞)."""
+
+    def __init__(
+        self,
+        *args: float,
+        minimum_volume_per_atom: float = 0.0,
+        maximum_volume_per_atom: float = +inf,
+    ):
+        match args:
+            case ():
+                pass
+            case (max_,):
+                maximum_volume_per_atom = max_
+            case (min_, max_):
+                minimum_volume_per_atom = min_
+                maximum_volume_per_atom = max_
+            case _:
+                raise TypeError(
+                    f"VolumeFilter takes at most 2 positional arguments ({len(args)} given)"
+                )
+        self.minimum_volume_per_atom = minimum_volume_per_atom
+        self.maximum_volume_per_atom = maximum_volume_per_atom
 
     def __call__(self, structure: Atoms) -> bool:
         """Return True if structure's volume is within range.
@@ -159,9 +187,15 @@ class VolumeFilter(FilterBase):
             structure (:class:`ase.Atoms`): structure to check
 
         Returns:
-            `True`: volume per atom is smaller or equal than `:attr:.maximum_volume_per_atom`.
+            `True`: volume per atom is within
+                ``[:attr:`.minimum_volume_per_atom`, :attr:`.maximum_volume_per_atom`]``.
             `False`: otherwise"""
-        return structure.cell.volume / len(structure) <= self.maximum_volume_per_atom
+        volume_per_atom = structure.cell.volume / len(structure)
+        return (
+            self.minimum_volume_per_atom
+            <= volume_per_atom
+            <= self.maximum_volume_per_atom
+        )
 
 
 @dataclass
