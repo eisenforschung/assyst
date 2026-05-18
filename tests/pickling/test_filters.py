@@ -3,7 +3,7 @@ from assyst.filters import AndFilter, OrFilter, DistanceFilter, AspectFilter, Vo
 
 def test_pickling_filters():
     df = DistanceFilter({'H': 1.0})
-    vf = VolumeFilter(maximum_volume_per_atom=20.0)
+    vf = VolumeFilter(20.0)
     af = AspectFilter(6.0)
     ef = EnergyFilter(min_energy=-10.0, max_energy=0.0)
     ff = ForceFilter(max_force=1.0)

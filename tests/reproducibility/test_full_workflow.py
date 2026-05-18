@@ -53,7 +53,7 @@ def run_workflow(rng):
     # Note: Calculating energies again would require attaching calculator to random structures
     # For this reproducibility test, we check geometry.
 
-    everything = list(filter(VolumeFilter(maximum_volume_per_atom=300), filter(DistanceFilter({'Cu': 1}), spg + volmin + allmin + random)))
+    everything = list(filter(VolumeFilter(300), filter(DistanceFilter({'Cu': 1}), spg + volmin + allmin + random)))
 
     return everything
 

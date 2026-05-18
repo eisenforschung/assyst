@@ -31,7 +31,7 @@ shear = Stretch(hydro=.05, shear=.20)
 stretch = RandomChoice(hydro, shear, .7)
 mods = 1*[rattle] + 1*[stretch]
 
-f = VolumeFilter(maximum_volume_per_atom=300) & DistanceFilter({'Cu': 1., 'Zn': 1.}) & AspectFilter(6)
+f = VolumeFilter(300) & DistanceFilter({'Cu': 1., 'Zn': 1.}) & AspectFilter(6)
 rattle = list(perturb(allmin, mods, filters=f))
 structures = list(filter(f, structures + volmin + allmin + rattle))
 
