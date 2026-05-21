@@ -182,9 +182,10 @@ Generative AI was used to generate the tests, parts of the
 documentation, and a small number of features. The majority of AI
 contributions are clearly marked as such by the commit information as
 authored by `google-labs-jules[bot]`[@jules],
-`Claude <noreply@anthropic.com>`[@claude] or `github-bot[bot]`[@claude].
-`jules` was used with Gemini 2.5 and 3, for `Claude` we used Sonnet and
-Opus version 4.6 and 4.7. Prompts are linked in PR descriptions where
+`Claude <noreply@anthropic.com>` or `github-bot[bot]`.
+`jules` was used with Gemini 2.5 and 3, for `Claude` we used Sonnet
+4.6[@claude_sonnet_4_6] and Opus 4.6[@claude_opus_4_6] and
+4.7[@claude_opus_4_7]. Prompts are linked in PR descriptions where
 applicable. Additionally, most of the test suite was generated and
 committed manually in early commits. We ensured high quality by manual
 revision of all generated code and documentation. These revisions were
