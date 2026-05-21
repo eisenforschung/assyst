@@ -20,7 +20,8 @@ training set spanning the full potential energy surface (PES) of a material.
 This software package is the reference implementation of this idea, designed to be as flexible as possible without
 assuming either a specific MLIP, reference data, or workflow manager in mind.
 It is built on `ASE <https://ase-lib.org/index.html>`_ and can use any of its calculators.
-It also assumes that you bring your own reference energies and forces.
+It also assumes that you label its output structures with reference energies and forces on your own, either with an ASE
+calculator or by any other method.
 For a ready-to-run implementation that targets Atomic Cluster Expansion and Moment Tensor Potentials fit to Density
 Functional Theory (DFT) data check out `pyiron_potentialfit <https://github.com/pyiron/pyiron_potentialfit>`_.
 

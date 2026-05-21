@@ -51,8 +51,8 @@ Available filter classes
    * - :class:`~assyst.filters.VolumeFilter`
      - Maximum volume per atom
    * - :class:`~assyst.filters.EnergyFilter`
-     - Energy per atom within ``[min_energy, max_energy]`` (requires a single-point calculator)
+     - Energy per atom within ``[min_energy, max_energy]`` (requires a single-point :class:`ase.calculators.calculator.Calculator`)
    * - :class:`~assyst.filters.ForceFilter`
-     - Maximum atomic force magnitude (requires a single-point calculator)
+     - Maximum atomic force magnitude (requires a single-point :class:`ase.calculators.calculator.Calculator`)
 
 See :doc:`api/filters` for the full API reference of each class.

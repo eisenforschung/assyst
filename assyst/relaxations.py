@@ -1,5 +1,6 @@
 """Relaxation step of ASSYST."""
 
+import warnings
 from dataclasses import dataclass
 from typing import Literal, Iterable, Iterator
 
@@ -48,7 +49,16 @@ class Relax:
         structure.calc = calc
         optimizer_cls = {"LBFGS": LBFGS, "BFGS": BFGS, "FIRE": FIRE}[self.algorithm]
         optimizer = optimizer_cls(self.apply_filter_and_constraints(structure), logfile="/dev/null")
-        optimizer.run(fmax=self.force_tolerance, steps=self.max_steps)
+        with warnings.catch_warnings():
+            # FrechetCellFilter occasionally emits a benign scipy.linalg.logm
+            # accuracy warning during cell updates; the reported error is at
+            # numerical noise level and does not affect the relaxation.
+            warnings.filterwarnings(
+                "ignore",
+                message="logm result may be inaccurate",
+                category=RuntimeWarning,
+            )
+            optimizer.run(fmax=self.force_tolerance, steps=self.max_steps)
         structure.calc = None
         structure.calc = SinglePointCalculator(
             structure,

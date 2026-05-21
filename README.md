@@ -13,9 +13,11 @@ individual phases or structures and instead tries to deliver a training set span
 (PES) of a material.
 
 This software package is a minimal implementation of this idea, designed to be as flexible as possible without assuming
-either a specific MLIP, reference data, or workflow manager in mind. It is built on
-[ASE](https://ase-lib.org/index.html) and can use any of its calculators. It also assumes that you bring your own
-reference energies and forces. For a ready-to-run implementation that targets Atomic Cluster Expansion and Moment Tensor
+either a specific MLIP, reference data, or workflow manager in mind.
+It is built on [ASE](https://ase-lib.org/index.html) and can use any of its calculators.
+It also assumes that you label its output structures with reference energies and forces on your own, either with an ASE
+calculator or by any other method.
+For a ready-to-run implementation that targets Atomic Cluster Expansion and Moment Tensor
 Potentials fit to Density Functional Theory (DFT) data check out pyiron_potentialfit.
 
 ![ASSYST schema](docs/img/AssystSchematicTraced.svg)
