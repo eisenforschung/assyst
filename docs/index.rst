@@ -66,6 +66,7 @@ Create a minimally viable training set in just 5 lines of python!
    :hidden:
    :caption: Developer Notes:
 
+   design
    metadata
    custom_relaxer
 
