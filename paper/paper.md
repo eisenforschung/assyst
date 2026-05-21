@@ -20,6 +20,7 @@ affiliations:
   - index: 1
     name: Max-Planck-Institute for Sustainable Materials, Germany
 date: 21 May 2026
+bibliography: paper.bib
 ---
 
 # Summary
