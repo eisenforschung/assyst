@@ -11,6 +11,7 @@ from assyst.filters import AspectFilter, DistanceFilter
 from assyst.perturbations import Rattle, Stretch
 from assyst.relaxations import FullRelax, VolumeRelax
 from assyst.workflow import (
+    FilterStage,
     PerturbStage,
     RelaxStage,
     breadth_first,
@@ -96,6 +97,15 @@ def test_filter_stage_narrows_flow_without_duplicating():
     result = breadth_first(seeds, [KeepWithTag("a"), Tag("/x")])
     # 'a' passes the filter and is then tagged; 'b'/'c' never flow onward
     assert uuids(result) == ["a", "b", "c", "a/x"]
+
+
+def test_filter_stage_applies_predicate():
+    seeds = make_seeds(["a", "b", "c"])
+    # real FilterStage with a plain predicate, then tag the survivors
+    keep = FilterStage(lambda s: s.info["uuid"] != "b")
+    result = breadth_first(seeds, [keep, Tag("/x")])
+    # 'b' is filtered out before the tagging stage and so is never tagged
+    assert uuids(result) == ["a", "b", "c", "a/x", "c/x"]
 
 
 def test_depth_first_matches_breadth_first_set():
