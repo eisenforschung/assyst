@@ -9,4 +9,5 @@ assyst
    perturbations
    filters
    calculators
+   workflow
    plot
