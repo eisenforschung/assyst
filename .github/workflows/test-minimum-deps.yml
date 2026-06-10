@@ -1,0 +1,24 @@
+name: test-minimum-deps
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-minimum-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # setuptools-scm derives the version from git history.
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v5
+      # Pin the lowest supported Python: minimum deps go with minimum Python,
+      # and the declared floors are the first versions shipping 3.11 wheels.
+      - run: uv venv --python 3.11
+      # --resolution lowest-direct pins every direct dependency to the lowest
+      # version its bound allows, exercising the floors declared in pyproject.
+      - run: uv pip install --resolution lowest-direct -e ".[test,plotneighborlist]"
+      - run: uv run --no-sync pytest
