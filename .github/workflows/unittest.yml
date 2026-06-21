@@ -28,5 +28,16 @@ jobs:
         pip install -e .[test,plotneighborlist]
     - name: run tests
       shell: bash -l {0}
+      env:
+        HYPOTHESIS_ARTIFACT_NAME: hypothesis-example-db-py${{ matrix.python-version }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         pytest
+    - name: Upload Hypothesis example database
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: hypothesis-example-db-py${{ matrix.python-version }}
+        path: .hypothesis/examples
+        if-no-files-found: ignore
+        retention-days: 90
