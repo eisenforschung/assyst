@@ -30,6 +30,30 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Resolve model from mention
+        id: model
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          REVIEW_BODY: ${{ github.event.review.body }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          body="${COMMENT_BODY}${REVIEW_BODY}${ISSUE_BODY}${ISSUE_TITLE}"
+          model=opus
+          if [[ "$body" =~ @claude\[([a-zA-Z]+)\] ]]; then
+            choice="${BASH_REMATCH[1],,}"
+            case "$choice" in
+              haiku|sonnet|opus)
+                model="$choice"
+                ;;
+              *)
+                echo "::warning::Unknown @claude model alias '$choice'; using default ($model)."
+                ;;
+            esac
+          fi
+          echo "model=$model" >> "$GITHUB_OUTPUT"
+          echo "Selected model: $model"
+
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1
@@ -47,5 +71,5 @@ jobs:
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
           # claude_args: '--allowed-tools Bash(gh pr:*)'
-          claude_args: '--allowedTools "WebFetch" "WebSearch" "Bash(git *)" "Bash(python *)" "Bash(pip install *)" "Bash(pytest *)" "Bash(gh *)" "mcp__github__*"'
+          claude_args: '--model ${{ steps.model.outputs.model }} --allowedTools "WebFetch" "WebSearch" "Bash(git *)" "Bash(python *)" "Bash(pip install *)" "Bash(pytest *)" "Bash(gh *)" "mcp__github__*"'
 
