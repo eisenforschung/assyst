@@ -43,7 +43,7 @@ jobs:
           if [[ "$body" =~ @claude\[([a-zA-Z]+)\] ]]; then
             choice="${BASH_REMATCH[1],,}"
             case "$choice" in
-              haiku|opus)
+              haiku|sonnet|opus)
                 model="$choice"
                 ;;
               *)
