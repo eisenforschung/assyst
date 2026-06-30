@@ -7,18 +7,43 @@ on:
     branches: [ main ]
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.filter.outputs.run }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            run:
+              - 'assyst/**'
+              - 'tests/**'
+              - 'pyproject.toml'
+              - '.github/workflows/**'
+
   test-minimum-deps:
+    needs: changes
     runs-on: ubuntu-latest
     steps:
+      - name: Skip notice
+        if: needs.changes.outputs.run != 'true'
+        run: echo "No source, test, or workflow changes; skipping."
       - uses: actions/checkout@v5
+        if: needs.changes.outputs.run == 'true'
         with:
           # setuptools-scm derives the version from git history.
           fetch-depth: 0
       - uses: astral-sh/setup-uv@v5
+        if: needs.changes.outputs.run == 'true'
       # Pin the lowest supported Python: minimum deps go with minimum Python,
       # and the declared floors are the first versions shipping 3.11 wheels.
       - run: uv venv --python 3.11
+        if: needs.changes.outputs.run == 'true'
       # --resolution lowest-direct pins every direct dependency to the lowest
       # version its bound allows, exercising the floors declared in pyproject.
       - run: uv pip install --resolution lowest-direct -e ".[test,plotneighborlist]"
+        if: needs.changes.outputs.run == 'true'
       - run: uv run --no-sync pytest
+        if: needs.changes.outputs.run == 'true'
