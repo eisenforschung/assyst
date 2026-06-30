@@ -38,9 +38,14 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
         run: |
+          # The action does its own trigger detection: it only fires on '@claude'
+          # followed by whitespace, punctuation, or end-of-line, so a model is
+          # selected with a space -- '@claude [haiku|sonnet|opus]'. This step only
+          # maps that alias onto a --model arg; bare or unrecognised mentions fall
+          # back to sonnet. (A glued '@claude[model]' would not trigger the action.)
           body="${COMMENT_BODY}${REVIEW_BODY}${ISSUE_BODY}${ISSUE_TITLE}"
           model=sonnet
-          if [[ "$body" =~ @claude\[([a-zA-Z]+)\] ]]; then
+          if [[ "$body" =~ @claude[[:space:]]*\[([a-zA-Z]+)\] ]]; then
             choice="${BASH_REMATCH[1],,}"
             case "$choice" in
               haiku|sonnet|opus)
