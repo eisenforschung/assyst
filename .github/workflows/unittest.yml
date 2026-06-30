@@ -21,7 +21,7 @@ jobs:
               - 'assyst/**'
               - 'tests/**'
               - 'pyproject.toml'
-              - '.github/workflows/**'
+              - '.github/workflows/unittest.yml'
 
   build:
     needs: changes
