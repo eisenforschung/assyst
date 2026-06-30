@@ -7,7 +7,24 @@ on:
   pull_request:
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.filter.outputs.run }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            run:
+              - 'assyst/**'
+              - 'tests/**'
+              - 'pyproject.toml'
+              - '.github/workflows/unittest.yml'
+
   build:
+    needs: changes
     strategy:
       fail-fast: false
       matrix:
@@ -15,17 +32,24 @@ jobs:
         os: ["ubuntu-latest"]
     runs-on: ${{ matrix.os }}
     steps:
+    - name: Skip notice
+      if: needs.changes.outputs.run != 'true'
+      run: echo "No source, test, or workflow changes; skipping."
     - uses: actions/checkout@v5
+      if: needs.changes.outputs.run == 'true'
     - name: Set up Python ${{ matrix.python-version }}
+      if: needs.changes.outputs.run == 'true'
       uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
         cache: pip
     - name: Setup
+      if: needs.changes.outputs.run == 'true'
       shell: bash -l {0}
       run: |
         pip install -e .[test,plotneighborlist]
     - name: run tests
+      if: needs.changes.outputs.run == 'true'
       shell: bash -l {0}
       env:
         HYPOTHESIS_ARTIFACT_NAME: hypothesis-example-db-py${{ matrix.python-version }}
@@ -33,7 +57,7 @@ jobs:
       run: |
         pytest
     - name: Upload Hypothesis example database
-      if: always()
+      if: needs.changes.outputs.run == 'true' && always()
       uses: actions/upload-artifact@v4
       with:
         name: hypothesis-example-db-py${{ matrix.python-version }}
