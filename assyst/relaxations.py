@@ -45,7 +45,7 @@ class Relax:
         """
         calc = structure.calc
         structure = structure.copy()
-        update_uuid(structure)
+        update_uuid(structure, change=type(self).__name__)
         structure.calc = calc
         optimizer_cls = {"LBFGS": LBFGS, "BFGS": BFGS, "FIRE": FIRE}[self.algorithm]
         optimizer = optimizer_cls(self.apply_filter_and_constraints(structure), logfile="/dev/null")

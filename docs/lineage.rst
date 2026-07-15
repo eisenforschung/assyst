@@ -12,19 +12,20 @@ Workflow Integration
 Initial Generation
 ~~~~~~~~~~~~~~~~~~
 
-When a structure is first generated using :func:`.pyxtal` (or through :func:`.sample`), it is assigned a new UUID.
+When a structure is first generated using :func:`.pyxtal` (or through :func:`.sample`), it is assigned a new UUID and ``change`` is set to ``"pyxtal"``.
 At this stage, the ``seed`` is set to the same UUID, and the ``lineage`` is empty.
 
 Perturbations
 ~~~~~~~~~~~~~
 
-Whenever a :class:`.PerturbationABC` (like :class:`.Rattle` or :class:`.Stretch`) is applied to a structure, a new UUID is generated.
+Whenever a :class:`.PerturbationABC` (like :class:`.Rattle` or :class:`.Stretch`) is applied to a structure, a new UUID is generated and ``change`` is set to that perturbation's own string form (e.g. ``rattle(0.1)``).
 The previous UUID is appended to the ``lineage`` list. The ``seed`` remains unchanged.
+The cumulative ``perturbation`` key still records every step of a :class:`.Series`, while ``change`` only reflects the most recent one.
 
 Relaxations
 ~~~~~~~~~~~
 
-Similarly, the :meth:`.Relax.relax` method generates a new UUID for the relaxed structure and updates the lineage.
+Similarly, the :meth:`.Relax.relax` method generates a new UUID for the relaxed structure, updates the lineage, and sets ``change`` to the relaxation class's name (e.g. ``VolumeRelax``).
 
 Example
 -------
