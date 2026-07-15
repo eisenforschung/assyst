@@ -12,6 +12,7 @@ These keys are managed by the :func:`assyst.utils.update_uuid` function and are 
 * ``uuid``: A Universally Unique Identifier (UUID) for the current structure.
 * ``seed``: The UUID of the initial structure from which this structure was derived. It remains constant throughout a lineage.
 * ``lineage``: A list of UUIDs of all parent structures, in the order they were generated.
+* ``change``: A description of the step that produced the current UUID (e.g. ``VolumeRelax``, ``pyxtal``, or a perturbation's own string form). Only set when the caller of :func:`assyst.utils.update_uuid` provides one; it reflects the most recent step only, not the full history.
 
 For more details on how lineage is tracked through the workflow, see :doc:`lineage`.
 

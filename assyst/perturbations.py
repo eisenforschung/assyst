@@ -129,7 +129,7 @@ class PerturbationABC(ABC):
     """Apply some perturbation to a given structure."""
 
     def __call__(self, structure: Atoms) -> Atoms:
-        update_uuid(structure)
+        update_uuid(structure, change=str(self))
         if "perturbation" not in structure.info:
             structure.info["perturbation"] = str(self)
         else:
