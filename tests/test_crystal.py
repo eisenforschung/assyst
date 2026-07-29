@@ -179,6 +179,81 @@ class TestSampleSpaceGroups(unittest.TestCase):
                 )
 
 
+class TestSampleShuffle(unittest.TestCase):
+    """shuffle=True must cover the same grid as the default order, but one structure per pyxtal call."""
+
+    formulas = Formulas.range("Cu", 1, 4)  # Cu1, Cu2, Cu3
+    spacegroups = [1, 2, 3]
+
+    def setUp(self):
+        # the shuffled path calls pyxtal for a single group, which returns Atoms rather than a list of dicts
+        pyxtal_patch = patch("assyst.crystals.pyxtal", side_effect=lambda *_, **__: make_mock_atoms())
+        # sniffing the symmetry of the mocked structures is not possible
+        spacegroup_patch = patch("assyst.crystals._get_real_spacegroup", return_value=1)
+        self.mock_pyxtal = pyxtal_patch.start()
+        spacegroup_patch.start()
+        self.addCleanup(pyxtal_patch.stop)
+        self.addCleanup(spacegroup_patch.stop)
+
+    def drawn_grid_points(self):
+        """The (species, num_ions, group) triples requested from pyxtal, in the order they were requested."""
+        return [(call.args[1], call.args[2], call.args[0]) for call in self.mock_pyxtal.call_args_list]
+
+    def test_covers_full_grid(self):
+        results = list(sample(self.formulas, self.spacegroups, shuffle=True, rng=0))
+        self.assertEqual(len(results), 9, msg="Every point of the formula x spacegroup grid should yield a structure")
+        self.assertEqual(
+            set(self.drawn_grid_points()),
+            {(("Cu",), (n,), g) for n in (1, 2, 3) for g in self.spacegroups},
+            msg="Shuffling should request every grid point exactly once",
+        )
+
+    def test_one_structure_per_call(self):
+        it = sample(self.formulas, self.spacegroups, shuffle=True, rng=0)
+        next(it)
+        self.assertEqual(
+            self.mock_pyxtal.call_count, 1,
+            msg="The first structure should cost a single pyxtal call, not a whole formula",
+        )
+
+    def test_order_is_not_formula_major(self):
+        list(sample(self.formulas, self.spacegroups, shuffle=True, rng=0))
+        first_formulas = {num_ions for _, num_ions, _ in self.drawn_grid_points()[:3]}
+        self.assertGreater(
+            len(first_formulas), 1,
+            msg="The start of a shuffled stream should mix formulas, not exhaust the first one",
+        )
+
+    def test_order_depends_on_seed(self):
+        list(sample(self.formulas, self.spacegroups, shuffle=True, rng=0))
+        first = self.drawn_grid_points()
+        self.mock_pyxtal.reset_mock()
+
+        list(sample(self.formulas, self.spacegroups, shuffle=True, rng=0))
+        self.assertEqual(first, self.drawn_grid_points(), msg="The same seed should give the same order")
+        self.mock_pyxtal.reset_mock()
+
+        list(sample(self.formulas, self.spacegroups, shuffle=True, rng=1))
+        self.assertNotEqual(first, self.drawn_grid_points(), msg="A different seed should give a different order")
+
+    def test_max_structures(self):
+        results = list(sample(self.formulas, self.spacegroups, max_structures=4, shuffle=True, rng=0))
+        self.assertEqual(len(results), 4, msg="Should not generate more than max_structures=4")
+        self.assertEqual(self.mock_pyxtal.call_count, 4, msg="Should not generate structures that are not yielded")
+
+    def test_atom_counts(self):
+        list(sample(self.formulas, self.spacegroups, min_atoms=2, max_atoms=2, shuffle=True, rng=0))
+        for _, num_ions, _ in self.drawn_grid_points():
+            self.assertEqual(sum(num_ions), 2, msg="Shuffling should respect the atom count limits")
+
+
+class TestSampleShuffleIncompatible(unittest.TestCase):
+    def test_incompatible_grid_points_are_skipped(self):
+        """Mg1 cannot be placed in group 194; sample() should skip the pair instead of raising."""
+        self.assertEqual(list(sample([{"Mg": 1}], [194], shuffle=True, rng=0)), [])
+        self.assertEqual(len(list(sample([{"Mg": 1}], [194, 1], shuffle=True, rng=0))), 1)
+
+
 class TestSampleSpaceGroupsArguments(unittest.TestCase):
     def test_invalid_dim(self):
         with self.assertRaises(ValueError):
@@ -217,11 +292,11 @@ class TestSampleSpaceGroupsArguments(unittest.TestCase):
 
 
 @settings(deadline=None, max_examples=50)
-@given(st.integers(1, 230))
-def test_spacegroup_info(group):
+@given(st.integers(1, 230), st.booleans())
+def test_spacegroup_info(group, shuffle):
     """sample() should add two fields to Atoms.info describing the requested and actual space group for
-    each structure."""
-    for atoms in sample([{"Cu": 4}], [group]):
+    each structure, in either traversal order."""
+    for atoms in sample([{"Cu": 4}], [group], shuffle=shuffle):
         assert "requested spacegroup" in atoms.info and "spacegroup" in atoms.info, \
             "sample() does not supply spacegroup metadata!"
         assert atoms.info["requested spacegroup"] == group \
