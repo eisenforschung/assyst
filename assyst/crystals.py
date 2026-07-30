@@ -258,22 +258,16 @@ class Formulas(Sequence):
 
 
 def _stoichiometries(
-    formulas: Iterable[dict[str, int]], min_atoms: int, max_atoms: int
+    formulas: Iterable[dict[str, int]],
 ) -> Iterator[tuple[tuple[str, ...], tuple[int, ...]]]:
-    """Split formulas into the (species, num_ions) pairs that :func:`.pyxtal` takes.
-
-    Formulas outside the given atom count limits are dropped.
-    """
+    """Split formulas into the (species, num_ions) pairs that :func:`.pyxtal` takes."""
     for stoich in formulas:
         # pyxtal never returns structures when one element with zero atoms is present, so filter here first for
         # robustness
         stoich = {e: n for e, n in stoich.items() if n > 0}
         if len(stoich) == 0:
             continue
-        elements, num_atoms = zip(*stoich.items())
-        if not min_atoms <= sum(num_atoms) <= max_atoms:
-            continue
-        yield elements, num_atoms
+        yield tuple(stoich.keys()), tuple(stoich.values())
 
 
 def _draw_structures(grid, dim, tm, rng) -> Iterator[Atoms]:
@@ -374,7 +368,8 @@ def sample(
         case _:
             raise ValueError("invalid value tolerance={tolerance}!")
 
-    stoichiometries = list(_stoichiometries(formulas, min_atoms, max_atoms))
+    formulas = Formulas(tuple(formulas)).trim(min_atoms, max_atoms)
+    stoichiometries = list(_stoichiometries(formulas))
     grid = list(product(stoichiometries, spacegroups))
     # one generator for the whole grid: passing a seed straight to pyxtal() would reseed it on every draw
     rng = np.random.default_rng(rng)
