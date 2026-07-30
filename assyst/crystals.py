@@ -276,26 +276,13 @@ def _stoichiometries(
         yield elements, num_atoms
 
 
-def _sample_by_formula(stoichiometries, spacegroups, dim, tm, rng) -> Iterator[Atoms]:
-    """Draw one structure per space group for each formula in turn; see :func:`.sample`."""
-    for elements, num_atoms in (bar := tqdm(stoichiometries)):
-        bar.set_description(_formula_string(elements, num_atoms))
-        with catch_warnings(category=UserWarning, action="ignore"):
-            # pyxtal warns about the space groups incompatible with this formula; skipping them is expected here
-            structures = pyxtal(spacegroups, elements, num_atoms, dim=dim, tm=tm, rng=rng)
-        for s in structures:
-            atoms = s.pop("atoms")
-            atoms.info.update(s)
-            yield atoms
+def _draw_structures(grid, dim, tm, rng) -> Iterator[Atoms]:
+    """Draw one structure per (formula, space group) pair in `grid`, in the order given.
 
-
-def _sample_shuffled(stoichiometries, spacegroups, dim, tm, rng) -> Iterator[Atoms]:
-    """Draw (formula, space group) pairs in random order, one structure at a time; see :func:`.sample`."""
-    # one generator for the whole grid: passing a seed straight to pyxtal() would reseed it on every draw
-    rng = np.random.default_rng(rng)
-    grid = list(product(stoichiometries, spacegroups))
-    for i in (bar := tqdm(rng.permutation(len(grid)))):
-        (elements, num_atoms), group = grid[i]
+    Pairs :mod:`pyxtal` cannot combine (stoichiometry incompatible with the group) are skipped, so a structure is
+    not guaranteed per grid point.
+    """
+    for (elements, num_atoms), group in (bar := tqdm(grid)):
         bar.set_description(f"{_formula_string(elements, num_atoms)} ({group})")
         with catch_warnings(category=UserWarning, action="ignore"):
             try:
@@ -324,17 +311,15 @@ def sample(
     """
     Create symmetric random structures.
 
-    By default structures come out formula by formula, i.e. all requested space groups for the first formula, then all
-    of them for the second, and so on.  Since one call to :func:`.pyxtal` covers all space groups of a formula at once,
-    this also means that the first structure already costs the generation of a full formula.  That is what ASSYST does,
-    where the whole set is generated before it is used, but it is a poor fit for consumers that pull structures one at
-    a time and stop early -- those see only the first formula.
+    Structures are drawn one at a time from the (formula x space group) grid.  By default the grid is walked in its
+    natural order -- all requested space groups for the first formula, then all of them for the second, and so on --
+    which is what ASSYST itself wants, since it consumes the whole set at once.  It is a poor fit for a consumer that
+    pulls structures one at a time and stops early, though: such a consumer sees only the first formula.
 
-    Pass `shuffle=True` for those: it walks the (formula x space group) grid in random order and generates one
-    structure per draw, so any prefix of the stream is a spread over all formulas and space groups.  The generated
-    structures are the same either way, only the order and the granularity of the generation differ.  In both cases
-    formulas and space groups that :mod:`pyxtal` cannot combine are skipped, so fewer structures come out than the grid
-    has points.
+    Pass `shuffle=True` for those: it walks the same grid in random order instead, so any prefix of the stream is a
+    spread over all formulas and space groups.  The generated structures are the same either way, only the order
+    differs.  In both cases formulas and space groups that :mod:`pyxtal` cannot combine are skipped, so fewer
+    structures come out than the grid has points.
 
     Args:
         formulas (:class:`.Formulas` or :class:`collections.abc.Iterable` of :class:`dict` from :class:`str` to :class:`int`): :class:`list` of chemical formulas
@@ -390,8 +375,12 @@ def sample(
             raise ValueError("invalid value tolerance={tolerance}!")
 
     stoichiometries = list(_stoichiometries(formulas, min_atoms, max_atoms))
-    draw = _sample_shuffled if shuffle else _sample_by_formula
-    yield from islice(draw(stoichiometries, spacegroups, dim, tm, rng), max_structures)
+    grid = list(product(stoichiometries, spacegroups))
+    # one generator for the whole grid: passing a seed straight to pyxtal() would reseed it on every draw
+    rng = np.random.default_rng(rng)
+    if shuffle:
+        grid = [grid[i] for i in rng.permutation(len(grid))]
+    yield from islice(_draw_structures(grid, dim, tm, rng), max_structures)
 
 
 __all__ = [
