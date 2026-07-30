@@ -28,6 +28,24 @@ def _get_real_spacegroup(s):
     return p.group.number
 
 
+def _formula_string(species: Iterable[str], num_ions: Iterable[int]) -> str:
+    """Render a stoichiometry as a chemical formula, e.g. ``('Cu', 'Ag'), (2, 1)`` to ``Cu2Ag1``."""
+    return "".join(f"{s}{n}" for s, n in zip(species, num_ions))
+
+
+def _structure_info(atoms: Atoms, group: int, repeat: int = 0) -> dict:
+    """Metadata that every generated structure carries.
+
+    Defined in one place so that all ways of drawing a structure describe it identically.
+    """
+    return {
+        "symmetry": group,
+        "repeat": repeat,
+        "requested spacegroup": group,
+        "spacegroup": _get_real_spacegroup(atoms),
+    }
+
+
 def pyxtal(
     group: Union[int, list[int]],
     species: tuple[str],
@@ -75,7 +93,7 @@ def pyxtal(
             "species and num_ions must be of same length, "
             f"not {species} and {num_ions}!"
         )
-    stoich = "".join(f"{s}{n}" for s, n in zip(species, num_ions))
+    stoich = _formula_string(species, num_ions)
 
     _rng = np.random.default_rng(rng)
 
@@ -117,15 +135,7 @@ def pyxtal(
                 if s is None:
                     failed_groups.append(g)
                     continue
-                structures.append(
-                    {
-                        "atoms": s,
-                        "symmetry": g,
-                        "repeat": i,
-                        "requested spacegroup": g,
-                        "spacegroup": _get_real_spacegroup(s),
-                    }
-                )
+                structures.append({"atoms": s} | _structure_info(s, g, repeat=i))
         if len(failed_groups) > 0:
             warn(
                 f"Groups [{', '.join(map(str, failed_groups))}] could not be generated with stoichiometry {stoich}!",
@@ -247,6 +257,38 @@ class Formulas(Sequence):
             return type(self)(tuple(f for f in self if min_atoms <= sum(f.values())))
 
 
+def _stoichiometries(
+    formulas: Iterable[dict[str, int]],
+) -> Iterator[tuple[tuple[str, ...], tuple[int, ...]]]:
+    """Split formulas into the (species, num_ions) pairs that :func:`.pyxtal` takes."""
+    for stoich in formulas:
+        # pyxtal never returns structures when one element with zero atoms is present, so filter here first for
+        # robustness
+        stoich = {e: n for e, n in stoich.items() if n > 0}
+        if len(stoich) == 0:
+            continue
+        yield tuple(stoich.keys()), tuple(stoich.values())
+
+
+def _draw_structures(grid, dim, tm, rng) -> Iterator[Atoms]:
+    """Draw one structure per (formula, space group) pair in `grid`, in the order given.
+
+    Pairs :mod:`pyxtal` cannot combine (stoichiometry incompatible with the group) are skipped, so a structure is
+    not guaranteed per grid point.
+    """
+    for (elements, num_atoms), group in (bar := tqdm(grid)):
+        bar.set_description(f"{_formula_string(elements, num_atoms)} ({group})")
+        with catch_warnings(category=UserWarning, action="ignore"):
+            try:
+                atoms = pyxtal(group, elements, num_atoms, dim=dim, tm=tm, rng=rng)
+            except ValueError:
+                # formula and space group are incompatible; pyxtal() raises instead of warning when only a
+                # single structure is requested
+                continue
+        atoms.info.update(_structure_info(atoms, group))
+        yield atoms
+
+
 def sample(
     formulas: Formulas | Iterable[dict[str, int]],
     spacegroups: list[int] | tuple[int, ...] | Iterable[int] | None = None,
@@ -257,10 +299,21 @@ def sample(
     tolerance: (
         Literal["metallic", "atomic", "molecular", "vdW"] | DistanceFilter | dict
     ) = "metallic",
+    shuffle: bool = False,
     rng: Union[int, np.random.Generator, None] = None,
 ) -> Iterator[Atoms]:
     """
     Create symmetric random structures.
+
+    Structures are drawn one at a time from the (formula x space group) grid.  By default the grid is walked in its
+    natural order -- all requested space groups for the first formula, then all of them for the second, and so on --
+    which is what ASSYST itself wants, since it consumes the whole set at once.  It is a poor fit for a consumer that
+    pulls structures one at a time and stops early, though: such a consumer sees only the first formula.
+
+    Pass `shuffle=True` for those: it walks the same grid in random order instead, so any prefix of the stream is a
+    spread over all formulas and space groups.  The generated structures are the same either way, only the order
+    differs.  In both cases formulas and space groups that :mod:`pyxtal` cannot combine are skipped, so fewer
+    structures come out than the grid has points.
 
     Args:
         formulas (:class:`.Formulas` or :class:`collections.abc.Iterable` of :class:`dict` from :class:`str` to :class:`int`): :class:`list` of chemical formulas
@@ -275,6 +328,8 @@ def sample(
             if str then it should be one values understood by :class:`pyxtal.tolerance.Tol_matrix`;
             if dict each value gives the minimum *radius* allowed for an atom, whether a given distance is allowed then
             depends on the sum of the radii of the respective elements
+        shuffle (bool): draw (formula, space group) pairs in random order and generate one structure at a time,
+            instead of one formula after the other
         rng (:class:`int`, :class:`numpy.random.Generator`): seed or random number generator
 
     Yields:
@@ -313,30 +368,14 @@ def sample(
         case _:
             raise ValueError("invalid value tolerance={tolerance}!")
 
-    for stoich in (bar := tqdm(formulas)):
-        # pyxtal never returns structures when one element with zero atoms is present, so filter here first for
-        # robustness
-        stoich = {e: n for e, n in stoich.items() if n > 0}
-        if len(stoich) == 0:
-            continue
-        elements, num_atoms = zip(*stoich.items())
-        if not min_atoms <= sum(num_atoms) <= max_atoms:
-            continue
-        stoich_str = "".join(f"{s}{n}" for s, n in zip(elements, num_atoms))
-        bar.set_description(stoich_str)
-
-        def pop(s):
-            atoms = s.pop("atoms")
-            atoms.info.update(s)
-            return atoms
-
-        with catch_warnings(category=UserWarning, action="ignore"):
-            px = pyxtal(spacegroups, elements, num_atoms, dim=dim, tm=tm, rng=rng)
-            yield from islice(map(pop, px), max_structures)
-            if max_structures is not None:
-                max_structures -= len(px)
-                if max_structures <= 0:
-                    break
+    formulas = Formulas(tuple(formulas)).trim(min_atoms, max_atoms)
+    stoichiometries = list(_stoichiometries(formulas))
+    grid = list(product(stoichiometries, spacegroups))
+    # one generator for the whole grid: passing a seed straight to pyxtal() would reseed it on every draw
+    rng = np.random.default_rng(rng)
+    if shuffle:
+        grid = [grid[i] for i in rng.permutation(len(grid))]
+    yield from islice(_draw_structures(grid, dim, tm, rng), max_structures)
 
 
 __all__ = [
