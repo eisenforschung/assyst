@@ -230,6 +230,14 @@ class TestSampleSpaceGroupsArguments(unittest.TestCase):
         self.assertEqual(len(results), 0)
         mock_pyxtal.assert_not_called()
 
+    @patch("assyst.crystals.pyxtal")
+    def test_all_zero_formula_skipped_after_trim(self, mock_pyxtal):
+        """min_atoms=0 lets an all-zero formula survive Formulas.trim(); _stoichiometries() must still skip it."""
+        mock_pyxtal.side_effect = lambda *_, **__: make_mock_atoms()
+        results = list(sample([{"Cu": 0}], [1], min_atoms=0))
+        self.assertEqual(len(results), 0)
+        mock_pyxtal.assert_not_called()
+
     @patch("assyst.crystals._get_real_spacegroup", return_value=1)
     @patch("assyst.crystals.pyxtal")
     def test_empty_dict_tolerance(self, mock_pyxtal, mock_spacegroup):
