@@ -46,8 +46,8 @@ with ImportAlarm(
     raise_exception=True,
 ) as ace_alarm:
     import pyace
-    from pyace.atomicenvironment import aseatoms_to_atomicenvironment
-    from pyace.linearacefit import compute_nfunc_func_ind_shift
+    from pyace.atomicenvironment import aseatoms_to_atomicenvironment  # needs pyace
+    from pyace.linearacefit import compute_nfunc_func_ind_shift  # needs pyace
 
 
 class Featurizer(ABC):
@@ -175,7 +175,7 @@ class RadialFeaturizer(Featurizer):
 
 
 @lru_cache(maxsize=4)
-def _ace_engine(featurizer: "AceFeaturizer"):
+def _ace_engine(featurizer: "AceFeaturizer"):  # needs pyace
     """Build the (expensive, unpicklable) pyace objects for a featurizer and keep them cached.
 
     Held outside :class:`.AceFeaturizer` so that it stays a plain, picklable dataclass.
@@ -212,7 +212,7 @@ def _ace_engine(featurizer: "AceFeaturizer"):
 
 
 @dataclass(frozen=True, eq=True)
-class AceFeaturizer(Featurizer):
+class AceFeaturizer(Featurizer):  # needs pyace
     """Linear Atomic Cluster Expansion features, as used in the paper.
 
     Wraps the B-basis of `pyace <https://github.com/ICAMS/python-ace>`__: :meth:`~.AceFeaturizer.__call__` returns
