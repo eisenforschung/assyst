@@ -8,6 +8,7 @@ assyst
    relaxations
    perturbations
    filters
+   leverage
    calculators
    plot
    utils
