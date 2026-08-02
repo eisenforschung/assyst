@@ -19,26 +19,35 @@ score until the requested training fraction is reached.  Selection uses only the
 energies or forces, so it can run *before* expensive labeling.
 
 The design matrix requires per-atom features; any :class:`.Featurizer` works.  :class:`.RadialFeaturizer` is a simple
-dependency-free default.  Selecting on energy rows only corresponds to the *energy-CUR* mode of the paper, passing a
+dependency-free default, :class:`.AceFeaturizer` wraps the linear ACE basis the paper itself uses and needs `pyace`
+installed.  Selecting on energy rows only corresponds to the *energy-CUR* mode of the paper, passing a
 ``force_weight`` adds force rows and corresponds to the *block-CUR* mode.
 
-To see which part of an ASSYST pool a reduction keeps and which it drops, label the structures of each step with
-:func:`.tag_stage` and pass the selection to :func:`.trace` or :func:`.summarize`.
+To see which part of an ASSYST pool a reduction keeps and which it drops, pass the selection to :func:`.trace` or
+:func:`.summarize`.
 """
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from functools import lru_cache
 from math import ceil
-from typing import Callable, Iterable, Iterator, Sequence, Union
+from typing import Callable, Iterable, Sequence, Union
 
 import numpy as np
 import pandas as pd
 from ase import Atoms
+from pyiron_snippets.import_alarm import ImportAlarm
 
 from .neighbors import neighbor_list
 
-STAGE_KEY = "stage"
-"""Key in :attr:`ase.Atoms.info` under which :func:`.tag_stage` records the generating ASSYST step."""
+with ImportAlarm(
+    "AceFeaturizer requires pyace; install with 'conda install -c conda-forge python-ace' or from "
+    "https://github.com/ICAMS/python-ace",
+    raise_exception=True,
+) as ace_alarm:
+    import pyace
+    from pyace.atomicenvironment import aseatoms_to_atomicenvironment
+    from pyace.linearacefit import compute_nfunc_func_ind_shift
 
 
 class Featurizer(ABC):
@@ -163,6 +172,120 @@ class RadialFeaturizer(Featurizer):
             np.add.at(grad, (j[:, None, None], directions, columns), values)
             np.add.at(grad, (i[:, None, None], directions, columns), -values)
         return grad
+
+
+@lru_cache(maxsize=4)
+def _ace_engine(featurizer: "AceFeaturizer"):
+    """Build the (expensive, unpicklable) pyace objects for a featurizer and keep them cached.
+
+    Held outside :class:`.AceFeaturizer` so that it stays a plain, picklable dataclass.
+    """
+    block = "UNARY" if len(featurizer.elements) == 1 else "ALL"
+    configuration = pyace.create_multispecies_basis_config(
+        {
+            "elements": list(featurizer.elements),
+            "embeddings": {"ALL": {"fs_parameters": [1, 1], "ndensity": 1, "npot": "FinnisSinclair"}},
+            "bonds": {
+                "ALL": {
+                    "NameOfCutoffFunction": "cos",
+                    "dcut": 0.01,
+                    "radbase": featurizer.radial_base,
+                    "radparameters": [2.0],
+                    "rcut": featurizer.cutoff,
+                }
+            },
+            "functions": {
+                block: {
+                    "nradmax_by_orders": list(featurizer.n_radial),
+                    "lmax_by_orders": list(featurizer.l_max),
+                }
+            },
+        }
+    )
+    basis = pyace.ACEBBasisSet(configuration)
+    # the calculator keeps a raw pointer to the evaluator and the evaluator one to the basis, so all three have to
+    # be kept alive together
+    evaluator = pyace.ACEBEvaluator(basis)
+    calculator = pyace.ACECalculator(evaluator)
+    n_features, shifts = compute_nfunc_func_ind_shift(basis)
+    return basis, evaluator, calculator, n_features, shifts
+
+
+@dataclass(frozen=True, eq=True)
+class AceFeaturizer(Featurizer):
+    """Linear Atomic Cluster Expansion features, as used in the paper.
+
+    Wraps the B-basis of `pyace <https://github.com/ICAMS/python-ace>`__: :meth:`~.AceFeaturizer.__call__` returns
+    the per-atom B-basis projections and :meth:`~.AceFeaturizer.gradient` their position derivatives, so both
+    energy-CUR and block-CUR selection work.  Species are laid out in blocks, one per element.
+
+    The defaults give a body order of three (a rank-1, a rank-2 and a rank-3 block), which is what the paper fits.
+
+    .. attention::
+        This class needs additional dependencies!
+        Install `pyace` with ``conda install -c conda-forge python-ace`` or from
+        `Github <https://github.com/ICAMS/python-ace>`__.
+    """
+
+    elements: tuple[str, ...]
+    """Elements the featurizer accepts; determines the feature layout and must cover all featurized structures."""
+    n_radial: tuple[int, ...] = (8, 3, 2)
+    """Number of radial functions per body order, i.e. ``nradmax_by_orders``; its length sets the body order."""
+    l_max: tuple[int, ...] = (0, 2, 2)
+    """Maximum angular momentum per body order, i.e. ``lmax_by_orders``; must be as long as :attr:`.n_radial`."""
+    cutoff: float = 6.5
+    """Cutoff radius in Å; the paper's value."""
+    radial_base: str = "ChebPow"
+    """Radial basis family passed to pyace."""
+
+    @ace_alarm
+    def __post_init__(self):
+        if len(self.elements) == 0:
+            raise ValueError("elements must not be empty!")
+        if len(set(self.elements)) != len(self.elements):
+            raise ValueError(f"elements must be unique, not {self.elements}!")
+        if len(self.n_radial) != len(self.l_max):
+            raise ValueError(
+                f"n_radial and l_max must be of same length, not {self.n_radial} and {self.l_max}!"
+            )
+        if len(self.n_radial) == 0:
+            raise ValueError("n_radial must not be empty!")
+        if any(n < 1 for n in self.n_radial):
+            raise ValueError(f"n_radial must be positive, not {self.n_radial}!")
+        if any(lmax < 0 for lmax in self.l_max):
+            raise ValueError(f"l_max must be non-negative, not {self.l_max}!")
+        if self.l_max[0] != 0:
+            raise ValueError(f"The rank-1 block is radial only, so l_max[0] must be 0, not {self.l_max[0]}!")
+        if self.cutoff <= 0:
+            raise ValueError(f"cutoff must be positive, not {self.cutoff}!")
+
+    @property
+    def n_features(self) -> int:
+        """Total number of basis functions over all species."""
+        return _ace_engine(self)[3]
+
+    def _evaluate(self, structure: Atoms, gradient: bool):
+        basis, _, calculator, _, shifts = _ace_engine(self)
+        unknown = set(structure.symbols) - set(self.elements)
+        if unknown:
+            raise ValueError(f"Structure contains elements {sorted(unknown)} not covered by featurizer {self}!")
+        environment = aseatoms_to_atomicenvironment(
+            structure, cutoff=basis.cutoffmax, elements_mapper_dict=basis.elements_to_index_map
+        )
+        calculator.compute(environment, compute_projections=True, compute_b_grad=gradient)
+        return environment, calculator, shifts
+
+    def __call__(self, structure: Atoms) -> np.ndarray:
+        environment, calculator, shifts = self._evaluate(structure, gradient=False)
+        features = np.zeros((len(structure), self.n_features))
+        for atom, (species, projection) in enumerate(zip(environment.species_type, calculator.projections)):
+            features[atom, shifts[species]: shifts[species] + len(projection)] = projection
+        return features
+
+    def gradient(self, structure: Atoms) -> np.ndarray:
+        _, calculator, _ = self._evaluate(structure, gradient=True)
+        # pyace returns the force per unit coefficient, i.e. the negative gradient, as (atoms, features, directions)
+        return -np.asarray(calculator.forces_bfuncs).transpose((0, 2, 1))
 
 
 def design_matrix(
@@ -363,35 +486,12 @@ def select(
     return sample_without_replacement(scores, number, rng=rng)
 
 
-def tag_stage(structures: Iterable[Atoms], stage: str) -> Iterator[Atoms]:
-    """Record which ASSYST step produced each structure.
-
-    Writes `stage` to ``structure.info[STAGE_KEY]`` and yields the structures again, so it can be wrapped around any
-    step of a pipeline.  ASSYST itself does not track this: perturbations leave a ``"perturbation"`` entry in
-    :attr:`~ase.Atoms.info` (which :func:`.stage_of` falls back to), but the relaxation steps are not distinguishable
-    after the fact.
-
-    Operates INPLACE.
-
-    >>> volmin = list(tag_stage(relax(seeds, VolumeRelax(), calc), "volmin"))    # doctest: +SKIP
-
-    Args:
-        structures (:class:`collections.abc.Iterable` of :class:`ase.Atoms`): structures to tag
-        stage (:class:`str`): name of the step that produced them
-
-    Yields:
-        :class:`ase.Atoms`: the same structures, tagged
-    """
-    for structure in structures:
-        structure.info[STAGE_KEY] = stage
-        yield structure
-
-
 def stage_of(structure: Atoms) -> str:
-    """Name of the ASSYST step a structure came from.
+    """Name of the ASSYST step a structure came from, as far as its metadata reveals it.
 
-    Returns the tag written by :func:`.tag_stage` if present, otherwise the perturbation recorded by
-    :class:`~assyst.perturbations.PerturbationABC`, otherwise ``"unknown"``.
+    Reads the perturbation recorded by :class:`~assyst.perturbations.PerturbationABC`, and reports
+    ``"unperturbed"`` for structures that carry none, i.e. the generated and relaxed ones.  ASSYST does not
+    currently distinguish those from each other; pass your own function to :func:`.trace` to resolve them.
 
     Args:
         structure (:class:`ase.Atoms`): structure to inspect
@@ -399,11 +499,9 @@ def stage_of(structure: Atoms) -> str:
     Returns:
         :class:`str`: the step name
     """
-    if STAGE_KEY in structure.info:
-        return str(structure.info[STAGE_KEY])
     if "perturbation" in structure.info:
         return str(structure.info["perturbation"])
-    return "unknown"
+    return "unperturbed"
 
 
 def trace(
@@ -477,13 +575,12 @@ def summarize(trace_frame: pd.DataFrame) -> pd.DataFrame:
 __all__ = [
     "Featurizer",
     "RadialFeaturizer",
-    "STAGE_KEY",
+    "AceFeaturizer",
     "design_matrix",
     "leverage_scores",
     "configuration_leverage",
     "sample_without_replacement",
     "select",
-    "tag_stage",
     "stage_of",
     "trace",
     "summarize",

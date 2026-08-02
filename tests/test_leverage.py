@@ -2,8 +2,13 @@ import numpy as np
 import pytest
 from ase.build import bulk
 
+try:
+    import pyace
+except ImportError:
+    pyace = None
+
 from assyst.leverage import (
-    STAGE_KEY,
+    AceFeaturizer,
     Featurizer,
     RadialFeaturizer,
     configuration_leverage,
@@ -13,10 +18,9 @@ from assyst.leverage import (
     select,
     stage_of,
     summarize,
-    tag_stage,
     trace,
 )
-from assyst.perturbations import Rattle
+from assyst.perturbations import Rattle, Stretch
 
 
 @pytest.fixture
@@ -286,6 +290,124 @@ def test_featurizer_without_gradient_rejects_force_rows(copper):
         design_matrix([copper], CountFeaturizer(), force_weight=0.1)
 
 
+# --- AceFeaturizer ---
+
+requires_pyace = pytest.mark.skipif(pyace is None, reason="pyace not installed")
+
+
+@requires_pyace
+def test_ace_validation():
+    with pytest.raises(ValueError):
+        AceFeaturizer(())
+    with pytest.raises(ValueError):
+        AceFeaturizer(("Al", "Al"))
+    with pytest.raises(ValueError):
+        AceFeaturizer(("Al",), n_radial=(4, 2), l_max=(0, 2, 2))
+    with pytest.raises(ValueError):
+        AceFeaturizer(("Al",), n_radial=(), l_max=())
+    with pytest.raises(ValueError):
+        AceFeaturizer(("Al",), n_radial=(0,), l_max=(0,))
+    with pytest.raises(ValueError):
+        AceFeaturizer(("Al",), n_radial=(4, 2), l_max=(0, -1))
+    with pytest.raises(ValueError):
+        AceFeaturizer(("Al",), n_radial=(4, 2), l_max=(1, 2))
+    with pytest.raises(ValueError):
+        AceFeaturizer(("Al",), cutoff=0.0)
+
+
+@pytest.fixture
+def ace():
+    return AceFeaturizer(("Al",), n_radial=(6, 3, 2), l_max=(0, 2, 2), cutoff=6.0)
+
+
+@pytest.fixture
+def aluminium(rng):
+    structure = bulk("Al", cubic=True).repeat((2, 1, 1))
+    structure.rattle(stdev=0.1, rng=rng)
+    return structure
+
+
+@requires_pyace
+def test_ace_shapes(ace, aluminium):
+    assert ace.n_features > len(ace.n_radial), "The basis must hold more than one function per body order!"
+    assert ace(aluminium).shape == (len(aluminium), ace.n_features)
+    assert ace.gradient(aluminium).shape == (len(aluminium), 3, ace.n_features)
+
+
+@requires_pyace
+def test_ace_matches_pyace_design_row(ace, aluminium):
+    """The summed per-atom features must be exactly pyace's own energy design row."""
+    import pyace.linearacefit as plf
+    from pyace.atomicenvironment import aseatoms_to_atomicenvironment
+
+    from assyst.leverage import _ace_engine
+
+    basis, _, calculator, n_features, shifts = _ace_engine(ace)
+    plf.g_calc, plf.g_func_ind_shift, plf.g_nfunc = calculator, shifts, n_features
+    environment = aseatoms_to_atomicenvironment(
+        aluminium, cutoff=basis.cutoffmax, elements_mapper_dict=basis.elements_to_index_map
+    )
+    energy_row, _ = plf.compute_b_grad_ae(environment)
+    np.testing.assert_allclose(
+        ace(aluminium).sum(axis=0), energy_row, atol=1e-12,
+        err_msg="Summed ACE features must reproduce pyace's energy design row!",
+    )
+
+
+@requires_pyace
+def test_ace_gradient_finite_differences(ace, aluminium):
+    gradient = ace.gradient(aluminium)
+    step = 1e-5
+    for atom in range(len(aluminium)):
+        for direction in range(3):
+            plus, minus = aluminium.copy(), aluminium.copy()
+            plus.positions[atom, direction] += step
+            minus.positions[atom, direction] -= step
+            finite_difference = (ace(plus).sum(axis=0) - ace(minus).sum(axis=0)) / (2 * step)
+            np.testing.assert_allclose(
+                gradient[atom, direction], finite_difference, atol=1e-5,
+                err_msg="Analytic ACE gradient must match finite differences!",
+            )
+
+
+@requires_pyace
+def test_ace_species_blocks():
+    """Each element gets its own block of basis functions."""
+    featurizer = AceFeaturizer(("Al", "Cu"), n_radial=(4, 2), l_max=(0, 2))
+    structure = bulk("AlCu", "rocksalt", a=5.0, cubic=True)
+    features = featurizer(structure)
+    aluminium = np.array([s == "Al" for s in structure.symbols])
+    for mask in (aluminium, ~aluminium):
+        used = np.flatnonzero((features[mask] != 0).any(axis=0))
+        other = np.flatnonzero((features[~mask] != 0).any(axis=0))
+        assert not set(used) & set(other), "Species blocks must not overlap!"
+
+
+@requires_pyace
+def test_ace_unknown_element(ace):
+    with pytest.raises(ValueError, match="Cu"):
+        ace(bulk("Cu"))
+
+
+@requires_pyace
+def test_ace_picklable(ace, aluminium):
+    import pickle
+
+    restored = pickle.loads(pickle.dumps(ace))
+    assert restored == ace
+    np.testing.assert_allclose(restored(aluminium), ace(aluminium))
+
+
+@requires_pyace
+def test_ace_drives_selection(ace, aluminium):
+    pool = [aluminium, aluminium.repeat((1, 2, 1)), bulk("Al", cubic=True)]
+    matrix, owners = design_matrix(pool, ace, force_weight=0.1)
+    assert matrix.shape[1] == ace.n_features
+    assert len(owners) == len(pool) + 3 * sum(len(s) for s in pool)
+    selected = select(pool, number=2, featurizer=ace, rng=0)
+    assert len(set(selected.tolist())) == 2
+
+
 def test_design_matrix_fits_pair_potential(rng):
     """The featurizer spans pair potentials, so a linear fit on the design matrix must reproduce one."""
     from ase.calculators.morse import MorsePotential
@@ -437,28 +559,20 @@ def test_select_input_validation(pool):
 
 # --- provenance tracing ---
 
-def test_tag_stage_and_stage_of(pool):
-    tagged = list(tag_stage(pool[:3], "volmin"))
-    assert [s.info[STAGE_KEY] for s in tagged] == ["volmin"] * 3
-    assert [stage_of(s) for s in tagged] == ["volmin"] * 3
-    assert tagged[0] is pool[0], "tag_stage must operate in place!"
-
-
-def test_stage_of_falls_back_to_perturbation(copper):
-    assert stage_of(copper) == "unknown", "Untagged structures must report an unknown stage!"
-    perturbed = Rattle(0.05)(copper.copy())
-    assert stage_of(perturbed) == "rattle(0.05)", "Perturbations must be used when no tag is set!"
-    perturbed.info[STAGE_KEY] = "rattle"
-    assert stage_of(perturbed) == "rattle", "An explicit tag must win over the perturbation!"
+def test_stage_of_reads_assyst_metadata(copper):
+    """Stages come from the metadata ASSYST already records, not from anything the reduction adds."""
+    assert stage_of(copper) == "unperturbed", "Structures without a perturbation are generated or relaxed ones!"
+    assert stage_of(Rattle(0.05)(copper.copy())) == "rattle(0.05)"
+    assert stage_of(Stretch(hydro=0.1, shear=0.02)(copper.copy())) == "stretch(hydro=0.1, shear=0.02)"
+    chained = Stretch(hydro=0.1, shear=0.02)(Rattle(0.05)(copper.copy()))
+    assert stage_of(chained) == "rattle(0.05)+stretch(hydro=0.1, shear=0.02)", \
+        "Chained perturbations must be reported in full!"
 
 
 @pytest.fixture
 def tagged_pool(pool):
-    for structure in pool[:10]:
-        structure.info[STAGE_KEY] = "allmin"
-    for structure in pool[10:]:
-        structure.info[STAGE_KEY] = "rattle"
-    return pool
+    """Half relaxed structures, half rattled ones, distinguished only by ASSYST's own metadata."""
+    return pool[:10] + [Rattle(0.05, rng=i)(s.copy()) for i, s in enumerate(pool[10:])]
 
 
 def test_trace_columns_and_accounting(tagged_pool):
@@ -474,7 +588,7 @@ def test_trace_columns_and_accounting(tagged_pool):
     np.testing.assert_array_equal(traced["rank"].to_numpy()[selected], np.arange(6))
     assert (traced.loc[~traced["selected"], "rank"] == -1).all()
     np.testing.assert_array_equal(np.flatnonzero(traced["selected"].to_numpy()), np.sort(selected))
-    assert set(traced["stage"]) == {"allmin", "rattle"}
+    assert set(traced["stage"]) == {"unperturbed", "rattle(0.05)"}
 
 
 def test_trace_accepts_explicit_scores(tagged_pool):
@@ -502,7 +616,7 @@ def test_summarize_balances(tagged_pool):
     assert list(summary.columns) == [
         "pool", "selected", "discarded", "selected_fraction", "mean_score", "score_share"
     ]
-    assert set(summary.index) == {"allmin", "rattle"}
+    assert set(summary.index) == {"unperturbed", "rattle(0.05)"}
     assert summary["pool"].sum() == len(tagged_pool)
     assert summary["selected"].sum() == len(selected)
     assert (summary["selected"] + summary["discarded"] == summary["pool"]).all()
@@ -512,8 +626,8 @@ def test_summarize_balances(tagged_pool):
 
 def test_summarize_counts_match_stages(tagged_pool):
     summary = summarize(trace(tagged_pool, [0, 1, 2], scores=np.ones(len(tagged_pool))))
-    assert summary.loc["allmin", "pool"] == 10
-    assert summary.loc["rattle", "pool"] == len(tagged_pool) - 10
-    assert summary.loc["allmin", "selected"] == 3
-    assert summary.loc["rattle", "selected"] == 0
-    assert summary.loc["rattle", "discarded"] == len(tagged_pool) - 10
+    assert summary.loc["unperturbed", "pool"] == 10
+    assert summary.loc["rattle(0.05)", "pool"] == len(tagged_pool) - 10
+    assert summary.loc["unperturbed", "selected"] == 3
+    assert summary.loc["rattle(0.05)", "selected"] == 0
+    assert summary.loc["rattle(0.05)", "discarded"] == len(tagged_pool) - 10
