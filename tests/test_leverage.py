@@ -4,6 +4,7 @@ from ase.build import bulk
 
 from assyst.leverage import (
     STAGE_KEY,
+    Featurizer,
     RadialFeaturizer,
     configuration_leverage,
     design_matrix,
@@ -262,6 +263,27 @@ def test_design_matrix_force_rows(copper):
 def test_design_matrix_empty():
     with pytest.raises(ValueError):
         design_matrix([], RadialFeaturizer(("Cu",)))
+
+
+class CountFeaturizer(Featurizer):
+    """Minimal custom featurizer: one constant channel per atom, no gradients."""
+
+    def __call__(self, structure):
+        return np.ones((len(structure), 1))
+
+
+def test_custom_featurizer(copper):
+    """Any Featurizer subclass plugs in; only force rows need gradients."""
+    structures = [copper, copper.repeat((1, 2, 1))]
+    matrix, owners = design_matrix(structures, CountFeaturizer())
+    np.testing.assert_array_equal(matrix, [[len(copper)], [2 * len(copper)]])
+    np.testing.assert_array_equal(owners, [0, 1])
+    assert len(select(structures, number=1, featurizer=CountFeaturizer(), rng=0)) == 1
+
+
+def test_featurizer_without_gradient_rejects_force_rows(copper):
+    with pytest.raises(NotImplementedError, match="CountFeaturizer"):
+        design_matrix([copper], CountFeaturizer(), force_weight=0.1)
 
 
 def test_design_matrix_fits_pair_potential(rng):
