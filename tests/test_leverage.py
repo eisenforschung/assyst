@@ -313,6 +313,75 @@ def test_ace_validation():
         AceFeaturizer(("Al",), n_radial=(4, 2), l_max=(1, 2))
     with pytest.raises(ValueError):
         AceFeaturizer(("Al",), cutoff=0.0)
+    with pytest.raises(ValueError):
+        AceFeaturizer(("Al",), n_functions_per_element=0)
+    with pytest.raises(ValueError, match="together"):
+        AceFeaturizer(("Al",), n_radial=(4, 2))
+    with pytest.raises(ValueError, match="together"):
+        AceFeaturizer(("Al",), l_max=(0, 2))
+    with pytest.raises(FileNotFoundError):
+        AceFeaturizer(("Al",), potential="does-not-exist.yaml")
+    with pytest.raises(FileNotFoundError):
+        AceFeaturizer.from_potential("does-not-exist.yaml")
+
+
+@requires_pyace
+def test_ace_defaults_match_pacemaker_template():
+    """The default basis must be the one ``pacemaker -t`` writes, with no functions_per_element filter."""
+    featurizer = AceFeaturizer(("Al",))
+    assert featurizer.n_radial is None and featurizer.l_max is None, "Default must defer to the template blocks!"
+    assert featurizer.cutoff == 7.0
+    assert featurizer.radial_base == "SBessel"
+    assert featurizer.radial_parameters == (5.25,)
+    assert featurizer.n_functions_per_element is None, "The template's filter must be off by default!"
+    # the untruncated template basis; a change here means the pyace defaults moved
+    assert featurizer.n_features == 945
+    assert AceFeaturizer(("Al", "Cu")).n_features == 4452
+
+
+@requires_pyace
+def test_ace_functions_per_element_truncates():
+    assert AceFeaturizer(("Al",), n_functions_per_element=200).n_features == 200
+    assert AceFeaturizer(("Al",)).n_features > 200, "Truncation must actually drop functions!"
+
+
+@requires_pyace
+def test_ace_from_potential(tmp_path, aluminium):
+    """A featurizer built from a saved basis must reproduce the basis it was saved from."""
+    from assyst.leverage import _ace_engine
+
+    source = AceFeaturizer(("Al",), n_radial=(6, 3, 2), l_max=(0, 2, 2), cutoff=6.0)
+    path = tmp_path / "potential.yaml"
+    _ace_engine(source)[0].save(str(path))
+
+    loaded = AceFeaturizer.from_potential(path)
+    assert loaded.elements == ("Al",), "Elements must come from the potential!"
+    assert loaded.potential == str(path)
+    assert loaded.n_features == source.n_features
+    assert np.allclose(loaded(aluminium), source(aluminium))
+    assert np.allclose(loaded.gradient(aluminium), source.gradient(aluminium))
+
+
+@requires_pyace
+def test_ace_from_potential_rejects_element_mismatch(tmp_path):
+    """Declaring elements the potential was not fitted for must not silently mislabel the feature blocks."""
+    from assyst.leverage import _ace_engine
+
+    source = AceFeaturizer(("Al",), n_radial=(4, 2), l_max=(0, 2), cutoff=6.0)
+    path = tmp_path / "potential.yaml"
+    _ace_engine(source)[0].save(str(path))
+
+    mismatched = AceFeaturizer(("Al", "Cu"), potential=str(path))
+    with pytest.raises(ValueError, match="fitted for elements"):
+        _ = mismatched.n_features
+
+
+@requires_pyace
+def test_ace_from_potential_rejects_non_basis(tmp_path):
+    path = tmp_path / "not-a-potential.yaml"
+    path.write_text("hello: world\n")
+    with pytest.raises(ValueError, match="C-tilde"):
+        AceFeaturizer.from_potential(path)
 
 
 @pytest.fixture

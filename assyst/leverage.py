@@ -27,6 +27,7 @@ To see which part of an ASSYST pool a reduction keeps and which it drops, pass t
 :func:`.summarize`.
 """
 
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import lru_cache
@@ -174,35 +175,75 @@ class RadialFeaturizer(Featurizer):
         return grad
 
 
+PACEMAKER_FUNCTIONS = {
+    "UNARY": {"nradmax_by_orders": (15, 6, 4, 3, 2, 2), "lmax_by_orders": (0, 3, 3, 2, 2, 1)},
+    "BINARY": {"nradmax_by_orders": (15, 6, 3, 2, 2, 1), "lmax_by_orders": (0, 3, 2, 1, 1, 0)},
+    "TERNARY": {"nradmax_by_orders": (15, 3, 3, 2, 1), "lmax_by_orders": (0, 2, 2, 1, 1)},
+    "ALL": {"nradmax_by_orders": (15, 3, 2, 1, 1), "lmax_by_orders": (0, 2, 2, 1, 1)},
+}
+"""Basis shape per bond block that ``pacemaker -t`` writes into its ``input.yaml`` template."""
+
+
+@ace_alarm
+def _load_basis(potential: str):  # needs pyace
+    """Read a B-basis from a potential file, with a hint when it is a C-tilde file instead."""
+    try:
+        return pyace.ACEBBasisSet(potential)
+    except Exception as e:
+        raise ValueError(
+            f"Could not read a B-basis from {potential}; pacemaker writes one as 'output_potential.yaml', "
+            "while '.yace' files hold the C-tilde basis, which cannot give B-basis projections."
+        ) from e
+
+
+def _functions_block(featurizer: "AceFeaturizer") -> dict:  # needs pyace
+    """The ``functions`` section of the pyace configuration."""
+    if featurizer.n_radial is None:
+        functions = {block: dict(spec) for block, spec in PACEMAKER_FUNCTIONS.items()}
+    else:
+        block = "UNARY" if len(featurizer.elements) == 1 else "ALL"
+        functions = {block: {"nradmax_by_orders": featurizer.n_radial, "lmax_by_orders": featurizer.l_max}}
+    functions = {b: {k: list(v) for k, v in spec.items()} for b, spec in functions.items()}
+    if featurizer.n_functions_per_element is not None:
+        functions["number_of_functions_per_element"] = featurizer.n_functions_per_element
+    return functions
+
+
 @lru_cache(maxsize=4)
 def _ace_engine(featurizer: "AceFeaturizer"):  # needs pyace
     """Build the (expensive, unpicklable) pyace objects for a featurizer and keep them cached.
 
     Held outside :class:`.AceFeaturizer` so that it stays a plain, picklable dataclass.
     """
-    block = "UNARY" if len(featurizer.elements) == 1 else "ALL"
-    configuration = pyace.create_multispecies_basis_config(
-        {
-            "elements": list(featurizer.elements),
-            "embeddings": {"ALL": {"fs_parameters": [1, 1], "ndensity": 1, "npot": "FinnisSinclair"}},
-            "bonds": {
-                "ALL": {
-                    "NameOfCutoffFunction": "cos",
-                    "dcut": 0.01,
-                    "radbase": featurizer.radial_base,
-                    "radparameters": [2.0],
-                    "rcut": featurizer.cutoff,
-                }
-            },
-            "functions": {
-                block: {
-                    "nradmax_by_orders": list(featurizer.n_radial),
-                    "lmax_by_orders": list(featurizer.l_max),
-                }
-            },
-        }
-    )
-    basis = pyace.ACEBBasisSet(configuration)
+    if featurizer.potential is not None:
+        basis = pyace.ACEBBasisSet(featurizer.potential)
+        stored = tuple(basis.elements_name)
+        if stored != tuple(featurizer.elements):
+            raise ValueError(
+                f"Potential {featurizer.potential} is fitted for elements {stored}, "
+                f"but featurizer declares {tuple(featurizer.elements)}!"
+            )
+    else:
+        configuration = pyace.create_multispecies_basis_config(
+            {
+                "elements": list(featurizer.elements),
+                "deltaSplineBins": 0.001,
+                # the embedding is the non-linearity and does not enter the B-basis projections at all; a linear one
+                # is used so the featurizer matches the model that consumes it
+                "embeddings": {"ALL": {"fs_parameters": [1, 1], "ndensity": 1, "npot": "FinnisSinclair"}},
+                "bonds": {
+                    "ALL": {
+                        "NameOfCutoffFunction": "cos",
+                        "dcut": 0.01,
+                        "radbase": featurizer.radial_base,
+                        "radparameters": list(featurizer.radial_parameters),
+                        "rcut": featurizer.cutoff,
+                    }
+                },
+                "functions": _functions_block(featurizer),
+            }
+        )
+        basis = pyace.ACEBBasisSet(configuration)
     # the calculator keeps a raw pointer to the evaluator and the evaluator one to the basis, so all three have to
     # be kept alive together
     evaluator = pyace.ACEBEvaluator(basis)
@@ -219,7 +260,16 @@ class AceFeaturizer(Featurizer):  # needs pyace
     the per-atom B-basis projections and :meth:`~.AceFeaturizer.gradient` their position derivatives, so both
     energy-CUR and block-CUR selection work.  Species are laid out in blocks, one per element.
 
-    The defaults give a body order of three (a rank-1, a rank-2 and a rank-3 block), which is what the paper fits.
+    By default the basis is the one ``pacemaker -t`` writes into its ``input.yaml`` template
+    (:data:`.PACEMAKER_FUNCTIONS`), but *without* its ``number_of_functions_per_element`` filter, so the full basis
+    is used.  Set :attr:`.n_functions_per_element` to truncate it the way a template-generated fit would; that is
+    worth doing for large pools, since the untruncated basis has 945 functions for a unary and 4452 for a binary
+    system.
+
+    An existing potential can be used as the basis specification instead, which is the way to score structures on
+    exactly the basis a fit already uses::
+
+        featurizer = AceFeaturizer.from_potential("output_potential.yaml")
 
     .. attention::
         This class needs additional dependencies!
@@ -229,14 +279,43 @@ class AceFeaturizer(Featurizer):  # needs pyace
 
     elements: tuple[str, ...]
     """Elements the featurizer accepts; determines the feature layout and must cover all featurized structures."""
-    n_radial: tuple[int, ...] = (8, 3, 2)
-    """Number of radial functions per body order, i.e. ``nradmax_by_orders``; its length sets the body order."""
-    l_max: tuple[int, ...] = (0, 2, 2)
+    n_radial: tuple[int, ...] | None = None
+    """Number of radial functions per body order, i.e. ``nradmax_by_orders``; its length sets the body order.
+
+    ``None`` uses the per-block :data:`.PACEMAKER_FUNCTIONS` defaults, otherwise the given shape applies to all bonds.
+    """
+    l_max: tuple[int, ...] | None = None
     """Maximum angular momentum per body order, i.e. ``lmax_by_orders``; must be as long as :attr:`.n_radial`."""
-    cutoff: float = 6.5
-    """Cutoff radius in Å; the paper's value."""
-    radial_base: str = "ChebPow"
+    cutoff: float = 7.0
+    """Cutoff radius in Å; the ``pacemaker -t`` default."""
+    radial_base: str = "SBessel"
     """Radial basis family passed to pyace."""
+    radial_parameters: tuple[float, ...] = (5.25,)
+    """Parameters of the radial basis family, i.e. ``radparameters``."""
+    n_functions_per_element: int | None = None
+    """Keep only this many functions per element, i.e. ``number_of_functions_per_element``; ``None`` keeps all."""
+    potential: str | None = None
+    """Path to a B-basis potential file to take the basis from; overrides all other basis settings.
+
+    Prefer :meth:`.from_potential`, which fills :attr:`.elements` from the file.
+    """
+
+    @classmethod
+    def from_potential(cls, potential: Union[str, "os.PathLike"], **kwargs) -> "AceFeaturizer":
+        """Take the basis from an existing ACE potential, so structures are scored on the basis a fit already uses.
+
+        Args:
+            potential (str): path to a B-basis potential file, i.e. pacemaker's ``output_potential.yaml``; the
+                ``.yace`` C-tilde files written for LAMMPS cannot provide B-basis projections
+            **kwargs: passed to the constructor; basis settings are ignored in favour of the file
+
+        Returns:
+            :class:`.AceFeaturizer`: featurizer over the elements the potential was fitted for
+        """
+        potential = str(potential)
+        if not os.path.exists(potential):
+            raise FileNotFoundError(f"No such potential file: {potential}!")
+        return cls(elements=tuple(_load_basis(potential).elements_name), potential=potential, **kwargs)
 
     @ace_alarm
     def __post_init__(self):
@@ -244,6 +323,20 @@ class AceFeaturizer(Featurizer):  # needs pyace
             raise ValueError("elements must not be empty!")
         if len(set(self.elements)) != len(self.elements):
             raise ValueError(f"elements must be unique, not {self.elements}!")
+        if self.n_functions_per_element is not None and self.n_functions_per_element < 1:
+            raise ValueError(
+                f"n_functions_per_element must be positive, not {self.n_functions_per_element}!"
+            )
+        if self.cutoff <= 0:
+            raise ValueError(f"cutoff must be positive, not {self.cutoff}!")
+        if self.potential is not None:
+            if not os.path.exists(self.potential):
+                raise FileNotFoundError(f"No such potential file: {self.potential}!")
+            return
+        if (self.n_radial is None) != (self.l_max is None):
+            raise ValueError("n_radial and l_max must be given together, or neither of them!")
+        if self.n_radial is None:
+            return
         if len(self.n_radial) != len(self.l_max):
             raise ValueError(
                 f"n_radial and l_max must be of same length, not {self.n_radial} and {self.l_max}!"
@@ -256,8 +349,6 @@ class AceFeaturizer(Featurizer):  # needs pyace
             raise ValueError(f"l_max must be non-negative, not {self.l_max}!")
         if self.l_max[0] != 0:
             raise ValueError(f"The rank-1 block is radial only, so l_max[0] must be 0, not {self.l_max[0]}!")
-        if self.cutoff <= 0:
-            raise ValueError(f"cutoff must be positive, not {self.cutoff}!")
 
     @property
     def n_features(self) -> int:
