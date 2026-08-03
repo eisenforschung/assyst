@@ -2,10 +2,33 @@ Custom Relaxers
 ===============
 
 ASSYST's relaxation step is designed to be extensible.
+
+Baking a calculator into a ``Relax`` instance
+----------------------------------------------
+
+:class:`~assyst.relaxations.Relax` (and its subclasses) accept an optional
+``calculator`` field.  When set, it takes precedence over ``structure.calc``,
+so an ASE-compatible engine can be attached once, at construction time,
+instead of relying on the top-level :func:`~assyst.relaxations.relax`
+function (or the caller) to set ``atoms.calc`` on every structure:
+
+.. code-block:: python
+
+    from assyst.calculators import Morse
+    from assyst.relaxations import FullRelax
+
+    settings = FullRelax(max_steps=200, calculator=Morse())
+    relaxed = settings.relax(structure)          # no `structure.calc` needed
+
+    # or, over many structures, still via the helper — `calculator` is
+    # optional here once `settings.calculator` is set:
+    from assyst.relaxations import relax as assyst_relax
+    relaxed_structures = list(assyst_relax(my_structures, settings))
+
 If your preferred energy/force engine does not expose an ASE-compatible
-:class:`ase.calculators.calculator.Calculator`, you can still plug it into
-the workflow by subclassing :class:`assyst.relaxations.Relax` and overriding the
-:meth:`~assyst.relaxations.Relax.relax` method.
+:class:`ase.calculators.calculator.Calculator` at all, you can still plug it
+into the workflow by subclassing :class:`assyst.relaxations.Relax` and
+overriding the :meth:`~assyst.relaxations.Relax.relax` method, as below.
 
 When to subclass ``Relax``
 --------------------------
@@ -130,21 +153,16 @@ Once defined, ``MyEngineRelax`` is a drop-in replacement anywhere
 
     settings = MyEngineRelax(max_steps=200, force_tolerance=5e-4)
 
-    relaxed_structures = list(
-        assyst_relax(
-            structures=my_structures,
-            settings=settings,
-            calculator=None,   # calculator is unused by MyEngineRelax.relax
-        )
-    )
+    relaxed_structures = list(assyst_relax(structures=my_structures, settings=settings))
 
 .. note::
 
-    The top-level :func:`assyst.relaxations.relax` function attaches an ASE
-    calculator to each structure before calling ``settings.relax``.  If your
-    custom ``relax`` method does not need an ASE calculator you can pass
-    ``calculator=None`` *and* iterate over the structures directly, bypassing
-    the helper function altogether:
+    The top-level :func:`assyst.relaxations.relax` function only attaches a
+    calculator to each structure when its own ``calculator`` argument is
+    given; it is ``None`` by default, so a custom ``relax`` method that
+    ignores calculators altogether needs nothing special passed to it, as
+    above.  You can also iterate over the structures directly, bypassing the
+    helper function altogether:
 
     .. code-block:: python
 

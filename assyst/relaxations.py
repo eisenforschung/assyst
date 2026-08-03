@@ -26,15 +26,47 @@ class Relax:
     max_steps: int = 100
     force_tolerance: float = 1e-3
     algorithm: Literal["LBFGS", "BFGS", "FIRE"] = "LBFGS"
+    calculator: AseCalculatorConfig | Calculator | None = None
 
     def apply_filter_and_constraints(self, structure: Atoms):
         """Hook to allow subclasses to add filters and constraints."""
         return structure
 
+    def get_calculator(self, structure: Atoms) -> Calculator:
+        """Resolve the calculator to use for *structure*.
+
+        Prefers ``self.calculator`` (baked into the relaxer at construction time)
+        over ``structure.calc``, so a custom engine does not have to be wrapped as
+        an ASE calculator and glued onto ``Atoms`` by the caller.  Falls back to
+        ``structure.calc`` for backwards compatibility with the old calling
+        convention (:func:`relax` attaching a calculator to the structure).
+
+        Args:
+            structure (:class:`ase.Atoms`): structure about to be relaxed
+
+        Returns:
+            :class:`ase.calculators.calculator.Calculator`: the calculator to use
+
+        Raises:
+            ValueError: neither ``self.calculator`` nor ``structure.calc`` is set
+        """
+        calc = self.calculator
+        if isinstance(calc, AseCalculatorConfig):
+            calc = calc.get_calculator()
+        if calc is None:
+            calc = structure.calc
+        if calc is None:
+            raise ValueError(
+                f"{type(self).__name__} has no calculator: set `calculator` on the "
+                "Relax instance or attach one to `structure.calc`."
+            )
+        return calc
+
     def relax(self, structure: Atoms) -> Atoms:
         """Relax a structure and return result.
 
-        Structure must have a calculator attached.
+        Structure must have a calculator attached, unless this relaxer was
+        constructed with `calculator` set.
         Returned structure will have a SinglePointCalculator with the final energy, forces and stresses attached.
 
         Args:
@@ -43,7 +75,7 @@ class Relax:
         Returns:
             :class:`ase.Atoms`: relaxed structure with attached single point calculator.
         """
-        calc = structure.calc
+        calc = self.get_calculator(structure)
         structure = structure.copy()
         update_uuid(structure)
         structure.calc = calc
@@ -116,7 +148,7 @@ class FullRelax(Relax):
 def relax(
     structures: Iterable[Atoms],
     settings: Relax,
-    calculator: AseCalculatorConfig | Calculator,
+    calculator: AseCalculatorConfig | Calculator | None = None,
 ) -> Iterator[Atoms]:
     """Relax structures according the given relaxation settings.
 
@@ -125,17 +157,18 @@ def relax(
     Args:
         structures (:class:`collections.abc.Iterable` of :class:`ase.Atoms`): the structures to minimize
         settings (:class:`.Relax`): the kind of relaxation to perform (position, volume, etc.)
-        calculator (:class:`.AseCalculatorConfig` or :class:`ase.calculators.calculator.Calculator`): the energy/force engine to use
+        calculator (:class:`.AseCalculatorConfig` or :class:`ase.calculators.calculator.Calculator`):
+            the energy/force engine to use.  Optional when `settings.calculator` is
+            already set, e.g. for a custom :class:`.Relax` subclass that bakes in its
+            own (possibly non-ASE) engine.
 
     Yields:
         :class:`ase.Atoms`: the corresponding relaxed configuration to each input structure
     """
     for s in structures:
         s = s.copy()
-        if isinstance(calculator, AseCalculatorConfig):
-            s.calc = calculator.get_calculator()
-        else:
-            s.calc = calculator
+        if calculator is not None:
+            s.calc = calculator.get_calculator() if isinstance(calculator, AseCalculatorConfig) else calculator
         yield settings.relax(s)
 
 

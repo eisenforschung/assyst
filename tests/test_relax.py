@@ -110,6 +110,67 @@ def test_relax_function_with_calc_config(mock_relax_method, single_atom_structur
     assert isinstance(mock_relax_method.call_args[0][0].calc, MockCalculator)
 
 
+# --- baked-in `calculator` field tests ---
+
+
+def test_relax_default_calculator_is_none():
+    assert Relax().calculator is None
+
+
+@patch("ase.optimize.LBFGS.run")
+def test_relax_uses_baked_in_calculator_without_atoms_calc(mock_run):
+    s = Atoms("H", positions=[[0, 0, 0]], cell=[10, 10, 10], pbc=True)
+    relaxed = Relax(calculator=MockCalculator()).relax(s)
+    mock_run.assert_called_once()
+    assert isinstance(relaxed.calc, SinglePointCalculator)
+
+
+@patch("ase.optimize.LBFGS.run")
+def test_relax_baked_in_calculator_takes_precedence_over_atoms_calc(mock_run):
+    class OtherCalculator(MockCalculator):
+        def get_potential_energy(self, atoms=None):
+            return 5.0
+
+    s = Atoms("H", positions=[[0, 0, 0]], cell=[10, 10, 10], pbc=True)
+    s.calc = OtherCalculator()
+    relaxed = Relax(calculator=MockCalculator()).relax(s)
+    assert relaxed.calc.get_potential_energy() == pytest.approx(0.0)
+
+
+def test_relax_get_calculator_resolves_ase_calculator_config():
+    class MockCalcConfig(AseCalculatorConfig):
+        def get_calculator(self):
+            return MockCalculator()
+
+    s = Atoms("H", positions=[[0, 0, 0]])
+    resolved = Relax(calculator=MockCalcConfig()).get_calculator(s)
+    assert isinstance(resolved, MockCalculator)
+
+
+def test_relax_get_calculator_falls_back_to_atoms_calc():
+    s = Atoms("H", positions=[[0, 0, 0]])
+    calc = MockCalculator()
+    s.calc = calc
+    assert Relax().get_calculator(s) is calc
+
+
+def test_relax_raises_without_any_calculator():
+    s = Atoms("H", positions=[[0, 0, 0]], cell=[10, 10, 10], pbc=True)
+    with pytest.raises(ValueError):
+        Relax().relax(s)
+
+
+def test_relax_function_calculator_argument_is_optional_when_baked_in():
+    """The historical `calculator=None` placeholder is no longer required:
+    `relax()`'s `calculator` argument only matters when `settings.calculator`
+    is unset."""
+    s = Atoms("H", positions=[[0, 0, 0]], cell=[10, 10, 10], pbc=True)
+    with patch("ase.optimize.LBFGS.run"):
+        results = list(relax([s], Relax(calculator=MockCalculator())))
+    assert len(results) == 1
+    assert isinstance(results[0].calc, SinglePointCalculator)
+
+
 # --- apply_filter_and_constraints tests ---
 
 
