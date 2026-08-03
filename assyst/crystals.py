@@ -8,7 +8,7 @@ from typing import Self, Iterable, Iterator, Literal, overload, Union
 
 import numpy as np
 from .filters import DistanceFilter
-from .utils import update_uuid
+from .utils import record_stage, update_uuid
 
 from ase import Atoms
 from pyxtal import pyxtal as _pyxtal
@@ -117,6 +117,7 @@ def pyxtal(
                 return None
         s = s.to_ase()
         update_uuid(s)
+        record_stage(s, "spg")
         s.wrap(center=(0, 0, 0))
         return s
 

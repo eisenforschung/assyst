@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from .filters import Filter
-from .utils import update_uuid
+from .utils import record_stage, update_uuid
 
 
 def rattle(
@@ -130,6 +130,7 @@ class PerturbationABC(ABC):
 
     def __call__(self, structure: Atoms) -> Atoms:
         update_uuid(structure)
+        record_stage(structure, str(self))
         if "perturbation" not in structure.info:
             structure.info["perturbation"] = str(self)
         else:

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Literal, Iterable, Iterator
 
 from .calculators import AseCalculatorConfig
-from .utils import update_uuid
+from .utils import record_stage, update_uuid
 
 from ase import Atoms
 from ase.calculators.calculator import Calculator
@@ -31,11 +31,19 @@ class Relax:
         """Hook to allow subclasses to add filters and constraints."""
         return structure
 
+    def __str__(self) -> str:
+        """Name of this relaxation in the stage history of a structure.
+
+        Names the kind of relaxation only; the numerical settings are not part of it.
+        """
+        return "relax"
+
     def relax(self, structure: Atoms) -> Atoms:
         """Relax a structure and return result.
 
         Structure must have a calculator attached.
         Returned structure will have a SinglePointCalculator with the final energy, forces and stresses attached.
+        The name of this relaxation is appended to the stage history of the structure, see :func:`.record_stage`.
 
         Args:
             structure (:class:`ase.Atoms`): structure to relax
@@ -46,6 +54,7 @@ class Relax:
         calc = structure.calc
         structure = structure.copy()
         update_uuid(structure)
+        record_stage(structure, str(self))
         structure.calc = calc
         optimizer_cls = {"LBFGS": LBFGS, "BFGS": BFGS, "FIRE": FIRE}[self.algorithm]
         optimizer = optimizer_cls(self.apply_filter_and_constraints(structure), logfile="/dev/null")
@@ -78,6 +87,9 @@ class CellRelax(Relax):
         structure.set_constraint(FixAtoms(np.ones(len(structure), dtype=bool)))
         return FrechetCellFilter(structure, constant_volume=True)
 
+    def __str__(self) -> str:
+        return "cell_relax"
+
 
 @dataclass(frozen=True, eq=True)
 class VolumeRelax(Relax):
@@ -91,6 +103,9 @@ class VolumeRelax(Relax):
             structure, hydrostatic_strain=True, scalar_pressure=self.pressure
         )
 
+    def __str__(self) -> str:
+        return "volume_relax"
+
 
 @dataclass(frozen=True, eq=True)
 class SymmetryRelax(Relax):
@@ -102,6 +117,9 @@ class SymmetryRelax(Relax):
         structure.set_constraint(FixSymmetry(structure))
         return FrechetCellFilter(structure, scalar_pressure=self.pressure)
 
+    def __str__(self) -> str:
+        return "symmetry_relax"
+
 
 @dataclass(frozen=True, eq=True)
 class FullRelax(Relax):
@@ -111,6 +129,9 @@ class FullRelax(Relax):
 
     def apply_filter_and_constraints(self, structure: Atoms):
         return FrechetCellFilter(structure, scalar_pressure=self.pressure)
+
+    def __str__(self) -> str:
+        return "full_relax"
 
 
 def relax(

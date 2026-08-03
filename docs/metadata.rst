@@ -32,6 +32,25 @@ When a perturbation is applied using a :class:`assyst.perturbations.Perturbation
 
 * ``perturbation``: A string description of the perturbation(s) applied (e.g., ``rattle(0.05)+stretch(hydro=0.05, shear=0.05)``). Multiple perturbations are concatenated with a ``+``.
 
+Workflow Stage
+--------------
+
+Every step of the workflow appends its name to one key, so a structure states which steps produced it and in which order.
+
+* ``stage``: The names of the steps applied so far, concatenated with a ``+`` (e.g., ``spg+volume_relax+full_relax+rattle(0.05)``).
+
+The step names are
+
+* ``spg``: generation by :func:`assyst.crystals.pyxtal`, either directly or through :func:`assyst.crystals.sample`
+* ``relax``, ``cell_relax``, ``volume_relax``, ``symmetry_relax``, ``full_relax``: the corresponding class in :mod:`assyst.relaxations`; the numerical settings of a relaxation are not part of its name
+* the string of the applied :class:`assyst.perturbations.PerturbationABC`, the same value that goes into ``perturbation``
+
+This makes the three unperturbed sets of a plain ASSYST run tell themselves apart -- the generated structures carry
+``spg``, the volume relaxed ones ``spg+volume_relax`` and the fully relaxed ones ``spg+volume_relax+full_relax`` --
+which the ``symmetry`` and ``perturbation`` keys alone cannot do.
+
+Use :func:`assyst.utils.stage_of` to read the key and :func:`assyst.utils.record_stage` to add a step of your own.
+
 .. toctree::
    :maxdepth: 1
    :hidden:

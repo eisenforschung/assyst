@@ -26,6 +26,13 @@ Relaxations
 
 Similarly, the :meth:`.Relax.relax` method generates a new UUID for the relaxed structure and updates the lineage.
 
+Stages
+~~~~~~
+
+Where the UUIDs record *which* structure a structure came from, the ``stage`` key records *what was done to it*:
+each of the steps above appends its name to it, so ``spg+volume_relax+full_relax`` is a generated structure that was
+volume relaxed and then fully relaxed.  See :doc:`metadata` for the step names.
+
 Example
 -------
 
