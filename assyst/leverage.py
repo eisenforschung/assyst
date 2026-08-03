@@ -40,6 +40,7 @@ from ase import Atoms
 from pyiron_snippets.import_alarm import ImportAlarm
 
 from .neighbors import neighbor_list
+from .utils import stage_of as _workflow_stage_of
 
 with ImportAlarm(
     "AceFeaturizer requires pyace; install with 'conda install -c conda-forge python-ace' or from "
@@ -578,21 +579,25 @@ def select(
 
 
 def stage_of(structure: Atoms) -> str:
-    """Name of the ASSYST step a structure came from, as far as its metadata reveals it.
+    """The ASSYST steps a structure went through, as recorded in its metadata.
 
-    Reads the perturbation recorded by :class:`~assyst.perturbations.PerturbationABC`, and reports
-    ``"unperturbed"`` for structures that carry none, i.e. the generated and relaxed ones.  ASSYST does not
-    currently distinguish those from each other; pass your own function to :func:`.trace` to resolve them.
+    Reads the ``stage`` key that every step of the workflow appends to, so generated, volume relaxed and fully
+    relaxed structures report ``spg``, ``spg+volume_relax`` and ``spg+volume_relax+full_relax`` respectively, and
+    perturbed ones carry their perturbation on top.  Structures that ASSYST did not make report ``"unknown"``.
+
+    Reporting the full history keeps the steps apart, but is more detail than a summary usually wants; pass your own
+    function to :func:`.trace` to coarsen it, e.g. to the last step only.
 
     Args:
         structure (:class:`ase.Atoms`): structure to inspect
 
     Returns:
-        :class:`str`: the step name
+        :class:`str`: the steps, joined with ``+``
+
+    See Also:
+        :func:`assyst.utils.stage_of`: the reader this delegates to
     """
-    if "perturbation" in structure.info:
-        return str(structure.info["perturbation"])
-    return "unperturbed"
+    return _workflow_stage_of(structure)
 
 
 def trace(

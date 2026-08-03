@@ -21,6 +21,7 @@ from assyst.leverage import (
     trace,
 )
 from assyst.perturbations import Rattle, Stretch
+from assyst.utils import record_stage
 
 
 @pytest.fixture
@@ -630,7 +631,7 @@ def test_select_input_validation(pool):
 
 def test_stage_of_reads_assyst_metadata(copper):
     """Stages come from the metadata ASSYST already records, not from anything the reduction adds."""
-    assert stage_of(copper) == "unperturbed", "Structures without a perturbation are generated or relaxed ones!"
+    assert stage_of(copper) == "unknown", "Structures ASSYST did not make carry no stage!"
     assert stage_of(Rattle(0.05)(copper.copy())) == "rattle(0.05)"
     assert stage_of(Stretch(hydro=0.1, shear=0.02)(copper.copy())) == "stretch(hydro=0.1, shear=0.02)"
     chained = Stretch(hydro=0.1, shear=0.02)(Rattle(0.05)(copper.copy()))
@@ -638,10 +639,39 @@ def test_stage_of_reads_assyst_metadata(copper):
         "Chained perturbations must be reported in full!"
 
 
+def test_stage_of_separates_generation_from_relaxation(copper):
+    """The unperturbed sets of a run differ in their stage, which is what makes them traceable."""
+    generated = record_stage(copper.copy(), "spg")
+    volume_relaxed = record_stage(generated.copy(), "volume_relax")
+    fully_relaxed = record_stage(volume_relaxed.copy(), "full_relax")
+    rattled = Rattle(0.05)(fully_relaxed.copy())
+
+    stages = [stage_of(s) for s in (generated, volume_relaxed, fully_relaxed, rattled)]
+    assert stages == [
+        "spg",
+        "spg+volume_relax",
+        "spg+volume_relax+full_relax",
+        "spg+volume_relax+full_relax+rattle(0.05)",
+    ]
+    assert len(set(stages)) == 4, "Every step of the workflow must be distinguishable from the others!"
+
+
+RELAXED = "spg+volume_relax+full_relax"
+"""Stage of a structure that went through a plain ASSYST run without being perturbed."""
+
+
+def _relaxed(structure):
+    """Copy of a structure tagged as if the workflow had generated and relaxed it."""
+    structure = structure.copy()
+    for step in RELAXED.split("+"):
+        record_stage(structure, step)
+    return structure
+
+
 @pytest.fixture
 def tagged_pool(pool):
     """Half relaxed structures, half rattled ones, distinguished only by ASSYST's own metadata."""
-    return pool[:10] + [Rattle(0.05, rng=i)(s.copy()) for i, s in enumerate(pool[10:])]
+    return [_relaxed(s) for s in pool[:10]] + [Rattle(0.05, rng=i)(_relaxed(s)) for i, s in enumerate(pool[10:])]
 
 
 def test_trace_columns_and_accounting(tagged_pool):
@@ -657,7 +687,7 @@ def test_trace_columns_and_accounting(tagged_pool):
     np.testing.assert_array_equal(traced["rank"].to_numpy()[selected], np.arange(6))
     assert (traced.loc[~traced["selected"], "rank"] == -1).all()
     np.testing.assert_array_equal(np.flatnonzero(traced["selected"].to_numpy()), np.sort(selected))
-    assert set(traced["stage"]) == {"unperturbed", "rattle(0.05)"}
+    assert set(traced["stage"]) == {RELAXED, f"{RELAXED}+rattle(0.05)"}
 
 
 def test_trace_accepts_explicit_scores(tagged_pool):
@@ -685,7 +715,7 @@ def test_summarize_balances(tagged_pool):
     assert list(summary.columns) == [
         "pool", "selected", "discarded", "selected_fraction", "mean_score", "score_share"
     ]
-    assert set(summary.index) == {"unperturbed", "rattle(0.05)"}
+    assert set(summary.index) == {RELAXED, f"{RELAXED}+rattle(0.05)"}
     assert summary["pool"].sum() == len(tagged_pool)
     assert summary["selected"].sum() == len(selected)
     assert (summary["selected"] + summary["discarded"] == summary["pool"]).all()
@@ -695,8 +725,9 @@ def test_summarize_balances(tagged_pool):
 
 def test_summarize_counts_match_stages(tagged_pool):
     summary = summarize(trace(tagged_pool, [0, 1, 2], scores=np.ones(len(tagged_pool))))
-    assert summary.loc["unperturbed", "pool"] == 10
-    assert summary.loc["rattle(0.05)", "pool"] == len(tagged_pool) - 10
-    assert summary.loc["unperturbed", "selected"] == 3
-    assert summary.loc["rattle(0.05)", "selected"] == 0
-    assert summary.loc["rattle(0.05)", "discarded"] == len(tagged_pool) - 10
+    rattled = f"{RELAXED}+rattle(0.05)"
+    assert summary.loc[RELAXED, "pool"] == 10
+    assert summary.loc[rattled, "pool"] == len(tagged_pool) - 10
+    assert summary.loc[RELAXED, "selected"] == 3
+    assert summary.loc[rattled, "selected"] == 0
+    assert summary.loc[rattled, "discarded"] == len(tagged_pool) - 10

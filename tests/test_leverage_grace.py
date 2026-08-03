@@ -41,11 +41,10 @@ FRACTION = 0.3
 def pipeline_step(structure):
     """Coarse ASSYST step of a structure, derived from the metadata ASSYST records on its own.
 
-    Perturbations leave their parameters behind (``rattle(0.1)``, ``stretch(hydro=0.15, shear=0.05)``), which is
-    more detail than we want here, and relaxed structures carry none at all.
+    The recorded stage is the full history (``spg+volume_relax+full_relax+rattle(0.1)``), of which only the last
+    step matters here, and without its parameters: ``full_relax``, ``rattle``, ``stretch``.
     """
-    perturbation = stage_of(structure)
-    return "relaxed" if perturbation == "unperturbed" else perturbation.split("(")[0]
+    return stage_of(structure).split("+")[-1].split("(")[0]
 
 
 @pytest.fixture(scope="module")
@@ -120,7 +119,9 @@ def test_pool_is_labeled_and_diverse(pool, labels):
     """The GRACE-labeled pool spans a wide range of structures, as ASSYST intends."""
     energies, n_atoms = labels
     assert len(pool) > 50, "Pipeline must produce a pool worth reducing!"
-    assert {pipeline_step(s) for s in pool} == {"relaxed", "rattle", "stretch"}
+    assert {pipeline_step(s) for s in pool} == {"full_relax", "rattle", "stretch"}
+    assert {stage_of(s) for s in pool if pipeline_step(s) == "full_relax"} == {"spg+volume_relax+full_relax"}, \
+        "The pipeline must record the whole history of a structure, not just its last step!"
     for structure in pool:
         assert isinstance(structure.calc, SinglePointCalculator)
         assert structure.get_forces().shape == (len(structure), 3)
@@ -149,10 +150,10 @@ def test_scores_are_label_free(pool, scores, labels):
 def test_relaxed_minima_are_redundant(pool, scores):
     """Relaxed minima sit in the densely sampled part of feature space, perturbed structures do not."""
     stages = np.array([pipeline_step(s) for s in pool])
-    assert scores[stages == "relaxed"].mean() < scores[stages == "stretch"].mean(), \
+    assert scores[stages == "full_relax"].mean() < scores[stages == "stretch"].mean(), \
         "Relaxed minima must carry less unique information than stretched structures!"
     ranked = np.argsort(scores)[::-1]
-    assert stages[ranked[0]] != "relaxed", "The single most informative structure must not be a relaxed minimum!"
+    assert stages[ranked[0]] != "full_relax", "The single most informative structure must not be a relaxed minimum!"
 
 
 def test_selection_is_valid_and_reproducible(pool):
@@ -257,7 +258,7 @@ def test_trace_accounts_for_every_structure(pool, scores):
         err_msg="The structure drawn at position p must carry rank p!",
     )
     assert (traced.loc[~traced["selected"], "rank"] == -1).all(), "Discarded structures must have rank -1!"
-    assert set(traced["stage"]) == {"relaxed", "rattle", "stretch"}
+    assert set(traced["stage"]) == {"full_relax", "rattle", "stretch"}
     np.testing.assert_allclose(traced["score"], scores)
     np.testing.assert_array_equal(traced["number_of_atoms"], [len(s) for s in pool])
 
@@ -267,14 +268,14 @@ def test_summary_balances(pool, scores):
     selected = select(pool, fraction=FRACTION, featurizer=FEATURIZER, rng=0)
     summary = summarize(trace(pool, selected, scores=scores, stage=pipeline_step))
 
-    assert set(summary.index) == {"relaxed", "rattle", "stretch"}
+    assert set(summary.index) == {"full_relax", "rattle", "stretch"}
     assert summary["pool"].sum() == len(pool)
     assert summary["selected"].sum() == len(selected)
     assert (summary["selected"] + summary["discarded"] == summary["pool"]).all()
     np.testing.assert_allclose(summary["selected_fraction"], summary["selected"] / summary["pool"])
     assert abs(summary["score_share"].sum() - 1.0) < 1e-12, "Score shares must partition the pool's leverage!"
 
-    assert summary.loc["relaxed", "mean_score"] < summary.loc["stretch", "mean_score"], \
+    assert summary.loc["full_relax", "mean_score"] < summary.loc["stretch", "mean_score"], \
         "Relaxed minima must score below stretched structures!"
     assert (summary["discarded"] > 0).all(), \
         "A reduction to a third of the pool must discard structures from every step!"
