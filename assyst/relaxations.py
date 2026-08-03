@@ -27,6 +27,9 @@ class Relax:
     force_tolerance: float = 1e-3
     algorithm: Literal["LBFGS", "BFGS", "FIRE"] = "LBFGS"
 
+    stage_name = "relax"
+    """Name of this kind of relaxation in the stage history of a structure."""
+
     def apply_filter_and_constraints(self, structure: Atoms):
         """Hook to allow subclasses to add filters and constraints."""
         return structure
@@ -34,9 +37,11 @@ class Relax:
     def __str__(self) -> str:
         """Name of this relaxation in the stage history of a structure.
 
-        Names the kind of relaxation only; the numerical settings are not part of it.
+        Names the kind of relaxation, plus the pressure it relaxes against where that is not zero, as in
+        ``full_relax(pressure=3.0)``.  The settings of the optimizer are not part of it.
         """
-        return "relax"
+        pressure = getattr(self, "pressure", 0.0)
+        return f"{self.stage_name}(pressure={pressure})" if pressure else self.stage_name
 
     def relax(self, structure: Atoms) -> Atoms:
         """Relax a structure and return result.
@@ -83,12 +88,11 @@ class Relax:
 class CellRelax(Relax):
     """Minimize energy while keeping relative positions and volume constant."""
 
+    stage_name = "cell_relax"
+
     def apply_filter_and_constraints(self, structure: Atoms):
         structure.set_constraint(FixAtoms(np.ones(len(structure), dtype=bool)))
         return FrechetCellFilter(structure, constant_volume=True)
-
-    def __str__(self) -> str:
-        return "cell_relax"
 
 
 @dataclass(frozen=True, eq=True)
@@ -97,14 +101,13 @@ class VolumeRelax(Relax):
 
     pressure: float = 0.0
 
+    stage_name = "volume_relax"
+
     def apply_filter_and_constraints(self, structure: Atoms):
         structure.set_constraint(FixAtoms(np.ones(len(structure), dtype=bool)))
         return FrechetCellFilter(
             structure, hydrostatic_strain=True, scalar_pressure=self.pressure
         )
-
-    def __str__(self) -> str:
-        return "volume_relax"
 
 
 @dataclass(frozen=True, eq=True)
@@ -113,12 +116,11 @@ class SymmetryRelax(Relax):
 
     pressure: float = 0.0
 
+    stage_name = "symmetry_relax"
+
     def apply_filter_and_constraints(self, structure: Atoms):
         structure.set_constraint(FixSymmetry(structure))
         return FrechetCellFilter(structure, scalar_pressure=self.pressure)
-
-    def __str__(self) -> str:
-        return "symmetry_relax"
 
 
 @dataclass(frozen=True, eq=True)
@@ -127,11 +129,10 @@ class FullRelax(Relax):
 
     pressure: float = 0.0
 
+    stage_name = "full_relax"
+
     def apply_filter_and_constraints(self, structure: Atoms):
         return FrechetCellFilter(structure, scalar_pressure=self.pressure)
-
-    def __str__(self) -> str:
-        return "full_relax"
 
 
 def relax(

@@ -42,7 +42,7 @@ Every step of the workflow appends its name to one key, so a structure states wh
 The step names are
 
 * ``spg``: generation by :func:`assyst.crystals.pyxtal`, either directly or through :func:`assyst.crystals.sample`
-* ``relax``, ``cell_relax``, ``volume_relax``, ``symmetry_relax``, ``full_relax``: the corresponding class in :mod:`assyst.relaxations`; the numerical settings of a relaxation are not part of its name
+* ``relax``, ``cell_relax``, ``volume_relax``, ``symmetry_relax``, ``full_relax``: the corresponding class in :mod:`assyst.relaxations`.  A relaxation against a non-zero pressure carries it, as in ``full_relax(pressure=3.0)``, since it minimizes to a different structure; the settings of the optimizer are not part of the name
 * the string of the applied :class:`assyst.perturbations.PerturbationABC`, the same value that goes into ``perturbation``
 
 This makes the three unperturbed sets of a plain ASSYST run tell themselves apart -- the generated structures carry

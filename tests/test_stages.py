@@ -81,9 +81,32 @@ def test_relaxation_records_its_own_name(settings, name, cu):
     assert stage_of(settings(max_steps=1).relax(cu)) == name
 
 
-def test_relaxation_name_ignores_settings():
-    """The kind of relaxation is the stage, its numerics are not."""
-    assert str(FullRelax(max_steps=5, force_tolerance=1e-1, pressure=3.0)) == str(FullRelax())
+def test_relaxation_name_ignores_optimizer_settings():
+    """How hard the optimizer works does not change what the structure is."""
+    assert str(FullRelax(max_steps=5, force_tolerance=1e-1, algorithm="FIRE")) == str(FullRelax())
+
+
+@pytest.mark.parametrize(
+    "settings, name",
+    [
+        (VolumeRelax(pressure=1.5), "volume_relax(pressure=1.5)"),
+        (SymmetryRelax(pressure=10), "symmetry_relax(pressure=10)"),
+        (FullRelax(pressure=3.0), "full_relax(pressure=3.0)"),
+        (FullRelax(pressure=-0.25), "full_relax(pressure=-0.25)"),
+    ],
+)
+def test_pressure_enters_the_name(settings, name):
+    """Relaxing against a pressure gives a different structure, so it belongs in the stage."""
+    assert str(settings) == name
+
+
+@pytest.mark.parametrize("settings", [Relax(), CellRelax(), VolumeRelax(), SymmetryRelax(), FullRelax()])
+def test_zero_or_absent_pressure_stays_out_of_the_name(settings):
+    assert "pressure" not in str(settings)
+
+
+def test_relaxation_records_its_pressure(cu):
+    assert stage_of(VolumeRelax(max_steps=1, pressure=2.0).relax(cu)) == "volume_relax(pressure=2.0)"
 
 
 def test_relaxations_accumulate(cu):
