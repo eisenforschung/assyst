@@ -94,20 +94,68 @@ def test_full_relax_runs(mock_run, single_atom_structure):
 
 
 @patch("assyst.relaxations.Relax.relax")
-def test_relax_function_with_calc_object(mock_relax_method, single_atom_structure):
-    calculator = MockCalculator()
-    list(relax([single_atom_structure], Relax(), calculator))
-    assert mock_relax_method.call_args[0][0].calc is calculator
+def test_relax_function_delegates_to_settings_relax(mock_relax_method, single_atom_structure):
+    """relax() carries no calculator concept of its own; everything -- including
+    which calculator to use -- is configured on `settings` alone (Relax.calculator),
+    so a custom, non-ASE relaxer only needs to hand callers one object."""
+    list(relax([single_atom_structure], Relax()))
+    mock_relax_method.assert_called_once_with(single_atom_structure)
 
 
-@patch("assyst.relaxations.Relax.relax")
-def test_relax_function_with_calc_config(mock_relax_method, single_atom_structure):
+# --- baked-in `calculator` field tests ---
+
+
+def test_relax_default_calculator_is_none():
+    assert Relax().calculator is None
+
+
+@patch("ase.optimize.LBFGS.run")
+def test_relax_uses_baked_in_calculator_without_atoms_calc(mock_run):
+    s = Atoms("H", positions=[[0, 0, 0]], cell=[10, 10, 10], pbc=True)
+    relaxed = Relax(calculator=MockCalculator()).relax(s)
+    mock_run.assert_called_once()
+    assert isinstance(relaxed.calc, SinglePointCalculator)
+
+
+@patch("ase.optimize.LBFGS.run")
+def test_relax_baked_in_calculator_takes_precedence_over_atoms_calc(mock_run):
+    class OtherCalculator(MockCalculator):
+        def get_potential_energy(self, atoms=None):
+            raise AssertionError("atoms.calc must not be used when Relax.calculator is set")
+
+        def get_forces(self, atoms=None):
+            raise AssertionError("atoms.calc must not be used when Relax.calculator is set")
+
+        def get_stress(self, atoms=None):
+            raise AssertionError("atoms.calc must not be used when Relax.calculator is set")
+
+    s = Atoms("H", positions=[[0, 0, 0]], cell=[10, 10, 10], pbc=True)
+    s.calc = OtherCalculator()
+    relaxed = Relax(calculator=MockCalculator()).relax(s)
+    assert isinstance(relaxed.calc, SinglePointCalculator)
+
+
+def test_relax_get_calculator_resolves_ase_calculator_config():
     class MockCalcConfig(AseCalculatorConfig):
         def get_calculator(self):
             return MockCalculator()
 
-    list(relax([single_atom_structure], Relax(), MockCalcConfig()))
-    assert isinstance(mock_relax_method.call_args[0][0].calc, MockCalculator)
+    s = Atoms("H", positions=[[0, 0, 0]])
+    resolved = Relax(calculator=MockCalcConfig()).get_calculator(s)
+    assert isinstance(resolved, MockCalculator)
+
+
+def test_relax_get_calculator_falls_back_to_atoms_calc():
+    s = Atoms("H", positions=[[0, 0, 0]])
+    calc = MockCalculator()
+    s.calc = calc
+    assert Relax().get_calculator(s) is calc
+
+
+def test_relax_raises_without_any_calculator():
+    s = Atoms("H", positions=[[0, 0, 0]], cell=[10, 10, 10], pbc=True)
+    with pytest.raises(ValueError):
+        Relax().relax(s)
 
 
 # --- apply_filter_and_constraints tests ---
@@ -311,30 +359,30 @@ def test_full_relax_default_pressure():
 
 
 def test_relax_function_yields_correct_number_of_structures(cu_structures):
-    results = list(relax(cu_structures, Relax(max_steps=5), Morse()))
+    results = list(relax(cu_structures, Relax(max_steps=5, calculator=Morse())))
     assert len(results) == len(cu_structures)
 
 
 def test_relax_function_does_not_mutate_input(cu_structures):
     original_positions = [s.get_positions().copy() for s in cu_structures]
-    list(relax(cu_structures, Relax(max_steps=5), Morse()))
+    list(relax(cu_structures, Relax(max_steps=5, calculator=Morse())))
     for s, orig in zip(cu_structures, original_positions):
         np.testing.assert_array_equal(s.get_positions(), orig)
 
 
 def test_relax_function_attaches_single_point_calculator(cu_structures):
-    for result in relax(cu_structures, Relax(max_steps=5), Morse()):
+    for result in relax(cu_structures, Relax(max_steps=5, calculator=Morse())):
         assert isinstance(result.calc, SinglePointCalculator)
 
 
 def test_relax_function_with_ase_calculator_config(cu_structures):
-    results = list(relax(cu_structures, Relax(max_steps=5), Morse()))
+    results = list(relax(cu_structures, Relax(max_steps=5, calculator=Morse())))
     assert len(results) == 3
 
 
 def test_relax_function_with_raw_ase_calculator(cu_structures):
     calc = Morse().get_calculator()
-    results = list(relax(cu_structures, Relax(max_steps=5), calc))
+    results = list(relax(cu_structures, Relax(max_steps=5, calculator=calc)))
     assert len(results) == 3
 
 
@@ -347,7 +395,7 @@ def test_relax_function_is_lazy_generator(cu_structures):
         return original_relax(self_inner, structure)
 
     with patch.object(Relax, "relax", counting_relax):
-        gen = relax(cu_structures, Relax(max_steps=5), Morse())
+        gen = relax(cu_structures, Relax(max_steps=5, calculator=Morse()))
         assert call_count[0] == 0, "relax should not be called before iteration"
         next(gen)
         assert call_count[0] == 1
