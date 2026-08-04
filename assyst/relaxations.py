@@ -38,8 +38,8 @@ class Relax:
         Prefers ``self.calculator`` (baked into the relaxer at construction time)
         over ``structure.calc``, so a custom engine does not have to be wrapped as
         an ASE calculator and glued onto ``Atoms`` by the caller.  Falls back to
-        ``structure.calc`` for backwards compatibility with the old calling
-        convention (:func:`relax` attaching a calculator to the structure).
+        ``structure.calc`` for callers that still attach a calculator directly to
+        the structure instead of configuring it on ``Relax``.
 
         Args:
             structure (:class:`ase.Atoms`): structure about to be relaxed
@@ -145,30 +145,25 @@ class FullRelax(Relax):
         return FrechetCellFilter(structure, scalar_pressure=self.pressure)
 
 
-def relax(
-    structures: Iterable[Atoms],
-    settings: Relax,
-    calculator: AseCalculatorConfig | Calculator | None = None,
-) -> Iterator[Atoms]:
+def relax(structures: Iterable[Atoms], settings: Relax) -> Iterator[Atoms]:
     """Relax structures according the given relaxation settings.
 
     Output structures have the final energy and force attached as ase's SinglePointCalculator.
 
+    Everything about how a structure is relaxed -- including which calculator or
+    other energy/force engine to use -- is configured on *settings* alone; see
+    :attr:`.Relax.calculator`.  A custom, non-ASE relaxer therefore only needs to
+    hand callers a single object, `settings`, rather than a `settings` plus a
+    separately-tracked calculator.
+
     Args:
         structures (:class:`collections.abc.Iterable` of :class:`ase.Atoms`): the structures to minimize
         settings (:class:`.Relax`): the kind of relaxation to perform (position, volume, etc.)
-        calculator (:class:`.AseCalculatorConfig` or :class:`ase.calculators.calculator.Calculator`):
-            the energy/force engine to use.  Optional when `settings.calculator` is
-            already set, e.g. for a custom :class:`.Relax` subclass that bakes in its
-            own (possibly non-ASE) engine.
 
     Yields:
         :class:`ase.Atoms`: the corresponding relaxed configuration to each input structure
     """
     for s in structures:
-        s = s.copy()
-        if calculator is not None:
-            s.calc = calculator.get_calculator() if isinstance(calculator, AseCalculatorConfig) else calculator
         yield settings.relax(s)
 
 

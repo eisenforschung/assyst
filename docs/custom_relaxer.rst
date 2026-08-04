@@ -9,20 +9,20 @@ Baking a calculator into a ``Relax`` instance
 :class:`~assyst.relaxations.Relax` (and its subclasses) accept an optional
 ``calculator`` field.  When set, it takes precedence over ``structure.calc``,
 so an ASE-compatible engine can be attached once, at construction time,
-instead of relying on the top-level :func:`~assyst.relaxations.relax`
-function (or the caller) to set ``atoms.calc`` on every structure:
+instead of the caller setting ``atoms.calc`` on every structure.  The
+top-level :func:`~assyst.relaxations.relax` function has no calculator
+concept of its own; everything, including the calculator, is configured on
+``settings`` alone:
 
 .. code-block:: python
 
     from assyst.calculators import Morse
-    from assyst.relaxations import FullRelax
+    from assyst.relaxations import FullRelax, relax as assyst_relax
 
     settings = FullRelax(max_steps=200, calculator=Morse())
-    relaxed = settings.relax(structure)          # no `structure.calc` needed
+    relaxed = settings.relax(structure)                    # no `structure.calc` needed
 
-    # or, over many structures, still via the helper — `calculator` is
-    # optional here once `settings.calculator` is set:
-    from assyst.relaxations import relax as assyst_relax
+    # or, over many structures:
     relaxed_structures = list(assyst_relax(my_structures, settings))
 
 If your preferred energy/force engine does not expose an ASE-compatible
@@ -35,7 +35,8 @@ When to subclass ``Relax``
 
 The built-in :meth:`~assyst.relaxations.Relax.relax` implementation drives
 minimization through ASE's LBFGS optimizer and therefore requires an ASE
-calculator to be attached to the :class:`~ase.Atoms` object.
+calculator, whether set on ``Relax.calculator`` or attached directly to the
+:class:`~ase.Atoms` object.
 A custom subclass is the right tool when:
 
 * the external code has its own minimizer (e.g. a force-field engine with
@@ -157,12 +158,11 @@ Once defined, ``MyEngineRelax`` is a drop-in replacement anywhere
 
 .. note::
 
-    The top-level :func:`assyst.relaxations.relax` function only attaches a
-    calculator to each structure when its own ``calculator`` argument is
-    given; it is ``None`` by default, so a custom ``relax`` method that
-    ignores calculators altogether needs nothing special passed to it, as
-    above.  You can also iterate over the structures directly, bypassing the
-    helper function altogether:
+    The top-level :func:`assyst.relaxations.relax` function never touches
+    calculators itself (see above), so a custom ``relax`` method that ignores
+    calculators altogether needs nothing special passed to it, as above.  You
+    can also iterate over the structures directly, bypassing the helper
+    function altogether:
 
     .. code-block:: python
 
