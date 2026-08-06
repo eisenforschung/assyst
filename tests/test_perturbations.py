@@ -7,9 +7,12 @@ from hypothesis import given, strategies as st
 import numpy as np
 from ase import Atoms
 from ase.build import bulk
-from ase.data import atomic_numbers
+from ase.data import atomic_numbers, chemical_symbols
 
-from assyst.perturbations import rattle, element_scaled_rattle, stretch, Rattle, Stretch, Series, RandomChoice, perturb
+from assyst.perturbations import (
+    rattle, element_scaled_rattle, stretch, Rattle, ElementScaledRattle, Stretch, Series, RandomChoice, perturb,
+    DEFAULT_REFERENCE_LENGTHS,
+)
 from tests.strategies.strategies import random_element_structures
 
 
@@ -240,6 +243,48 @@ def test_element_scaled_rattle_respects_element_specific_sigma(simple_structure,
                            atol=5 * element_sigma / np.sqrt(n_repeat))
         assert np.allclose(disp.var(axis=0),  element_sigma**2,
                            atol=5 * np.sqrt(2 * sigma**4 / (n_repeat - 1)))
+
+
+def test_default_reference_lengths_covers_all_elements():
+    """DEFAULT_REFERENCE_LENGTHS should give a strictly positive value for every element ASE knows about."""
+    assert set(DEFAULT_REFERENCE_LENGTHS) == set(chemical_symbols[1:])
+    assert all(v > 0 for v in DEFAULT_REFERENCE_LENGTHS.values())
+
+
+def test_default_reference_lengths_are_ase_covalent_radii():
+    """Regression pin: the table is ASE's covalent radii, not some other scale."""
+    assert DEFAULT_REFERENCE_LENGTHS["H"] == pytest.approx(0.31)
+    assert DEFAULT_REFERENCE_LENGTHS["C"] == pytest.approx(0.76)
+    assert DEFAULT_REFERENCE_LENGTHS["Au"] == pytest.approx(1.36)
+
+
+def test_element_scaled_rattle_uses_default_reference_lengths_when_omitted():
+    """Without an explicit `reference`, the per-atom sigma passed to `rattle` should use DEFAULT_REFERENCE_LENGTHS."""
+    structure = bulk("Cu") * (2, 2, 2)
+    with patch("assyst.perturbations.rattle") as mock_rattle:
+        mock_rattle.return_value = structure
+        element_scaled_rattle(structure.copy(), sigma=0.3)
+    used_sigma = mock_rattle.call_args.args[1]
+    expected = 0.3 * DEFAULT_REFERENCE_LENGTHS["Cu"] * np.ones((len(structure), 1))
+    assert np.allclose(used_sigma, expected)
+
+
+def test_element_scaled_rattle_reference_none_matches_omitted():
+    """Passing reference=None explicitly should behave identically to omitting it."""
+    structure = bulk("Fe") * (2, 2, 2)
+    out_omitted = element_scaled_rattle(structure.copy(), sigma=0.2, rng=7)
+    out_none = element_scaled_rattle(structure.copy(), sigma=0.2, reference=None, rng=7)
+    assert np.allclose(out_omitted.positions, out_none.positions)
+
+
+def test_element_scaled_rattle_class_defaults_reference():
+    """ElementScaledRattle should default `reference` to None, letting element_scaled_rattle apply its own default."""
+    structure = bulk("Fe") * (2, 2, 2)
+    perturbation = ElementScaledRattle(sigma=0.2, rng=7)
+    with patch("assyst.perturbations.element_scaled_rattle") as mock_esr:
+        mock_esr.return_value = structure
+        perturbation(structure.copy())
+    assert mock_esr.call_args.args[2] is None
 
 
 if __name__ == '__main__':
