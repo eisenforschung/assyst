@@ -12,7 +12,20 @@ These keys are managed by the :func:`assyst.utils.update_uuid` function and are 
 * ``uuid``: A Universally Unique Identifier (UUID) for the current structure.
 * ``seed``: The UUID of the initial structure from which this structure was derived. It remains constant throughout a lineage.
 * ``lineage``: A list of UUIDs of all parent structures, in the order they were generated.
-* ``step``: A description of the step that produced the current UUID (e.g. ``VolumeRelax``, ``pyxtal``, or a perturbation's own string form). Only set when the caller of :func:`assyst.utils.update_uuid` provides one; it reflects the most recent step only, not the full history.
+* ``step``: The name of the workflow step that produced the current UUID.  Only set when the caller of :func:`assyst.utils.update_uuid` provides one; like ``uuid`` it reflects the most recent step only, the structures it came from are in ``lineage``.
+
+The step names are
+
+* ``pyxtal``: generation by :func:`assyst.crystals.pyxtal`, either directly or through :func:`assyst.crystals.sample`
+* ``relax``, ``cell_relax``, ``volume_relax``, ``symmetry_relax``, ``full_relax``: the corresponding class in :mod:`assyst.relaxations`.  A relaxation against a non-zero pressure carries it, as in ``full_relax(pressure=3.0)``, since it minimizes to a different structure; the settings of the optimizer are not part of the name
+* the string of the applied :class:`assyst.perturbations.PerturbationABC`, the same value that goes into ``perturbation``
+
+This makes the sets of a plain ASSYST run tell themselves apart -- the generated structures carry ``pyxtal``, the
+volume relaxed ones ``volume_relax``, the fully relaxed ones ``full_relax`` and the perturbed ones their perturbation
+-- which the ``symmetry`` and ``perturbation`` keys alone cannot do.
+
+Use :func:`assyst.utils.step_of` to read the key, and pass ``step=`` to :func:`assyst.utils.update_uuid` to record a
+step of your own.
 
 For more details on how lineage is tracked through the workflow, see :doc:`lineage`.
 

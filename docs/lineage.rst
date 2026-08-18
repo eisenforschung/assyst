@@ -25,7 +25,14 @@ The cumulative ``perturbation`` key still records every step of a :class:`.Serie
 Relaxations
 ~~~~~~~~~~~
 
-Similarly, the :meth:`.Relax.relax` method generates a new UUID for the relaxed structure, updates the lineage, and sets ``step`` to the relaxation class's name (e.g. ``VolumeRelax``).
+Similarly, the :meth:`.Relax.relax` method generates a new UUID for the relaxed structure, updates the lineage, and sets ``step`` to the name of the relaxation (e.g. ``volume_relax``, or ``volume_relax(pressure=3.0)`` when it relaxes against a non-zero pressure).
+
+Steps
+~~~~~
+
+Where the UUIDs record *which* structure a structure came from, the ``step`` key records *what was done to it* last.
+Read it with :func:`.step_of`, which returns ``"unknown"`` for structures ASSYST did not make.
+See :doc:`metadata` for the step names.
 
 Example
 -------

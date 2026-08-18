@@ -27,15 +27,28 @@ class Relax:
     force_tolerance: float = 1e-3
     algorithm: Literal["LBFGS", "BFGS", "FIRE"] = "LBFGS"
 
+    step_name = "relax"
+    """Name of this kind of relaxation when recorded as the step of a structure."""
+
     def apply_filter_and_constraints(self, structure: Atoms):
         """Hook to allow subclasses to add filters and constraints."""
         return structure
+
+    def __str__(self) -> str:
+        """Name of this relaxation when recorded as the step of a structure.
+
+        Names the kind of relaxation, plus the pressure it relaxes against where that is not zero, as in
+        ``full_relax(pressure=3.0)``.  The settings of the optimizer are not part of it.
+        """
+        pressure = getattr(self, "pressure", 0.0)
+        return f"{self.step_name}(pressure={pressure})" if pressure else self.step_name
 
     def relax(self, structure: Atoms) -> Atoms:
         """Relax a structure and return result.
 
         Structure must have a calculator attached.
         Returned structure will have a SinglePointCalculator with the final energy, forces and stresses attached.
+        The name of this relaxation is recorded as the step of the returned structure, see :func:`.step_of`.
 
         Args:
             structure (:class:`ase.Atoms`): structure to relax
@@ -45,7 +58,7 @@ class Relax:
         """
         calc = structure.calc
         structure = structure.copy()
-        update_uuid(structure, step=type(self).__name__)
+        update_uuid(structure, step=str(self))
         structure.calc = calc
         optimizer_cls = {"LBFGS": LBFGS, "BFGS": BFGS, "FIRE": FIRE}[self.algorithm]
         optimizer = optimizer_cls(self.apply_filter_and_constraints(structure), logfile="/dev/null")
@@ -74,6 +87,8 @@ class Relax:
 class CellRelax(Relax):
     """Minimize energy while keeping relative positions and volume constant."""
 
+    step_name = "cell_relax"
+
     def apply_filter_and_constraints(self, structure: Atoms):
         structure.set_constraint(FixAtoms(np.ones(len(structure), dtype=bool)))
         return FrechetCellFilter(structure, constant_volume=True)
@@ -84,6 +99,8 @@ class VolumeRelax(Relax):
     """Minimize energy while keeping relative positions and cell shape constant."""
 
     pressure: float = 0.0
+
+    step_name = "volume_relax"
 
     def apply_filter_and_constraints(self, structure: Atoms):
         structure.set_constraint(FixAtoms(np.ones(len(structure), dtype=bool)))
@@ -98,6 +115,8 @@ class SymmetryRelax(Relax):
 
     pressure: float = 0.0
 
+    step_name = "symmetry_relax"
+
     def apply_filter_and_constraints(self, structure: Atoms):
         structure.set_constraint(FixSymmetry(structure))
         return FrechetCellFilter(structure, scalar_pressure=self.pressure)
@@ -108,6 +127,8 @@ class FullRelax(Relax):
     """Minimize energy with respect to internal positions and cell without constraints."""
 
     pressure: float = 0.0
+
+    step_name = "full_relax"
 
     def apply_filter_and_constraints(self, structure: Atoms):
         return FrechetCellFilter(structure, scalar_pressure=self.pressure)
