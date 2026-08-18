@@ -40,7 +40,7 @@ from ase import Atoms
 from pyiron_snippets.import_alarm import ImportAlarm
 
 from .neighbors import neighbor_list
-from .utils import stage_of as _workflow_stage_of
+from .utils import step_of as _workflow_step_of
 
 with ImportAlarm(
     "AceFeaturizer requires pyace; install with 'conda install -c conda-forge python-ace' or from "
@@ -578,33 +578,32 @@ def select(
     return sample_without_replacement(scores, number, rng=rng)
 
 
-def stage_of(structure: Atoms) -> str:
-    """The ASSYST steps a structure went through, as recorded in its metadata.
+def step_of(structure: Atoms) -> str:
+    """The ASSYST step a structure came from, as recorded in its metadata.
 
-    Reads the ``stage`` key that every step of the workflow appends to, so generated, volume relaxed and fully
-    relaxed structures report ``spg``, ``spg+volume_relax`` and ``spg+volume_relax+full_relax`` respectively, and
-    perturbed ones carry their perturbation on top.  Structures that ASSYST did not make report ``"unknown"``.
+    Reads the ``step`` key the workflow records, so generated, volume relaxed and fully relaxed structures report
+    ``pyxtal``, ``volume_relax`` and ``full_relax`` respectively, and perturbed ones their perturbation.  Structures
+    that ASSYST did not make report ``"unknown"``.
 
-    Reporting the full history keeps the steps apart, but is more detail than a summary usually wants; pass your own
-    function to :func:`.trace` to coarsen it, e.g. to the last step only.
+    The key holds the most recent step only; the structures a configuration came from are in its ``lineage``.
 
     Args:
         structure (:class:`ase.Atoms`): structure to inspect
 
     Returns:
-        :class:`str`: the steps, joined with ``+``
+        :class:`str`: the name of the step
 
     See Also:
-        :func:`assyst.utils.stage_of`: the reader this delegates to
+        :func:`assyst.utils.step_of`: the reader this delegates to
     """
-    return _workflow_stage_of(structure)
+    return _workflow_step_of(structure)
 
 
 def trace(
     structures: Sequence[Atoms],
     selected: Iterable[int],
     scores: np.ndarray | None = None,
-    stage: Callable[[Atoms], str] = stage_of,
+    step: Callable[[Atoms], str] = step_of,
     **kwargs,
 ) -> pd.DataFrame:
     """Tabulate which structures a selection keeps and which it discards.
@@ -614,11 +613,12 @@ def trace(
         selected (:class:`collections.abc.Iterable` of :class:`int`): indices returned by :func:`.select`
         scores (:class:`numpy.ndarray` or None): per-structure leverage scores; computed with
             :func:`.configuration_leverage` if not given
-        stage (callable): maps a structure to the name of the step that produced it; :func:`.stage_of` by default
+        step (callable): maps a structure to the name of the step that produced it; :func:`.step_of` by default.
+            Pass your own to coarsen the names, e.g. to fold every perturbation into one group
         **kwargs: passed to :func:`.configuration_leverage` when `scores` is not given
 
     Returns:
-        :class:`pandas.DataFrame`: one row per structure, with columns ``stage``, ``selected``, ``rank`` (position in
+        :class:`pandas.DataFrame`: one row per structure, with columns ``step``, ``selected``, ``rank`` (position in
         the draw order, ``-1`` if discarded), ``score``, ``number_of_atoms``, ``volume_per_atom`` and ``formula``
     """
     if scores is None:
@@ -631,7 +631,7 @@ def trace(
         rank[index] = position
     return pd.DataFrame(
         {
-            "stage": [stage(s) for s in structures],
+            "step": [step(s) for s in structures],
             "selected": rank >= 0,
             "rank": rank,
             "score": scores,
@@ -649,11 +649,11 @@ def summarize(trace_frame: pd.DataFrame) -> pd.DataFrame:
         trace_frame (:class:`pandas.DataFrame`): as returned by :func:`.trace`
 
     Returns:
-        :class:`pandas.DataFrame`: one row per step, indexed by stage, with the number of structures in the pool, how
+        :class:`pandas.DataFrame`: one row per step, indexed by step name, with the number of structures in the pool, how
         many were ``selected`` and ``discarded``, the ``selected_fraction`` of that step, the step's share of the
         total leverage of the pool (``score_share``) and its ``mean_score``
     """
-    grouped = trace_frame.groupby("stage")
+    grouped = trace_frame.groupby("step")
     total = trace_frame["score"].sum()
     summary = pd.DataFrame(
         {
@@ -677,7 +677,7 @@ __all__ = [
     "configuration_leverage",
     "sample_without_replacement",
     "select",
-    "stage_of",
+    "step_of",
     "trace",
     "summarize",
 ]

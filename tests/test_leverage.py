@@ -16,12 +16,12 @@ from assyst.leverage import (
     leverage_scores,
     sample_without_replacement,
     select,
-    stage_of,
+    step_of,
     summarize,
     trace,
 )
 from assyst.perturbations import Rattle, Stretch
-from assyst.utils import record_stage
+from assyst.utils import update_uuid
 
 
 @pytest.fixture
@@ -629,43 +629,36 @@ def test_select_input_validation(pool):
 
 # --- provenance tracing ---
 
-def test_stage_of_reads_assyst_metadata(copper):
-    """Stages come from the metadata ASSYST already records, not from anything the reduction adds."""
-    assert stage_of(copper) == "unknown", "Structures ASSYST did not make carry no stage!"
-    assert stage_of(Rattle(0.05)(copper.copy())) == "rattle(0.05)"
-    assert stage_of(Stretch(hydro=0.1, shear=0.02)(copper.copy())) == "stretch(hydro=0.1, shear=0.02)"
+def test_step_of_reads_assyst_metadata(copper):
+    """Steps come from the metadata ASSYST already records, not from anything the reduction adds."""
+    assert step_of(copper) == "unknown", "Structures ASSYST did not make carry no step!"
+    assert step_of(Rattle(0.05)(copper.copy())) == "rattle(0.05)"
+    assert step_of(Stretch(hydro=0.1, shear=0.02)(copper.copy())) == "stretch(hydro=0.1, shear=0.02)"
     chained = Stretch(hydro=0.1, shear=0.02)(Rattle(0.05)(copper.copy()))
-    assert stage_of(chained) == "rattle(0.05)+stretch(hydro=0.1, shear=0.02)", \
-        "Chained perturbations must be reported in full!"
+    assert step_of(chained) == "stretch(hydro=0.1, shear=0.02)", \
+        "The step is the most recent one; the whole chain stays in `perturbation`!"
+    assert chained.info["perturbation"] == "rattle(0.05)+stretch(hydro=0.1, shear=0.02)"
 
 
-def test_stage_of_separates_generation_from_relaxation(copper):
-    """The unperturbed sets of a run differ in their stage, which is what makes them traceable."""
-    generated = record_stage(copper.copy(), "spg")
-    volume_relaxed = record_stage(generated.copy(), "volume_relax")
-    fully_relaxed = record_stage(volume_relaxed.copy(), "full_relax")
+def test_step_of_separates_generation_from_relaxation(copper):
+    """The unperturbed sets of a run differ in their step, which is what makes them traceable."""
+    generated = update_uuid(copper.copy(), step="pyxtal")
+    volume_relaxed = update_uuid(generated.copy(), step="volume_relax")
+    fully_relaxed = update_uuid(volume_relaxed.copy(), step="full_relax")
     rattled = Rattle(0.05)(fully_relaxed.copy())
 
-    stages = [stage_of(s) for s in (generated, volume_relaxed, fully_relaxed, rattled)]
-    assert stages == [
-        "spg",
-        "spg+volume_relax",
-        "spg+volume_relax+full_relax",
-        "spg+volume_relax+full_relax+rattle(0.05)",
-    ]
-    assert len(set(stages)) == 4, "Every step of the workflow must be distinguishable from the others!"
+    steps = [step_of(s) for s in (generated, volume_relaxed, fully_relaxed, rattled)]
+    assert steps == ["pyxtal", "volume_relax", "full_relax", "rattle(0.05)"]
+    assert len(set(steps)) == 4, "Every step of the workflow must be distinguishable from the others!"
 
 
-RELAXED = "spg+volume_relax+full_relax"
-"""Stage of a structure that went through a plain ASSYST run without being perturbed."""
+RELAXED = "full_relax"
+"""Step of a structure that went through a plain ASSYST run without being perturbed."""
 
 
 def _relaxed(structure):
     """Copy of a structure tagged as if the workflow had generated and relaxed it."""
-    structure = structure.copy()
-    for step in RELAXED.split("+"):
-        record_stage(structure, step)
-    return structure
+    return update_uuid(structure.copy(), step=RELAXED)
 
 
 @pytest.fixture
@@ -680,14 +673,14 @@ def test_trace_columns_and_accounting(tagged_pool):
     traced = trace(tagged_pool, selected, featurizer=featurizer)
 
     assert list(traced.columns) == [
-        "stage", "selected", "rank", "score", "number_of_atoms", "volume_per_atom", "formula"
+        "step", "selected", "rank", "score", "number_of_atoms", "volume_per_atom", "formula"
     ]
     assert len(traced) == len(tagged_pool)
     assert traced["selected"].sum() == 6
     np.testing.assert_array_equal(traced["rank"].to_numpy()[selected], np.arange(6))
     assert (traced.loc[~traced["selected"], "rank"] == -1).all()
     np.testing.assert_array_equal(np.flatnonzero(traced["selected"].to_numpy()), np.sort(selected))
-    assert set(traced["stage"]) == {RELAXED, f"{RELAXED}+rattle(0.05)"}
+    assert set(traced["step"]) == {RELAXED, "rattle(0.05)"}
 
 
 def test_trace_accepts_explicit_scores(tagged_pool):
@@ -696,10 +689,10 @@ def test_trace_accepts_explicit_scores(tagged_pool):
     np.testing.assert_array_equal(traced["score"], scores)
 
 
-def test_trace_custom_stage_function(tagged_pool):
+def test_trace_custom_step_function(tagged_pool):
     traced = trace(tagged_pool, [0], scores=np.ones(len(tagged_pool)),
-                   stage=lambda s: s.get_chemical_formula())
-    assert set(traced["stage"]) == {s.get_chemical_formula() for s in tagged_pool}
+                   step=lambda s: s.get_chemical_formula())
+    assert set(traced["step"]) == {s.get_chemical_formula() for s in tagged_pool}
 
 
 def test_trace_score_validation(tagged_pool):
@@ -715,7 +708,7 @@ def test_summarize_balances(tagged_pool):
     assert list(summary.columns) == [
         "pool", "selected", "discarded", "selected_fraction", "mean_score", "score_share"
     ]
-    assert set(summary.index) == {RELAXED, f"{RELAXED}+rattle(0.05)"}
+    assert set(summary.index) == {RELAXED, "rattle(0.05)"}
     assert summary["pool"].sum() == len(tagged_pool)
     assert summary["selected"].sum() == len(selected)
     assert (summary["selected"] + summary["discarded"] == summary["pool"]).all()
@@ -723,9 +716,9 @@ def test_summarize_balances(tagged_pool):
     assert abs(summary["score_share"].sum() - 1.0) < 1e-12, "Score shares must sum to one!"
 
 
-def test_summarize_counts_match_stages(tagged_pool):
+def test_summarize_counts_match_steps(tagged_pool):
     summary = summarize(trace(tagged_pool, [0, 1, 2], scores=np.ones(len(tagged_pool))))
-    rattled = f"{RELAXED}+rattle(0.05)"
+    rattled = "rattle(0.05)"
     assert summary.loc[RELAXED, "pool"] == 10
     assert summary.loc[rattled, "pool"] == len(tagged_pool) - 10
     assert summary.loc[RELAXED, "selected"] == 3

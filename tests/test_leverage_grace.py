@@ -19,7 +19,7 @@ from assyst.leverage import (
     configuration_leverage,
     design_matrix,
     select,
-    stage_of,
+    step_of,
     summarize,
     trace,
 )
@@ -41,10 +41,10 @@ FRACTION = 0.3
 def pipeline_step(structure):
     """Coarse ASSYST step of a structure, derived from the metadata ASSYST records on its own.
 
-    The recorded stage is the full history (``spg+volume_relax+full_relax+rattle(0.1)``), of which only the last
-    step matters here, and without its parameters: ``full_relax``, ``rattle``, ``stretch``.
+    The recorded step carries its parameters (``rattle(0.1)``), which are more detail than the grouping here wants:
+    ``full_relax``, ``rattle``, ``stretch``.
     """
-    return stage_of(structure).split("+")[-1].split("(")[0]
+    return step_of(structure).split("(")[0]
 
 
 @pytest.fixture(scope="module")
@@ -120,8 +120,11 @@ def test_pool_is_labeled_and_diverse(pool, labels):
     energies, n_atoms = labels
     assert len(pool) > 50, "Pipeline must produce a pool worth reducing!"
     assert {pipeline_step(s) for s in pool} == {"full_relax", "rattle", "stretch"}
-    assert {stage_of(s) for s in pool if pipeline_step(s) == "full_relax"} == {"spg+volume_relax+full_relax"}, \
-        "The pipeline must record the whole history of a structure, not just its last step!"
+    minima = [s for s in pool if pipeline_step(s) == "full_relax"]
+    assert {step_of(s) for s in minima} == {"full_relax"}, \
+        "The pipeline must record the step each structure came from!"
+    assert all(len(s.info["lineage"]) >= 2 for s in minima), \
+        "A minimum is generated and then relaxed twice, a history its lineage must still hold!"
     for structure in pool:
         assert isinstance(structure.calc, SinglePointCalculator)
         assert structure.get_forces().shape == (len(structure), 3)
@@ -149,11 +152,11 @@ def test_scores_are_label_free(pool, scores, labels):
 
 def test_relaxed_minima_are_redundant(pool, scores):
     """Relaxed minima sit in the densely sampled part of feature space, perturbed structures do not."""
-    stages = np.array([pipeline_step(s) for s in pool])
-    assert scores[stages == "full_relax"].mean() < scores[stages == "stretch"].mean(), \
+    steps = np.array([pipeline_step(s) for s in pool])
+    assert scores[steps == "full_relax"].mean() < scores[steps == "stretch"].mean(), \
         "Relaxed minima must carry less unique information than stretched structures!"
     ranked = np.argsort(scores)[::-1]
-    assert stages[ranked[0]] != "full_relax", "The single most informative structure must not be a relaxed minimum!"
+    assert steps[ranked[0]] != "full_relax", "The single most informative structure must not be a relaxed minimum!"
 
 
 def test_selection_is_valid_and_reproducible(pool):
@@ -244,7 +247,7 @@ def test_reduced_set_retains_accuracy(pool, labels):
 def test_trace_accounts_for_every_structure(pool, scores):
     """Every pool member is traced to its ASSYST step and marked either selected or discarded."""
     selected = select(pool, fraction=FRACTION, featurizer=FEATURIZER, rng=0)
-    traced = trace(pool, selected, scores=scores, stage=pipeline_step)
+    traced = trace(pool, selected, scores=scores, step=pipeline_step)
 
     assert len(traced) == len(pool)
     assert traced["selected"].sum() == len(selected)
@@ -258,7 +261,7 @@ def test_trace_accounts_for_every_structure(pool, scores):
         err_msg="The structure drawn at position p must carry rank p!",
     )
     assert (traced.loc[~traced["selected"], "rank"] == -1).all(), "Discarded structures must have rank -1!"
-    assert set(traced["stage"]) == {"full_relax", "rattle", "stretch"}
+    assert set(traced["step"]) == {"full_relax", "rattle", "stretch"}
     np.testing.assert_allclose(traced["score"], scores)
     np.testing.assert_array_equal(traced["number_of_atoms"], [len(s) for s in pool])
 
@@ -266,7 +269,7 @@ def test_trace_accounts_for_every_structure(pool, scores):
 def test_summary_balances(pool, scores):
     """The per-step summary adds up and reports where the reduction takes its structures from."""
     selected = select(pool, fraction=FRACTION, featurizer=FEATURIZER, rng=0)
-    summary = summarize(trace(pool, selected, scores=scores, stage=pipeline_step))
+    summary = summarize(trace(pool, selected, scores=scores, step=pipeline_step))
 
     assert set(summary.index) == {"full_relax", "rattle", "stretch"}
     assert summary["pool"].sum() == len(pool)
@@ -284,5 +287,5 @@ def test_summary_balances(pool, scores):
 def test_selection_spreads_over_all_steps(pool, scores):
     """The reduction keeps structures from every ASSYST step, rather than collapsing onto one."""
     selected = select(pool, fraction=FRACTION, featurizer=FEATURIZER, rng=0)
-    summary = summarize(trace(pool, selected, scores=scores, stage=pipeline_step))
+    summary = summarize(trace(pool, selected, scores=scores, step=pipeline_step))
     assert (summary["selected"] > 0).all(), "Every ASSYST step must contribute to the reduced set!"
