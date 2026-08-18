@@ -231,6 +231,16 @@ def test_relax_assigns_seed_if_absent(cu_structure):
     assert result.info["seed"] == result.info["uuid"]
 
 
+def test_relax_records_step(cu_structure):
+    result = Relax(max_steps=5).relax(cu_structure)
+    assert result.info["step"] == "relax"
+
+
+def test_volume_relax_records_step(cu_structure):
+    result = VolumeRelax(max_steps=5).relax(cu_structure)
+    assert result.info["step"] == "volume_relax"
+
+
 def test_relax_reduces_energy():
     s = bulk("Cu", cubic=True)
     s.positions[0] += 0.3

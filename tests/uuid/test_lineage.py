@@ -43,6 +43,11 @@ def test_full_workflow_lineage():
     assert s3.info.get("seed") == uuid1
     assert s3.info["lineage"] == [uuid1, uuid_after_rattle, uuid2]
 
+
+def test_pyxtal_records_step():
+    s = pyxtal(1, species=["Cu"], num_ions=[2])
+    assert s.info["step"] == "pyxtal"
+
 def test_individual_perturbations():
     s = Atoms("Cu2", positions=[[0,0,0], [1,1,1]], cell=[3,3,3], pbc=True)
     s.info["uuid"] = "initial-uuid"
