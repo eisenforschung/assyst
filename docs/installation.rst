@@ -36,5 +36,9 @@ from conda-forge.
 
 The example notebooks also fit simple Atomic Cluster Expansion models, though not technically part of the ASSYST
 workflow.
-You will need to install the ``python-ace`` conda-forge package or follow the 
+:class:`~assyst.leverage.AceFeaturizer`, which scores structures on the same linear ACE basis such a fit would use,
+needs it as well; the rest of :mod:`assyst.leverage` does not.
+You will need to install the ``python-ace`` conda-forge package or follow the
 `instructions <https://pacemaker.readthedocs.io/en/latest/pacemaker/install/>`_.
+The PyPI release of ``python-ace`` only ships a CPython 3.9 wheel, so it cannot be installed on the python versions
+``assyst`` supports and there is no ``pip`` extra for it.
