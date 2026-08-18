@@ -1,7 +1,7 @@
 import uuid
 from ase import Atoms
 
-def update_uuid(structure: Atoms, change: str | None = None) -> Atoms:
+def update_uuid(structure: Atoms, step: str | None = None) -> Atoms:
     """Updates the UUID of the structure and maintains a lineage.
 
     If the structure already has a UUID, it is appended to the 'lineage' list.
@@ -9,8 +9,8 @@ def update_uuid(structure: Atoms, change: str | None = None) -> Atoms:
 
     Args:
         structure (ase.Atoms): The structure to update.
-        change (str, optional): Description of what produced this new UUID, e.g. the name of a
-            relaxation or sampling step. Stored in the 'change' key of `info` when given.
+        step (str, optional): Description of what produced this new UUID, e.g. the name of a
+            relaxation or sampling step. Stored in the 'step' key of `info` when given.
 
     Returns:
         ase.Atoms: The updated structure.
@@ -27,7 +27,7 @@ def update_uuid(structure: Atoms, change: str | None = None) -> Atoms:
     if 'seed' not in structure.info:
         structure.info['seed'] = new_uuid
 
-    if change is not None:
-        structure.info['change'] = change
+    if step is not None:
+        structure.info['step'] = step
 
     return structure

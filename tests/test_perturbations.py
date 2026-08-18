@@ -51,17 +51,17 @@ class TestPerturbations(unittest.TestCase):
         rattled_structure = rattle_pert(self.structure.copy())
         self.assertIn('rattle(0.1)', rattled_structure.info['perturbation'])
 
-    def test_rattle_class_records_change(self):
-        """Test that applying a perturbation also records it under 'change'."""
+    def test_rattle_class_records_step(self):
+        """Test that applying a perturbation also records it under 'step'."""
         rattle_pert = Rattle(sigma=0.1)
         rattled_structure = rattle_pert(self.structure.copy())
-        self.assertEqual(rattled_structure.info['change'], 'rattle(0.1)')
+        self.assertEqual(rattled_structure.info['step'], 'rattle(0.1)')
 
-    def test_series_records_last_change(self):
-        """Test that a Series records only its last step under 'change', unlike the cumulative 'perturbation'."""
+    def test_series_records_last_step(self):
+        """Test that a Series records only its last step under 'step', unlike the cumulative 'perturbation'."""
         series = Series((Rattle(sigma=0.1), Stretch(hydro=0.1, shear=0.1)))
         result = series(self.structure.copy())
-        self.assertEqual(result.info['change'], str(Stretch(hydro=0.1, shear=0.1)))
+        self.assertEqual(result.info['step'], str(Stretch(hydro=0.1, shear=0.1)))
         self.assertEqual(result.info['perturbation'], 'rattle(0.1)+stretch(hydro=0.1, shear=0.1)')
 
     def test_rattle_class_supercell(self):

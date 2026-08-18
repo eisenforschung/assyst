@@ -231,14 +231,14 @@ def test_relax_assigns_seed_if_absent(cu_structure):
     assert result.info["seed"] == result.info["uuid"]
 
 
-def test_relax_records_change_as_class_name(cu_structure):
+def test_relax_records_step_as_class_name(cu_structure):
     result = Relax(max_steps=5).relax(cu_structure)
-    assert result.info["change"] == "Relax"
+    assert result.info["step"] == "Relax"
 
 
-def test_volume_relax_records_change_as_class_name(cu_structure):
+def test_volume_relax_records_step_as_class_name(cu_structure):
     result = VolumeRelax(max_steps=5).relax(cu_structure)
-    assert result.info["change"] == "VolumeRelax"
+    assert result.info["step"] == "VolumeRelax"
 
 
 def test_relax_reduces_energy():
