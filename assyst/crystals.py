@@ -98,7 +98,7 @@ def pyxtal(
             else:
                 return None
         s = s.to_ase()
-        update_uuid(s, change="pyxtal")
+        update_uuid(s, step="pyxtal")
         s.wrap(center=(0, 0, 0))
         return s
 
