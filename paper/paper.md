@@ -59,7 +59,7 @@ significant parts of the periodic table [@grace]; extended formalisms
 handle additional degrees of freedom beyond geometry [@yang2026macro]; and new
 reference data expand the scope of potentials [@schran2019automated;
 @herzog2024coupled]. All of these developments hint strongly that much more 
-high quality-training data will be required in the near future, generated and
+high-quality training data will be required in the near future, generated and
 ingested by new data sources and new MLIP architectures that are difficult to
 foresee. `assyst` therefore targets a design that facilitates interoperability
 with different (electronic-structure) reference data, MLIPs, or workflow managers.
@@ -138,7 +138,7 @@ which naturally integrate into the main workflow.
 Finally, where `assyst` relies on random initialization or perturbation,
 the state of the underlying random number generators is exposed to
 enable fully reproducible runs. Each generated structure is assigned an
-ID, and the relationships between derived structures is tracked. Together they
+ID, and the relationships between derived structures are tracked. Together they
 establish the provenance of each data point in a training set. This property is
 verified in the test suite.
 
