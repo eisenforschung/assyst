@@ -20,6 +20,14 @@ calculator or by any other method.
 For a ready-to-run implementation that targets Atomic Cluster Expansion and Moment Tensor
 Potentials fit to Density Functional Theory (DFT) data check out pyiron_potentialfit.
 
+Development happens on [Github](https://github.com/eisenforschung/assyst).
+Please submit bugs, usage questions, or feature requests directly via [Github Issues](https://github.com/eisenforschung/assyst/issues/new).
+For bug reports please include which version of `assyst` you are using and, if
+possible, a small code snippet that reproduces the issue.
+We are open for any contributions!
+Feel free to open [Pull Requests](https://github.com/eisenforschung/assyst/pulls) directly or get in touch via
+the issues.
+
 ![ASSYST schema](docs/img/AssystSchematicTraced.svg)
 
 ## Citation
