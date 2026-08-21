@@ -32,8 +32,8 @@ lightweight, pure Python library that implements the Automated Small
 Symmetric Structure Training method. It has a modular design: small,
 orthogonal classes communicate via abstract interfaces and the Atomic
 Simulation Environment (ASE) Calculator API. The package can be easily
-integrated with workflow managers (e.g. executorlib [@executorlib] and
-pyiron [@pyiron]), command-line interfaces (CLI) or graphical user
+integrated with workflow managers, e.g. executorlib [@executorlib] and
+pyiron [@pyiron], command-line interfaces (CLI) or graphical user
 interfaces (GUI), enabling heterogeneous high-performance computing (HPC)
 deployment. Released under the BSD 3-clause license with full documentation and
 CI testing, ASSYST enables the flexible and extensible generation of
@@ -115,10 +115,10 @@ with executorlib [@executorlib].
 This flexibility is also crucial to future-proof the package to changes
 in MLIP architecture or reference data. `assyst` will require very few
 or no changes to deal with other MLIPs or data, while more monolithic
-designs, e.g. those in [\[stateoffield\]](#stateoffield){.ref}, are likely to
-require more modifications.
+designs, e.g. those discussed in the [State of the Field](#stateoffield)
+section, are likely to require more modifications.
 
-In [\[fig1classes\]](#fig1classes){.ref}, we show the program design
+In \autoref{fig1classes}, we show the program design
 that enables this flexibility. Green boxes depict individual workflow
 steps. Between them data flows as lists of ASE [@ase-paper] `Atoms`
 objects. `Atoms` is a well-known and widely used data structure in
@@ -142,18 +142,12 @@ ID, and the relationships between derived structures are tracked. Together they
 establish the provenance of each data point in a training set. This property is
 verified in the test suite.
 
-<figure>
-<p><img src="Fig1_Features_Classes_InputTop_Shortlabel.png"
-style="width:80.0%" /></p>
-<figcaption><p>Outline of data and control flow in the package. Green
+![Outline of data and control flow in the package. Green
 boxes are the cleanly separated workflow steps. Arrows among them follow
 the flow of generated structures. Ochre boxes present example code of the
 small modular classes that are used to configure the individual workflow
 steps. Violet boxes locate where `assyst` loosely couples to external
-codes.</p></figcaption>
-</figure>
-
-[]{#fig1classes}
+codes.\label{fig1classes}](Fig1_Features_Classes_InputTop_Shortlabel.png){ width=80% }
 
 # Research Impact Statement
 
