@@ -32,8 +32,8 @@ lightweight, pure Python library that implements the Automated Small
 Symmetric Structure Training method. It has a modular design: small,
 orthogonal classes communicate via abstract interfaces and the Atomic
 Simulation Environment (ASE) Calculator API. The package can be easily
-integrated with workflow managers (e.g. executorlib [@executorlib] and
-pyiron [@pyiron]), command-line interfaces (CLI) or graphical user
+integrated with workflow managers, e.g. executorlib [@executorlib] and
+pyiron [@pyiron], command-line interfaces (CLI) or graphical user
 interfaces (GUI), enabling heterogeneous high-performance computing (HPC)
 deployment. Released under the BSD 3-clause license with full documentation and
 CI testing, ASSYST enables the flexible and extensible generation of
@@ -115,8 +115,8 @@ with executorlib [@executorlib].
 This flexibility is also crucial to future-proof the package to changes
 in MLIP architecture or reference data. `assyst` will require very few
 or no changes to deal with other MLIPs or data, while more monolithic
-designs, e.g. those in [\[stateoffield\]](#stateoffield){.ref}, are likely to
-require more modifications.
+designs, e.g. those discussed in the [State of the Field](#stateoffield)
+section, are likely to require more modifications.
 
 In \autoref{fig1classes}, we show the program design
 that enables this flexibility. Green boxes depict individual workflow
