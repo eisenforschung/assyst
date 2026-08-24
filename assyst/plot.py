@@ -57,7 +57,7 @@ def _reduce_distances(
     structures: Iterable[Atoms],
     rmax: float,
     reduce: Literal["min", "mean"] | Callable[[Iterable[float]], float] | None,
-) -> list[float]:
+) -> np.ndarray:
     """Compute neighbor distances, optionally reduced per structure.
 
     Args:
@@ -66,25 +66,26 @@ def _reduce_distances(
         rmax (float):
             neighbor cutoff radius
         reduce (callable, "min", "mean", or None):
-            if ``None``, return all neighbor distances concatenated; otherwise
-            apply the reducer per structure and return one value per structure,
-            skipping structures with no neighbors within *rmax*
+            applied to the neighbor distances of each structure; ``None`` keeps
+            all of them.  Structures with no neighbors within *rmax* are
+            skipped.
 
     Returns:
-        list of floats (or :class:`numpy.ndarray` when *reduce* is ``None``)
+        :class:`numpy.ndarray` of the reduced distances of all structures
+        concatenated; a reducer returning an array (e.g. the identity)
+        therefore contributes all its values, rather than one dataset per
+        structure
     """
-    _preset = {"min": np.min, "mean": np.mean}
-    if reduce is None:
-        return np.concatenate(
-            [neighbor_list("d", s, float(rmax)) for s in structures]
-        )
+    _preset = {"min": np.min, "mean": np.mean, None: lambda d: d}
     reduce_func = _preset.get(reduce, reduce)
     distances = []
     for s in structures:
         d = neighbor_list("d", s, float(rmax))
         if len(d) > 0:
-            distances.append(reduce_func(d))
-    return distances
+            distances.append(np.ravel(reduce_func(d)))
+    if len(distances) == 0:
+        return np.array([])
+    return np.concatenate(distances)
 
 
 def _plot_histogram(
@@ -218,7 +219,9 @@ def distance_histogram(
             maximum cutoff to consider neighborhood
         reduce (callable from array of floats to float):
             applied to the neighbor distances per structure, and should reduce a single scalar that is binned;
-            if `None` plot all atomic distances concatenated
+            if `None` plot all atomic distances concatenated; a reducer that
+            returns an array instead of a scalar (e.g. ``lambda d: d``) is also
+            allowed, its results are concatenated into a single histogram
         **kwargs:
             passed through to :func:`matplotlib.pyplot.hist`
 
