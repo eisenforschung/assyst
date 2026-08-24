@@ -10,6 +10,7 @@ from assyst.plot import (
     _lattice_angles,
     _aspect_ratio,
     _reduce_distances,
+    _neighbor_distances,
     _distance_xlabel,
     volume_histogram,
     size_histogram,
@@ -83,6 +84,23 @@ class TestReduceDistances(unittest.TestCase):
         result = _reduce_distances([s], rmax=6.0, reduce=None)
         self.assertGreater(len(result), 0)
 
+    @unittest.skipIf(matscipy is None, "matscipy not installed")
+    def test_reduce_array_concatenates(self):
+        # a reducer that returns an array rather than a scalar must not yield
+        # one dataset per structure, but all distances in one flat array
+        s = Atoms('H2', positions=[[0, 0, 0], [1, 0, 0]], cell=[10, 10, 10])
+        flat, per_structure = _neighbor_distances([s, s], rmax=6.0, reduce=lambda d: d)
+        self.assertFalse(per_structure)
+        self.assertEqual(np.ndim(flat), 1)
+        all_distances, _ = _neighbor_distances([s, s], rmax=6.0, reduce=None)
+        np.testing.assert_array_almost_equal(sorted(flat), sorted(all_distances))
+
+    @unittest.skipIf(matscipy is None, "matscipy not installed")
+    def test_reduce_per_structure_flag(self):
+        s = Atoms('H2', positions=[[0, 0, 0], [1, 0, 0]], cell=[10, 10, 10])
+        self.assertTrue(_neighbor_distances([s], rmax=6.0, reduce="min")[1])
+        self.assertFalse(_neighbor_distances([s], rmax=6.0, reduce=None)[1])
+
     def test_distance_xlabel_presets(self):
         self.assertIn("Minimum", _distance_xlabel("min"))
         self.assertIn("Mean", _distance_xlabel("mean"))
@@ -117,6 +135,17 @@ class TestPlotFunctions(unittest.TestCase):
 
         distance_histogram(self.structures, reduce="mean")
         distance_histogram(self.structures, reduce=None)
+
+    @unittest.skipIf(matscipy is None, "matscipy not installed")
+    @patch('matplotlib.pyplot.hist')
+    def test_distance_histogram_array_reduce(self, mock_hist):
+        # an identity reducer plots a single histogram of all distances, not
+        # one histogram per structure
+        structures = self.structures * 3
+        distance_histogram(structures, reduce=lambda d: d)
+        mock_hist.assert_called_once()
+        (data,), _ = mock_hist.call_args
+        self.assertEqual(np.ndim(data), 1)
 
     @unittest.skipIf(matscipy is None, "matscipy not installed")
     @patch('matplotlib.pyplot.hist')

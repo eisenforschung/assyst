@@ -53,12 +53,15 @@ def _distance_xlabel(
     return _DISTANCE_LABELS.get(reduce, r"Distance [$\mathrm{\AA}$]")
 
 
-def _reduce_distances(
+def _neighbor_distances(
     structures: Iterable[Atoms],
     rmax: float,
     reduce: Literal["min", "mean"] | Callable[[Iterable[float]], float] | None,
-) -> list[float]:
+) -> tuple[list[float] | np.ndarray, bool]:
     """Compute neighbor distances, optionally reduced per structure.
+
+    Like :func:`._reduce_distances`, but additionally reports whether the
+    returned values are one per structure or all neighbor distances.
 
     Args:
         structures (iterable of :class:`ase.Atoms`):
@@ -68,23 +71,52 @@ def _reduce_distances(
         reduce (callable, "min", "mean", or None):
             if ``None``, return all neighbor distances concatenated; otherwise
             apply the reducer per structure and return one value per structure,
-            skipping structures with no neighbors within *rmax*
+            skipping structures with no neighbors within *rmax*; if the reducer
+            returns an array rather than a scalar (e.g. the identity function),
+            the per structure results are concatenated into one flat array
 
     Returns:
-        list of floats (or :class:`numpy.ndarray` when *reduce* is ``None``)
+        tuple of the distances (a list of floats, or a :class:`numpy.ndarray`
+        when *reduce* is ``None`` or the reducer does not return scalars) and a
+        bool that is ``True`` when they are one value per structure
     """
     _preset = {"min": np.min, "mean": np.mean}
     if reduce is None:
         return np.concatenate(
             [neighbor_list("d", s, float(rmax)) for s in structures]
-        )
+        ), False
     reduce_func = _preset.get(reduce, reduce)
     distances = []
+    scalar = True
     for s in structures:
         d = neighbor_list("d", s, float(rmax))
-        if len(d) > 0:
-            distances.append(reduce_func(d))
-    return distances
+        if len(d) == 0:
+            continue
+        r = np.asarray(reduce_func(d))
+        # a reducer may return an array instead of a scalar; keep track so that
+        # the results can be flattened below rather than handed to
+        # :func:`matplotlib.pyplot.hist` as one dataset per structure
+        scalar &= r.ndim == 0
+        distances.append(r)
+    if not scalar:
+        return np.concatenate([r.ravel() for r in map(np.atleast_1d, distances)]), False
+    return [float(r) for r in distances], True
+
+
+def _reduce_distances(
+    structures: Iterable[Atoms],
+    rmax: float,
+    reduce: Literal["min", "mean"] | Callable[[Iterable[float]], float] | None,
+) -> list[float] | np.ndarray:
+    """Compute neighbor distances, optionally reduced per structure.
+
+    See :func:`._neighbor_distances` for the arguments.
+
+    Returns:
+        list of floats (or :class:`numpy.ndarray` when *reduce* is ``None`` or
+        the reducer does not return scalars)
+    """
+    return _neighbor_distances(structures, rmax, reduce)[0]
 
 
 def _plot_histogram(
@@ -218,18 +250,21 @@ def distance_histogram(
             maximum cutoff to consider neighborhood
         reduce (callable from array of floats to float):
             applied to the neighbor distances per structure, and should reduce a single scalar that is binned;
-            if `None` plot all atomic distances concatenated
+            if `None` plot all atomic distances concatenated; a reducer that
+            returns an array instead of a scalar (e.g. ``lambda d: d``) is also
+            allowed, its results are concatenated into a single histogram
         **kwargs:
             passed through to :func:`matplotlib.pyplot.hist`
 
     Returns:
         Return value of :func:`matplotlib.pyplot.hist`"""
     kwargs.setdefault("bins", 100)
+    distances, per_structure = _neighbor_distances(structures, rmax, reduce)
     xlabel = _distance_xlabel(reduce)
-    ylabel = r"#$\,$Neighbours" if reduce is None else r"#$\,$Structures"
+    ylabel = r"#$\,$Structures" if per_structure else r"#$\,$Neighbours"
     return _plot_histogram(
         structures,
-        lambda s: _reduce_distances(s, rmax, reduce),
+        lambda _: distances,
         xlabel,
         ylabel,
         **kwargs,
