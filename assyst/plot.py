@@ -53,15 +53,12 @@ def _distance_xlabel(
     return _DISTANCE_LABELS.get(reduce, r"Distance [$\mathrm{\AA}$]")
 
 
-def _neighbor_distances(
+def _reduce_distances(
     structures: Iterable[Atoms],
     rmax: float,
     reduce: Literal["min", "mean"] | Callable[[Iterable[float]], float] | None,
-) -> tuple[list[float] | np.ndarray, bool]:
+) -> np.ndarray:
     """Compute neighbor distances, optionally reduced per structure.
-
-    Like :func:`._reduce_distances`, but additionally reports whether the
-    returned values are one per structure or all neighbor distances.
 
     Args:
         structures (iterable of :class:`ase.Atoms`):
@@ -69,54 +66,26 @@ def _neighbor_distances(
         rmax (float):
             neighbor cutoff radius
         reduce (callable, "min", "mean", or None):
-            if ``None``, return all neighbor distances concatenated; otherwise
-            apply the reducer per structure and return one value per structure,
-            skipping structures with no neighbors within *rmax*; if the reducer
-            returns an array rather than a scalar (e.g. the identity function),
-            the per structure results are concatenated into one flat array
+            applied to the neighbor distances of each structure; ``None`` keeps
+            all of them.  Structures with no neighbors within *rmax* are
+            skipped.
 
     Returns:
-        tuple of the distances (a list of floats, or a :class:`numpy.ndarray`
-        when *reduce* is ``None`` or the reducer does not return scalars) and a
-        bool that is ``True`` when they are one value per structure
+        :class:`numpy.ndarray` of the reduced distances of all structures
+        concatenated; a reducer returning an array (e.g. the identity)
+        therefore contributes all its values, rather than one dataset per
+        structure
     """
-    _preset = {"min": np.min, "mean": np.mean}
-    if reduce is None:
-        return np.concatenate(
-            [neighbor_list("d", s, float(rmax)) for s in structures]
-        ), False
+    _preset = {"min": np.min, "mean": np.mean, None: lambda d: d}
     reduce_func = _preset.get(reduce, reduce)
     distances = []
-    scalar = True
     for s in structures:
         d = neighbor_list("d", s, float(rmax))
-        if len(d) == 0:
-            continue
-        r = np.asarray(reduce_func(d))
-        # a reducer may return an array instead of a scalar; keep track so that
-        # the results can be flattened below rather than handed to
-        # :func:`matplotlib.pyplot.hist` as one dataset per structure
-        scalar &= r.ndim == 0
-        distances.append(r)
-    if not scalar:
-        return np.concatenate([r.ravel() for r in map(np.atleast_1d, distances)]), False
-    return [float(r) for r in distances], True
-
-
-def _reduce_distances(
-    structures: Iterable[Atoms],
-    rmax: float,
-    reduce: Literal["min", "mean"] | Callable[[Iterable[float]], float] | None,
-) -> list[float] | np.ndarray:
-    """Compute neighbor distances, optionally reduced per structure.
-
-    See :func:`._neighbor_distances` for the arguments.
-
-    Returns:
-        list of floats (or :class:`numpy.ndarray` when *reduce* is ``None`` or
-        the reducer does not return scalars)
-    """
-    return _neighbor_distances(structures, rmax, reduce)[0]
+        if len(d) > 0:
+            distances.append(np.ravel(reduce_func(d)))
+    if len(distances) == 0:
+        return np.array([])
+    return np.concatenate(distances)
 
 
 def _plot_histogram(
@@ -259,12 +228,11 @@ def distance_histogram(
     Returns:
         Return value of :func:`matplotlib.pyplot.hist`"""
     kwargs.setdefault("bins", 100)
-    distances, per_structure = _neighbor_distances(structures, rmax, reduce)
     xlabel = _distance_xlabel(reduce)
-    ylabel = r"#$\,$Structures" if per_structure else r"#$\,$Neighbours"
+    ylabel = r"#$\,$Neighbours" if reduce is None else r"#$\,$Structures"
     return _plot_histogram(
         structures,
-        lambda _: distances,
+        lambda s: _reduce_distances(s, rmax, reduce),
         xlabel,
         ylabel,
         **kwargs,

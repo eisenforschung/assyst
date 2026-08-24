@@ -10,7 +10,6 @@ from assyst.plot import (
     _lattice_angles,
     _aspect_ratio,
     _reduce_distances,
-    _neighbor_distances,
     _distance_xlabel,
     volume_histogram,
     size_histogram,
@@ -89,17 +88,25 @@ class TestReduceDistances(unittest.TestCase):
         # a reducer that returns an array rather than a scalar must not yield
         # one dataset per structure, but all distances in one flat array
         s = Atoms('H2', positions=[[0, 0, 0], [1, 0, 0]], cell=[10, 10, 10])
-        flat, per_structure = _neighbor_distances([s, s], rmax=6.0, reduce=lambda d: d)
-        self.assertFalse(per_structure)
+        flat = _reduce_distances([s, s], rmax=6.0, reduce=lambda d: d)
         self.assertEqual(np.ndim(flat), 1)
-        all_distances, _ = _neighbor_distances([s, s], rmax=6.0, reduce=None)
+        all_distances = _reduce_distances([s, s], rmax=6.0, reduce=None)
         np.testing.assert_array_almost_equal(sorted(flat), sorted(all_distances))
 
     @unittest.skipIf(matscipy is None, "matscipy not installed")
-    def test_reduce_per_structure_flag(self):
+    def test_reduce_scalar_one_value_per_structure(self):
         s = Atoms('H2', positions=[[0, 0, 0], [1, 0, 0]], cell=[10, 10, 10])
-        self.assertTrue(_neighbor_distances([s], rmax=6.0, reduce="min")[1])
-        self.assertFalse(_neighbor_distances([s], rmax=6.0, reduce=None)[1])
+        result = _reduce_distances([s, s, s], rmax=6.0, reduce="mean")
+        self.assertEqual(np.ndim(result), 1)
+        self.assertEqual(len(result), 3)
+
+    @unittest.skipIf(matscipy is None, "matscipy not installed")
+    def test_reduce_no_structures_with_neighbors(self):
+        no_neighbors = Atoms('H', positions=[[0, 0, 0]], cell=[10, 10, 10])
+        for reduce in ("min", None, lambda d: d):
+            self.assertEqual(
+                len(_reduce_distances([no_neighbors], rmax=6.0, reduce=reduce)), 0
+            )
 
     def test_distance_xlabel_presets(self):
         self.assertIn("Minimum", _distance_xlabel("min"))
