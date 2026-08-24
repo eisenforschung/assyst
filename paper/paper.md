@@ -69,7 +69,7 @@ with different (electronic-structure) reference data, MLIPs, or workflow manager
 There exist multiple software packages that aim to generate training
 data for MLIPs (and often the MLIPs themselves, too), offering
 integrated workflows to do so automatically or semi-automatically, e.g.
-[@gelzinyte23; @ZengDeepMD; @autoplex; @pymatnest] aimed at solid-state
+[@gelzinyte23; @ZengDeepMD; @autoplex] and V.G. Fletcher[^2] aimed at solid-state
 materials. All of these packages are deeply integrated with the software
 required to run the underlying electronic structure calculations and
 MLIP fitting. While this can be convenient, it also makes setting up
@@ -78,10 +78,17 @@ additional MLIPs or electronic data generation methods very difficult.
 By comparison, `assyst` aims to be more compact and easier to extend,
 and to be less dependent on certain reference data or MLIPs. The
 integration of `assyst` has been demonstrated in multiple public
-workshops [@dpg2025; @dpg2026]. The corresponding supporting material
+workshops [^1]. The corresponding supporting material
 illustrates the ease of integration with existing workflow tools, MLIP codes, and a
 GUI---something that would be cumbersome to implement with other CLI-based
 tools.
+
+[^1]: See
+[DPG2025](https://workshop.pyiron.org/DPG-tutorial-2025/02_assyst.html) and
+[DPG2026](https://workshop.pyiron.org/DPG-tutorial-2026/03_assyst.html).
+
+[^2]: V.G. Fletcher,
+[NS_database_builder](https://github.com/VGFletcher/NS_database_builder)
 
 # Software Design and Features
 
@@ -120,11 +127,11 @@ section, are likely to require more modifications.
 
 In \autoref{fig1classes}, we show the program design
 that enables this flexibility. Green boxes depict individual workflow
-steps. Between them data flows as lists of ASE [@ase-paper] `Atoms`
-objects. `Atoms` is a well-known and widely used data structure in
+steps. Between them data flows as lists of ASE `Atoms`
+objects [@ase-paper]. `Atoms` is a well-known and widely used data structure in
 computational materials science that enables the easy distribution of
 the individual workflow steps. In our previous GUI implementations
-[@dpg2025; @dpg2026], each of the boxes is represented by an interactive
+[^1], each of the boxes is represented by an interactive
 'window' or 'node'. The ochre-colored boxes highlight possible and
 common configuration options for each step, e.g. passing
 `VolumeRelax("BFGS", pressure=0)` will instruct `relax(...)` to minimize
@@ -158,7 +165,7 @@ prompted multiple independent
 investigations [@ito25; @bienvenue25; @brunner26] using derived training
 sets, so we believe a unified and easily extended implementation
 will be helpful. `assyst` has been used in multiple public teaching
-workshops [@dpg2025; @dpg2026].
+workshops.
 
 # Documentation and Source Code
 
