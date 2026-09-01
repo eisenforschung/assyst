@@ -38,3 +38,7 @@ The example notebooks also fit simple Atomic Cluster Expansion models, though no
 workflow.
 You will need to install the ``python-ace`` conda-forge package or follow the 
 `instructions <https://pacemaker.readthedocs.io/en/latest/pacemaker/install/>`_.
+
+.. code-block:: bash
+
+   conda install -c conda-forge python-ace 'setuptools<81' 'numpy<2.4'
