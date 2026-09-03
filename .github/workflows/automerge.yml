@@ -1,0 +1,119 @@
+name: automerge
+
+# Merge pull requests carrying the `automerge` label as soon as every check on
+# the head commit has finished green.  Only users with write access can set a
+# label, so the label itself is the approval act.
+#
+# The merge runs on GITHUB_TOKEN, whose pushes raise no events, so `push: main`
+# workflows are re-dispatched explicitly (see DISPATCH_AFTER_MERGE below).
+
+on:
+  pull_request_target:
+    types: [labeled, ready_for_review]
+  workflow_run:
+    # Completion of one of these re-evaluates the queue.  A new workflow that
+    # reports a check on pull requests belongs in this list, otherwise a green
+    # pull request waits for the next event before it is merged.
+    workflows: ["unittest", "test-minimum-deps", "Codecov", "Claude Code Review"]
+    types: [completed]
+  status:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  checks: read
+  actions: write
+
+concurrency:
+  group: automerge
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    name: automerge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure the label exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          LABEL: automerge
+        run: |
+          gh label create "$LABEL" --color 0E8A16 \
+              --description "Merge once every check on the head commit is green" \
+            || echo "'$LABEL' already exists."
+
+      - name: Merge green pull requests
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          LABEL: automerge
+          SELF: automerge
+          DISPATCH_AFTER_MERGE: codecov.yml
+        run: |
+          set -euo pipefail
+
+          numbers=$(gh pr list --state open --label "$LABEL" --json number --jq '.[].number')
+          if [ -z "$numbers" ]; then
+            echo "No open pull request carries the '$LABEL' label."
+            exit 0
+          fi
+
+          # This run reports a check on the head commit while it is deciding, so
+          # it is dropped from the rollup by workflow name and by job name.
+          filter='
+            [ .statusCheckRollup[]?
+              | select((.workflowName // "") != $self and (.name // "") != $self)
+            ] as $checks
+            | if   .isDraft                 then "draft"
+              elif .mergeable != "MERGEABLE" then "not mergeable (" + (.mergeable // "?") + ")"
+              elif ($checks | length) == 0   then "no checks reported"
+              elif any($checks[]; .__typename == "CheckRun" and .status != "COMPLETED")
+                then "checks still running"
+              elif any($checks[]; .__typename == "StatusContext" and .state == "PENDING")
+                then "checks still running"
+              elif any($checks[]; .__typename == "CheckRun"
+                       and (.conclusion as $c
+                            | ["SUCCESS", "SKIPPED", "NEUTRAL"] | index($c) | not))
+                then "checks failed"
+              elif any($checks[]; .__typename == "StatusContext" and .state != "SUCCESS")
+                then "checks failed"
+              else "green"
+              end'
+
+          merged=0
+          failed=0
+          for pr in $numbers; do
+            echo "::group::#$pr"
+            # Mergeability is computed asynchronously; UNKNOWN means ask again.
+            for _ in 1 2 3; do
+              pull=$(gh pr view "$pr" --json isDraft,mergeable,statusCheckRollup)
+              [ "$(jq -r .mergeable <<<"$pull")" = UNKNOWN ] || break
+              sleep 5
+            done
+            state=$(jq -r --arg self "$SELF" "$filter" <<<"$pull")
+            if [ "$state" != green ]; then
+              echo "#$pr: $state -- not merging."
+            elif gh pr merge "$pr" --squash; then
+              echo "#$pr: merged."
+              merged=1
+            else
+              echo "::warning title=automerge::#$pr is green but the merge was refused."
+              failed=1
+            fi
+            echo "::endgroup::"
+          done
+
+          # workflow_dispatch is the one trigger exempt from the GITHUB_TOKEN
+          # event suppression, so the merge commit's `push: main` workflows are
+          # started here instead.
+          if [ "$merged" = 1 ]; then
+            for wf in $DISPATCH_AFTER_MERGE; do
+              gh workflow run "$wf" --ref main \
+                || echo "::warning title=automerge::could not dispatch $wf"
+            done
+          fi
+
+          exit "$failed"
