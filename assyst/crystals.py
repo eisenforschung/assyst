@@ -199,7 +199,7 @@ class Formulas(Sequence):
             *range_args: passed to the builtin :func:`range`; e.g. ``(1, 3)`` gives counts 1, 2
         """
         if isinstance(elements, str):
-            return cls(tuple({elements: i} for i in range(*range_args)))
+            return cls(tuple({elements: i} for i in range(*range_args) if i != 0))
         formulas = [cls.range(e, *range_args) for e in elements]
         total = formulas[0]
         for f in formulas[1:]:

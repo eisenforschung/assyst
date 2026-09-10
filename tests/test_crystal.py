@@ -16,6 +16,16 @@ class TestFormulas(unittest.TestCase):
         self.assertEqual(f[2], {"Cu": 3}, msg="Third element should be {'Cu': 3}")
         self.assertEqual(f.elements, {"Cu"}, msg="Elements should be {'Cu'}")
 
+    def test_range_skips_zero(self):
+        f = Formulas.range("Cu", 3)
+        self.assertEqual(len(f), 2, msg="Length of range('Cu', 3) should be 2")
+        self.assertNotIn({"Cu": 0}, f, msg="range should not produce a formula without atoms")
+        self.assertEqual(
+            Formulas.range("Cu", 3) * Formulas.range("Ag", 3),
+            Formulas.range("Cu", 1, 3) * Formulas.range("Ag", 1, 3),
+            msg="One argument range should match the explicit form starting at one",
+        )
+
     def test_binary_range(self):
         f = Formulas.range(("Cu", "Ag"), 1, 3)
         self.assertEqual(f.elements, {"Cu", "Ag"}, msg="Elements should contain all given elements: {'Cu', 'Ag'}")
