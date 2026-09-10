@@ -39,6 +39,13 @@ When structures are generated using :func:`assyst.crystals.sample` or :func:`ass
 * ``spacegroup``: The actual symmetry group number of the generated structure, which may be higher than the requested one.
 * ``repeat``: The iteration index when multiple structures are generated for the same symmetry group.
 
+Relaxation
+----------
+
+When a structure is relaxed by a class in :mod:`assyst.relaxations`, the outcome of the optimizer is recorded:
+
+* ``converged``: Whether the optimizer reached the requested ``force_tolerance`` before running out of ``max_steps``.  A structure that stopped early keeps the energy and forces of its last step, so check this key before treating it as a minimum.
+
 Perturbation
 ------------
 
