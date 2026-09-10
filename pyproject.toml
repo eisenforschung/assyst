@@ -11,6 +11,10 @@ version_file = "assyst/_version.py"
 [tool.ruff]
 line-length = 120
 
+[tool.pytest.ini_options]
+addopts = "--doctest-modules"
+testpaths = ["tests", "assyst"]
+
 [project]
 name = "assyst"
 description = "Reference implentation of the Automated Small Symmetric Structure Training method."

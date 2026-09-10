@@ -161,6 +161,7 @@ class Formulas(Sequence):
     arguments as the builtin `range`, except that it skips the zero.
 
     >>> el = Formulas.range('Cu', 3)
+    >>> el
     Formulas(atoms=({'Cu': 1}, {'Cu': 2}))
     >>> el == el_manual
     True
@@ -168,6 +169,7 @@ class Formulas(Sequence):
     Addition is overloaded to the addition of the underlying tuples.
 
     >>> Formulas.range('Cu', 1, 5) == Formulas.range('Cu', 1, 3) + Formulas.range('Cu', 3, 5)
+    True
 
     The bitwise or operation is akin to the inner product
 
@@ -175,7 +177,7 @@ class Formulas(Sequence):
     Formulas(atoms=({'Cu': 1, 'Ag': 1}, {'Cu': 2, 'Ag': 2}))
 
     >>> Formulas.range('Cu', 3) * Formulas.range('Ag', 3)
-    Formulas(atoms=({'Cu': 1, 'Ag': 1}, {'Cu': 2, 'Ag': 1}, {'Cu': 1, 'Ag': 2}, {'Cu': 2, 'Ag': 2}))
+    Formulas(atoms=({'Cu': 1, 'Ag': 1}, {'Cu': 1, 'Ag': 2}, {'Cu': 2, 'Ag': 1}, {'Cu': 2, 'Ag': 2}))
     """
 
     atoms: tuple[dict[str, int], ...]
@@ -199,7 +201,7 @@ class Formulas(Sequence):
             *range_args: passed to the builtin :func:`range`; e.g. ``(1, 3)`` gives counts 1, 2
         """
         if isinstance(elements, str):
-            return cls(tuple({elements: i} for i in range(*range_args)))
+            return cls(tuple({elements: i} for i in range(*range_args) if i != 0))
         formulas = [cls.range(e, *range_args) for e in elements]
         total = formulas[0]
         for f in formulas[1:]:
