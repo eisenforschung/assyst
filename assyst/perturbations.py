@@ -3,12 +3,18 @@
 import warnings
 from abc import ABC, abstractmethod
 from ase import Atoms
+from ase.data import chemical_symbols, covalent_radii
 from typing import Iterable, Callable, Self, Iterator, Union
 from dataclasses import dataclass
 import numpy as np
 
 from .filters import Filter
 from .utils import update_uuid
+
+DEFAULT_REFERENCE_LENGTHS: dict[str, float] = {
+    sym: float(radius) for sym, radius in zip(chemical_symbols[1:], covalent_radii[1:])
+}
+"""Default per-element reference length (Å) for :func:`.element_scaled_rattle`, taken from ASE's covalent radii."""
 
 
 def rattle(
@@ -38,7 +44,7 @@ def rattle(
 def element_scaled_rattle(
     structure: Atoms,
     sigma: float,
-    reference: dict[str, float],
+    reference: Union[dict[str, float], None] = None,
     rng: Union[int, np.random.Generator, None] = None,
 ) -> Atoms:
     """Randomly displace positions with gaussian noise relative to an elemental reference length.
@@ -51,7 +57,8 @@ def element_scaled_rattle(
     Args:
         structure (:class:`ase.Atoms`): structure to perturb
         sigma (:class:`float`): relative standard deviation
-        reference (:class:`dict` of :class:`str` to :class:`float`): reference length per element
+        reference (:class:`dict` of :class:`str` to :class:`float`): reference length per element; defaults to
+            :data:`.DEFAULT_REFERENCE_LENGTHS` (ASE covalent radii) when not given
         rng (:class:`int`, :class:`numpy.random.Generator`): seed or random number generator
 
     Raises:
@@ -59,6 +66,8 @@ def element_scaled_rattle(
         ValueError: if reference values are not positive
         ValueError: if reference does not contain all elements in given structure
     """
+    if reference is None:
+        reference = DEFAULT_REFERENCE_LENGTHS
     sigma = sigma * np.ones(len(structure))
     if not all(r > 0 for r in reference.values()):
         raise ValueError("Reference lengths must be strictly positive!")
@@ -221,11 +230,12 @@ class ElementScaledRattle(RngMixin, PerturbationABC):
     """Displace atoms by some amount from a normal distribution.
 
     Operates like :class:`.Rattle` but uses a standard deviation derived from the relative `sigma` and the `reference`,
-    where this reference is given by element.
+    where this reference is given by element. `reference` defaults to :data:`.DEFAULT_REFERENCE_LENGTHS` (ASE
+    covalent radii) when not given.
     """
 
     sigma: float
-    reference: dict[str, float]
+    reference: Union[dict[str, float], None] = None
     create_supercells: bool = False
     "Create minimal 2x2x2 super cells when applied to structures of only one atom."
     rng: Union[int, np.random.Generator, None] = None
@@ -324,6 +334,7 @@ class RandomChoice(RngMixin, PerturbationABC):
 __all__ = [
         "rattle",
         "element_scaled_rattle",
+        "DEFAULT_REFERENCE_LENGTHS",
         "stretch",
         "PerturbationABC",
         "Perturbation",
