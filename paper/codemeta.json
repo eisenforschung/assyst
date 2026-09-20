@@ -1,0 +1,30 @@
+{
+  "@context": "https://raw.githubusercontent.com/codemeta/codemeta/master/codemeta.jsonld",
+  "@type": "Code",
+  "author": [
+    {
+      "@id": "https://orcid.org/0000-0002-6029-8748",
+      "@type": "Person",
+      "email": "pmrv@posteo.de",
+      "name": "Marvin Poul",
+      "affiliation": "Max-Planck-Institute for Sustainable Materials"
+    },
+    {
+      "@id": "https://orcid.org/0000-0002-7903-2472",
+      "@type": "Person",
+      "email": "neugebauer@mpi-susmat.de",
+      "name": "Jörg Neugebauer",
+      "affiliation": "Max-Planck-Institute for Sustainable Materials"
+    }
+  ],
+  "identifier": "https://doi.org/10.5281/zenodo.15744358",
+  "codeRepository": "https://github.com/eisenforschung/assyst",
+  "datePublished": "2026-05-21",
+  "dateModified": "2026-05-21",
+  "dateCreated": "2026-05-21",
+  "description": "Reference implentation of the Automated Small Symmetric Structure Training method ",
+  "keywords": "Python, Machine Learning, Potential, Machine Learning Interatomic Potentials, Physics, Material Science, Atomistics, Simulation",
+  "license": "BSD",
+  "title": "assyst",
+  "version": "1.0.0"
+}
