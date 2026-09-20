@@ -11,6 +11,13 @@ version_file = "assyst/_version.py"
 [tool.ruff]
 line-length = 120
 
+[tool.coverage.report]
+exclude_also = [
+    # pyace is not published on PyPI, so CI cannot install it and the ACE featurizer never runs there; it is
+    # covered by tests/test_leverage.py wherever pyace *is* available
+    "# needs pyace",
+]
+
 [project]
 name = "assyst"
 description = "Reference implentation of the Automated Small Symmetric Structure Training method."
