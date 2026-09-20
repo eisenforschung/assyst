@@ -5,3 +5,5 @@ dist/
 .ipynb_checkpoints/
 __pycache__/
 *.py[cod]
+.coverage
+.coverage.*
