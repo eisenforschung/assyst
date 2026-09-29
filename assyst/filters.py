@@ -10,7 +10,7 @@ from dataclasses import dataclass, KW_ONLY
 from itertools import combinations_with_replacement, product
 from math import nan, inf
 from numbers import Number
-from typing import Callable, Literal
+from typing import cast, Callable, Literal
 
 from ase import Atoms
 from ase.calculators.singlepoint import SinglePointCalculator
@@ -71,8 +71,8 @@ class DistanceFilter(FilterBase):
 
     def __post_init__(self):
         if isinstance(self.radii, Number):
-            r = self.radii
-            self.radii = defaultdict(lambda: r)
+            radius = float(cast(float, self.radii))
+            self.radii = {element: radius for element in atomic_numbers if element != "X"}
 
     def _element_wise_dist(self, structure: Atoms) -> dict[tuple[str, str], float]:
         pair: dict[tuple[str, str], float] = defaultdict(lambda: inf)
@@ -110,6 +110,9 @@ class DistanceFilter(FilterBase):
                 passed to Tol_matrix as is and used there to initialize radii of elements not explicitly set in this
                 filter
         """
+        # recover the case where we initialized a dict from a scalar
+        if len(self.radii) == len(atomic_numbers) - 1 and len(set(self.radii.values())) == 1:
+            return Tol_matrix.from_single_value(2 * self.radii["H"])
         return Tol_matrix(
             *(
                 (

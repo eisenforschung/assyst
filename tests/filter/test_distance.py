@@ -88,6 +88,68 @@ class TestDistanceFilter(unittest.TestCase):
         self.assertFalse(filter(structure), msg="minimal image d=0.5 < 2*0.3")
 
 
+class TestDistanceFilterScalar(unittest.TestCase):
+    """DistanceFilter built from a single number applies that radius to every element (#165)."""
+
+    def test_call_rejects_close(self):
+        """Scalar radius rejects a pair closer than twice the radius."""
+        structure = Atoms('Cu2', cell=[20, 20, 20], pbc=True, positions=[(0, 0, 0), (0.2, 0, 0)])
+        self.assertFalse(DistanceFilter(1.5)(structure), msg="d=0.2 < 2*1.5")
+
+    def test_call_accepts_far(self):
+        """Scalar radius accepts a pair farther than twice the radius."""
+        structure = Atoms('Cu2', cell=[20, 20, 20], pbc=True, positions=[(0, 0, 0), (3.1, 0, 0)])
+        self.assertTrue(DistanceFilter(1.5)(structure), msg="d=3.1 > 2*1.5")
+
+    def test_call_threshold(self):
+        """Scalar radius compares against 2*r for pairs just below and just above."""
+        for d, expected in ((2.99, False), (3.01, True)):
+            with self.subTest(d=d):
+                structure = Atoms('Cu2', cell=[20, 20, 20], pbc=True, positions=[(0, 0, 0), (d, 0, 0)])
+                self.assertIs(DistanceFilter(1.5)(structure), expected)
+
+    def test_call_heterogeneous(self):
+        """Scalar radius applies to mixed-element pairs."""
+        structure = Atoms('CuAg', cell=[20, 20, 20], pbc=True, positions=[(0, 0, 0), (2.5, 0, 0)])
+        self.assertFalse(DistanceFilter(1.5)(structure), msg="Cu-Ag d=2.5 < 2*1.5")
+        self.assertTrue(DistanceFilter(1.2)(structure), msg="Cu-Ag d=2.5 > 2*1.2")
+
+    def test_call_matches_mapping(self):
+        """Scalar form gives the same verdict as the mapping form with equal radii."""
+        structure = Atoms('CuAg2', cell=[10, 10, 10], pbc=True,
+                          positions=[(0, 0, 0), (2.5, 0, 0), (5.5, 0, 0)])
+        for r in (1.0, 1.2, 1.3, 1.6):
+            with self.subTest(r=r):
+                self.assertEqual(
+                    DistanceFilter(r)(structure),
+                    DistanceFilter({'Cu': r, 'Ag': r})(structure),
+                )
+
+    def test_to_tol_matrix(self):
+        """Scalar form gives 2*r for any element pair, not the pyxtal prototype value."""
+        tol = DistanceFilter(1.5).to_tol_matrix()
+        self.assertIsInstance(tol, Tol_matrix)
+        for a, b in (('Cu', 'Cu'), ('Cu', 'Ag'), ('H', 'U')):
+            with self.subTest(pair=(a, b)):
+                self.assertEqual(tol.get_tol(atomic_numbers[a], atomic_numbers[b]), 3.0)
+
+    def test_to_tol_matrix_after_call(self):
+        """Calling the filter does not change what to_tol_matrix returns afterwards."""
+        filter = DistanceFilter(1.5)
+        filter(Atoms('Cu2', cell=[20, 20, 20], pbc=True, positions=[(0, 0, 0), (4.0, 0, 0)]))
+        tol = filter.to_tol_matrix()
+        for a, b in (('Cu', 'Cu'), ('Cu', 'Ag'), ('Ag', 'Ag')):
+            with self.subTest(pair=(a, b)):
+                self.assertEqual(tol.get_tol(atomic_numbers[a], atomic_numbers[b]), 3.0)
+
+    def test_mapping_missing_element_not_inserted(self):
+        """Mapping form still treats absent elements as NaN (allowed) and does not grow the mapping."""
+        structure = Atoms('CuAg', cell=[20, 20, 20], pbc=True, positions=[(0, 0, 0), (0.2, 0, 0)])
+        radii = {'Cu': 1.5}
+        self.assertTrue(DistanceFilter(radii)(structure), msg="Ag radius absent -> NaN -> pair allowed")
+        self.assertEqual(radii, {'Cu': 1.5})
+
+
 def _dimer(symbols, d, cell=40.0):
     return Atoms(symbols, cell=[cell] * 3, pbc=True, positions=[(0, 0, 0), (d, 0, 0)])
 
@@ -159,6 +221,13 @@ def test_to_tol_matrix(ra, rb, a, b):
 
     for i, j in product((a, b), repeat=2):
         assert tol_matrix.get_tol(atomic_numbers[i], atomic_numbers[j]) == radii[i] + radii[j]
+
+
+@given(radii, elements(), elements())
+def test_to_tol_matrix_scalar(r, a, b):
+    """to_tol_matrix of a scalar filter returns 2*r for any element pair."""
+    tol_matrix = DistanceFilter(r).to_tol_matrix()
+    assert tol_matrix.get_tol(atomic_numbers[a], atomic_numbers[b]) == 2 * r
 
 
 @given(
