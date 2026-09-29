@@ -74,10 +74,10 @@ class DistanceFilter(FilterBase):
             r = self.radii
             self.radii = defaultdict(lambda: r)
 
-    @staticmethod
-    def _element_wise_dist(structure: Atoms) -> dict[tuple[str, str], float]:
+    def _element_wise_dist(self, structure: Atoms) -> dict[tuple[str, str], float]:
         pair: dict[tuple[str, str], float] = defaultdict(lambda: inf)
-        for i, j, d in zip(*neighbor_list("ijd", structure, 5.0)):
+        cutoff = 2 * np.nanmax(np.fromiter(self.radii.values(), dtype=float), initial=2.5) + 0.1
+        for i, j, d in zip(*neighbor_list("ijd", structure, cutoff)):
             ei, ej = sorted((structure.symbols[i], structure.symbols[j]))
             pair[ei, ej] = min(d, pair[ei, ej])
         return pair
