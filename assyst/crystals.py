@@ -158,24 +158,31 @@ class Formulas(Sequence):
     >>> el_manual = Formulas(({'Cu': 1}, {'Cu': 2}))
 
     :meth:`.range` is a helper class method that initializes `Formulas` for a single element and takes the same
-    arguments as the builtin `range`, except that it skips the zero.
+    arguments as the builtin `range`.
 
-    >>> el = Formulas.range('Cu', 3)
-    Formulas(atoms=({'Cu': 1}, {'Cu': 2}))
-    >>> el == el_manual
+    >>> Formulas.range('Cu', 3)
+    Formulas(atoms=({'Cu': 0}, {'Cu': 1}, {'Cu': 2}))
+
+    The zero is retained by default, but is ignored by :func:`sample` or can be
+    removed explicitly with :meth:`.trim`.
+
+    >>> Formulas.range('Cu', 3).trim() == el_manual
+    True
+    >>> Formulas.range('Cu', 1, 3) == el_manual
     True
 
     Addition is overloaded to the addition of the underlying tuples.
 
     >>> Formulas.range('Cu', 1, 5) == Formulas.range('Cu', 1, 3) + Formulas.range('Cu', 3, 5)
+    True
 
     The bitwise or operation is akin to the inner product
 
-    >>> Formulas.range('Cu', 3) | Formulas.range('Ag', 3)
+    >>> Formulas.range('Cu', 1, 3) | Formulas.range('Ag', 1, 3)
     Formulas(atoms=({'Cu': 1, 'Ag': 1}, {'Cu': 2, 'Ag': 2}))
 
-    >>> Formulas.range('Cu', 3) * Formulas.range('Ag', 3)
-    Formulas(atoms=({'Cu': 1, 'Ag': 1}, {'Cu': 2, 'Ag': 1}, {'Cu': 1, 'Ag': 2}, {'Cu': 2, 'Ag': 2}))
+    >>> Formulas.range('Cu', 1, 3) * Formulas.range('Ag', 1, 3)
+    Formulas(atoms=({'Cu': 1, 'Ag': 1}, {'Cu': 1, 'Ag': 2}, {'Cu': 2, 'Ag': 1}, {'Cu': 2, 'Ag': 2}))
     """
 
     atoms: tuple[dict[str, int], ...]
