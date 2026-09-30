@@ -206,6 +206,16 @@ def test_relax_records_convergence(cu_structure):
     assert ran_out.info["relax_converged"] is False
 
 
+def test_relax_drop_unconverged(cu_structure):
+    cu_structure.rattle(0.1, seed=0)
+    calc = Morse()
+    reached = Relax(max_steps=0, force_tolerance=1e10)
+    ran_out = Relax(max_steps=0, force_tolerance=1e-8)
+    assert len(list(relax([cu_structure], reached, calc, drop_unconverged=True))) == 1
+    assert len(list(relax([cu_structure], ran_out, calc, drop_unconverged=True))) == 0
+    assert len(list(relax([cu_structure], ran_out, calc))) == 1
+
+
 def test_relax_does_not_modify_input_structure_positions(cu_structure):
     original_positions = cu_structure.get_positions().copy()
     Relax(max_steps=5).relax(cu_structure)

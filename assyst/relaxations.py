@@ -141,6 +141,7 @@ def relax(
     structures: Iterable[Atoms],
     settings: Relax,
     calculator: AseCalculatorConfig | Calculator,
+    drop_unconverged: bool = False,
 ) -> Iterator[Atoms]:
     """Relax structures according the given relaxation settings.
 
@@ -150,6 +151,8 @@ def relax(
         structures (:class:`collections.abc.Iterable` of :class:`ase.Atoms`): the structures to minimize
         settings (:class:`.Relax`): the kind of relaxation to perform (position, volume, etc.)
         calculator (:class:`.AseCalculatorConfig` or :class:`ase.calculators.calculator.Calculator`): the energy/force engine to use
+        drop_unconverged (bool): skip structures whose relaxation did not reach
+            :attr:`.Relax.force_tolerance` within :attr:`.Relax.max_steps`
 
     Yields:
         :class:`ase.Atoms`: the corresponding relaxed configuration to each input structure
@@ -160,7 +163,10 @@ def relax(
             s.calc = calculator.get_calculator()
         else:
             s.calc = calculator
-        yield settings.relax(s)
+        s = settings.relax(s)
+        if drop_unconverged and not s.info["relax_converged"]:
+            continue
+        yield s
 
 
 __all__ = [
