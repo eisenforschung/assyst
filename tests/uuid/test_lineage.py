@@ -101,7 +101,7 @@ def test_relax_lineage():
     s.calc = Morse().get_calculator()
 
     rel = Relax(max_steps=1)
-    s_relaxed = rel.relax(s)
+    s_relaxed = rel(s)
 
     assert s_relaxed.info["uuid"] != "before-relax"
     assert s_relaxed.info["lineage"] == ["before-relax"]

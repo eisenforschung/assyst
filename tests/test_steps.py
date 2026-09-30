@@ -66,7 +66,7 @@ def test_step_of_defaults_for_foreign_structures():
 )
 def test_relaxation_records_its_own_name(settings, name, cu):
     assert str(settings()) == name
-    assert step_of(settings(max_steps=1).relax(cu)) == name
+    assert step_of(settings(max_steps=1)(cu)) == name
 
 
 def test_relaxation_name_ignores_optimizer_settings():
@@ -94,7 +94,7 @@ def test_zero_or_absent_pressure_stays_out_of_the_name(settings):
 
 
 def test_relaxation_records_its_pressure(cu):
-    assert step_of(VolumeRelax(max_steps=1, pressure=2.0).relax(cu)) == "volume_relax(pressure=2.0)"
+    assert step_of(VolumeRelax(max_steps=1, pressure=2.0)(cu)) == "volume_relax(pressure=2.0)"
 
 
 def test_later_relaxation_replaces_the_earlier_step(cu):
@@ -105,7 +105,7 @@ def test_later_relaxation_replaces_the_earlier_step(cu):
 
 
 def test_relax_does_not_tag_its_input(cu):
-    FullRelax(max_steps=1).relax(cu)
+    FullRelax(max_steps=1)(cu)
     assert STEP_KEY not in cu.info
 
 
@@ -129,7 +129,7 @@ def test_perturbation_step_agrees_with_perturbation_key(cu2):
 
 
 def test_perturbation_replaces_the_relaxation_step(cu):
-    relaxed = FullRelax(max_steps=1).relax(cu)
+    relaxed = FullRelax(max_steps=1)(cu)
     (perturbed,) = perturb([relaxed], [Rattle(0.05)])
     assert step_of(relaxed) == "full_relax"
     assert step_of(perturbed) == "rattle(0.05)"
