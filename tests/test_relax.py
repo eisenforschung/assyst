@@ -210,10 +210,8 @@ def test_relax_raises_with_final_structure_when_not_converged(cu_structure):
 
 def test_relax_records_convergence(cu_structure):
     cu_structure.rattle(0.1, seed=0)
-    calc = Morse()
-    (reached,) = relax([cu_structure], Relax(max_steps=0, force_tolerance=1e10), calc)
-    with pytest.warns(UserWarning, match="did not reach"):
-        (ran_out,) = relax([cu_structure], Relax(max_steps=0, force_tolerance=1e-8), calc)
+    reached = Relax(max_steps=0, force_tolerance=1e10)(cu_structure)
+    ran_out = Relax(max_steps=0, force_tolerance=1e-8)(cu_structure)
     assert reached.info["relax_converged"] is True
     assert ran_out.info["relax_converged"] is False
 
@@ -284,9 +282,8 @@ def test_relax_records_step(cu_structure):
 
 
 def test_volume_relax_records_step(cu_structure):
-    with pytest.raises(NotConvergedError) as e:
-        VolumeRelax(max_steps=5).relax(cu_structure)
-    assert e.value.structure.info["step"] == "volume_relax"
+    result = VolumeRelax(max_steps=5)(cu_structure)
+    assert result.info["step"] == "volume_relax"
 
 
 def test_relax_reduces_energy():
@@ -294,10 +291,8 @@ def test_relax_reduces_energy():
     s.positions[0] += 0.3
     s.calc = Morse().get_calculator()
     initial_energy = s.get_potential_energy()
-    # does not converge in 100 steps; longer runs blow the atoms apart into a zero-force state
-    with pytest.raises(NotConvergedError) as e:
-        Relax(max_steps=100).relax(s)
-    assert e.value.structure.calc.get_potential_energy() < initial_energy
+    result = Relax(max_steps=100)(s)
+    assert result.calc.get_potential_energy() < initial_energy
 
 
 def test_full_relax_converges(cu_structure):

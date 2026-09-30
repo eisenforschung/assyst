@@ -30,9 +30,10 @@ The contract your override must satisfy:
 4. If the relaxation does not reach ``force_tolerance`` within ``max_steps``,
    prepare the final structure exactly as in 3., but raise
    :class:`~assyst.relaxations.NotConvergedError` with it attached instead of
-   returning it.  :func:`~assyst.relaxations.relax` catches the exception,
-   records ``relax_converged`` in :attr:`ase.Atoms.info` (see :doc:`metadata`)
-   and keeps or drops the structure according to ``drop_unconverged``.
+   returning it.  Calling the relaxer instance, as :func:`~assyst.relaxations.relax`
+   does, catches the exception and records ``relax_converged`` in
+   :attr:`ase.Atoms.info` (see :doc:`metadata`); :func:`~assyst.relaxations.relax`
+   then keeps or drops the structure according to ``drop_unconverged``.
    A structure that is returned normally counts as converged.
 
 Toy example

@@ -2,7 +2,7 @@ import pytest
 from ase import Atoms
 from assyst.crystals import sample, Formulas, pyxtal
 from assyst.perturbations import perturb, Rattle, Stretch, Series, rattle
-from assyst.relaxations import NotConvergedError, relax, Relax
+from assyst.relaxations import relax, Relax
 from assyst.calculators import Morse
 
 def test_full_workflow_lineage():
@@ -101,9 +101,7 @@ def test_relax_lineage():
     s.calc = Morse().get_calculator()
 
     rel = Relax(max_steps=1)
-    with pytest.raises(NotConvergedError) as e:
-        rel.relax(s)
-    s_relaxed = e.value.structure
+    s_relaxed = rel(s)
 
     assert s_relaxed.info["uuid"] != "before-relax"
     assert s_relaxed.info["lineage"] == ["before-relax"]

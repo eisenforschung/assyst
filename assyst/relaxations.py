@@ -55,8 +55,31 @@ class Relax:
         pressure = getattr(self, "pressure", 0.0)
         return f"{self.step_name}(pressure={pressure})" if pressure else self.step_name
 
+    def __call__(self, structure: Atoms) -> Atoms:
+        """Relax a structure and return the final structure, whether or not the relaxation converged.
+
+        Calls :meth:`.relax` and records whether it converged under the ``relax_converged`` key of
+        :attr:`ase.Atoms.info`, taking the final structure from :class:`.NotConvergedError` if it raised.
+
+        Args:
+            structure (:class:`ase.Atoms`): structure to relax
+
+        Returns:
+            :class:`ase.Atoms`: final structure with attached single point calculator.
+        """
+        try:
+            structure = self.relax(structure)
+            structure.info["relax_converged"] = True
+        except NotConvergedError as e:
+            structure = e.structure
+            structure.info["relax_converged"] = False
+        return structure
+
     def relax(self, structure: Atoms) -> Atoms:
         """Relax a structure and return result.
+
+        Override this to implement a custom relaxation; call the instance itself to relax a structure
+        without having to handle :class:`.NotConvergedError`.
 
         Structure must have a calculator attached.
         Returned structure will have a SinglePointCalculator with the final energy, forces and stresses attached.
@@ -165,7 +188,7 @@ def relax(
 
     Output structures have the final energy and force attached as ase's SinglePointCalculator.
     Whether their relaxation converged is recorded under the ``relax_converged`` key of :attr:`ase.Atoms.info`,
-    from whether :meth:`.Relax.relax` raised :class:`.NotConvergedError`.
+    see :meth:`.Relax.__call__`.
 
     Args:
         structures (:class:`collections.abc.Iterable` of :class:`ase.Atoms`): the structures to minimize
@@ -187,12 +210,8 @@ def relax(
         else:
             s.calc = calculator
         total += 1
-        try:
-            s = settings.relax(s)
-            s.info["relax_converged"] = True
-        except NotConvergedError as e:
-            s = e.structure
-            s.info["relax_converged"] = False
+        s = settings(s)
+        if not s.info["relax_converged"]:
             unconverged += 1
             if drop_unconverged:
                 continue
