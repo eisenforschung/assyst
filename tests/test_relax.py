@@ -198,6 +198,14 @@ def test_relax_clears_constraints_on_output(cu_structure):
     assert len(result.constraints) == 0
 
 
+def test_relax_records_convergence(cu_structure):
+    cu_structure.rattle(0.1, seed=0)
+    reached = Relax(max_steps=0, force_tolerance=1e10).relax(cu_structure)
+    ran_out = Relax(max_steps=0, force_tolerance=1e-8).relax(cu_structure)
+    assert reached.info["converged"] is True
+    assert ran_out.info["converged"] is False
+
+
 def test_relax_does_not_modify_input_structure_positions(cu_structure):
     original_positions = cu_structure.get_positions().copy()
     Relax(max_steps=5).relax(cu_structure)
