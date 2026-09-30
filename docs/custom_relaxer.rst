@@ -27,6 +27,13 @@ The contract your override must satisfy:
 3. Return a new :class:`~ase.Atoms` object with a
    :class:`~ase.calculators.singlepoint.SinglePointCalculator` carrying the
    final energy, forces, and stress.
+4. If the relaxation does not reach ``force_tolerance`` within ``max_steps``,
+   prepare the final structure exactly as in 3., but raise
+   :class:`~assyst.relaxations.NotConvergedError` with it attached instead of
+   returning it.  :func:`~assyst.relaxations.relax` catches the exception,
+   records ``relax_converged`` in :attr:`ase.Atoms.info` (see :doc:`metadata`)
+   and keeps or drops the structure according to ``drop_unconverged``.
+   A structure that is returned normally counts as converged.
 
 Toy example
 -----------
@@ -42,7 +49,7 @@ optimisation to a hypothetical external library ``myengine``.
     from ase import Atoms
     from ase.calculators.singlepoint import SinglePointCalculator
 
-    from assyst.relaxations import Relax
+    from assyst.relaxations import NotConvergedError, Relax
     from assyst.utils import update_uuid
 
 
@@ -67,6 +74,7 @@ optimisation to a hypothetical external library ``myengine``.
         final_energy      : float   (eV)
         final_forces      : np.ndarray, shape (N, 3)  (eV/Å)
         final_stress      : np.ndarray, shape (6,)    (eV/Å³, Voigt order)
+        converged         : bool    whether ftol was reached within max_steps
         """
         # --- replace this block with actual engine calls ---
         n_atoms = len(positions)
@@ -74,8 +82,9 @@ optimisation to a hypothetical external library ``myengine``.
         final_energy = -float(n_atoms)          # 1 eV/atom binding
         final_forces = np.zeros((n_atoms, 3))   # converged → forces ≈ 0
         final_stress = np.zeros(6)
+        converged = True
         # ---------------------------------------------------
-        return relaxed_positions, final_energy, final_forces, final_stress
+        return relaxed_positions, final_energy, final_forces, final_stress, converged
 
 
     # ---------------------------------------------------------------------------
@@ -92,7 +101,7 @@ optimisation to a hypothetical external library ``myengine``.
 
         def relax(self, structure: Atoms) -> Atoms:
             # 1. Run the external relaxation
-            relaxed_pos, energy, forces, stress = myengine_run_relaxation(
+            relaxed_pos, energy, forces, stress, converged = myengine_run_relaxation(
                 positions=structure.get_positions(),
                 cell=structure.get_cell(),
                 numbers=structure.get_atomic_numbers(),
@@ -114,6 +123,10 @@ optimisation to a hypothetical external library ``myengine``.
 
             # 4. Update provenance (UUID / lineage) — do not skip this step
             update_uuid(relaxed)
+
+            # 5. Report a relaxation that ran out of steps, with its final structure
+            if not converged:
+                raise NotConvergedError(relaxed)
 
             return relaxed
 

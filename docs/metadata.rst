@@ -42,9 +42,9 @@ When structures are generated using :func:`assyst.crystals.sample` or :func:`ass
 Relaxation
 ----------
 
-When a structure is relaxed by a class in :mod:`assyst.relaxations`, the outcome of the optimizer is recorded:
+When structures are relaxed with :func:`assyst.relaxations.relax`, the outcome of each relaxation is recorded:
 
-* ``relax_converged``: Whether the optimizer reached the requested ``force_tolerance`` before running out of ``max_steps``.  A structure that stopped early keeps the energy and forces of its last step, so check this key before treating it as a minimum.  Like ``step`` it reflects the most recent relaxation only, and it is carried along unchanged by later perturbations, so on a perturbed structure it describes the relaxation it came from, not the structure itself.
+* ``relax_converged``: Whether the optimizer reached the requested ``force_tolerance`` before running out of ``max_steps``, i.e. whether :meth:`assyst.relaxations.Relax.relax` raised :class:`assyst.relaxations.NotConvergedError`.  A structure that stopped early keeps the energy and forces of its last step, so check this key before treating it as a minimum.  Like ``step`` it reflects the most recent relaxation only, and it is carried along unchanged by later perturbations, so on a perturbed structure it describes the relaxation it came from, not the structure itself.
 
 Perturbation
 ------------

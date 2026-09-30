@@ -17,6 +17,18 @@ from ase.optimize import BFGS, FIRE, LBFGS, CellAwareBFGS
 import numpy as np
 
 
+class NotConvergedError(RuntimeError):
+    """Raised by :meth:`.Relax.relax` when the relaxation does not reach its force tolerance.
+
+    Carries the final structure of the relaxation, so callers can still use it.
+    """
+
+    def __init__(self, structure: Atoms, message: str = "relaxation did not converge"):
+        super().__init__(message)
+        self.structure = structure
+        """Final structure of the relaxation, as :meth:`.Relax.relax` would have returned it."""
+
+
 @dataclass(frozen=True, eq=True)
 class Relax:
     """Minimize energy with respect to internal positions.
@@ -49,14 +61,16 @@ class Relax:
         Structure must have a calculator attached.
         Returned structure will have a SinglePointCalculator with the final energy, forces and stresses attached.
         The name of this relaxation is recorded as the step of the returned structure, see :func:`.step_of`.
-        Whether the optimizer reached :attr:`.force_tolerance` before :attr:`.max_steps` is recorded under the
-        ``relax_converged`` key of :attr:`ase.Atoms.info`.
 
         Args:
             structure (:class:`ase.Atoms`): structure to relax
 
         Returns:
             :class:`ase.Atoms`: relaxed structure with attached single point calculator.
+
+        Raises:
+            :class:`.NotConvergedError`: if the optimizer does not reach :attr:`.force_tolerance` within
+                :attr:`.max_steps`; the final structure is attached to it, prepared as for a return.
         """
         calc = structure.calc
         structure = structure.copy()
@@ -74,7 +88,6 @@ class Relax:
                 category=RuntimeWarning,
             )
             converged = optimizer.run(fmax=self.force_tolerance, steps=self.max_steps)
-        structure.info["relax_converged"] = bool(converged)
         structure.calc = None
         structure.calc = SinglePointCalculator(
             structure,
@@ -83,6 +96,11 @@ class Relax:
             stress=calc.get_stress(),
         )
         structure.constraints.clear()
+        if not converged:
+            raise NotConvergedError(
+                structure,
+                f"{self} did not reach force_tolerance={self.force_tolerance} within max_steps={self.max_steps}",
+            )
         return structure
 
 
@@ -146,6 +164,8 @@ def relax(
     """Relax structures according the given relaxation settings.
 
     Output structures have the final energy and force attached as ase's SinglePointCalculator.
+    Whether their relaxation converged is recorded under the ``relax_converged`` key of :attr:`ase.Atoms.info`,
+    from whether :meth:`.Relax.relax` raised :class:`.NotConvergedError`.
 
     Args:
         structures (:class:`collections.abc.Iterable` of :class:`ase.Atoms`): the structures to minimize
@@ -166,10 +186,13 @@ def relax(
             s.calc = calculator.get_calculator()
         else:
             s.calc = calculator
-        s = settings.relax(s)
         total += 1
-        # custom relaxers may not record convergence; treat those as converged
-        if not s.info.get("relax_converged", True):
+        try:
+            s = settings.relax(s)
+            s.info["relax_converged"] = True
+        except NotConvergedError as e:
+            s = e.structure
+            s.info["relax_converged"] = False
             unconverged += 1
             if drop_unconverged:
                 continue
@@ -177,14 +200,14 @@ def relax(
     if unconverged > 0:
         warnings.warn(
             f"{unconverged} of {total} structures did not reach force_tolerance={settings.force_tolerance} "
-            f"within max_steps={settings.max_steps}"
-            + ("; they were dropped." if drop_unconverged else "; pass drop_unconverged=True to discard them."),
+            f"within max_steps={settings.max_steps}",
             UserWarning,
             stacklevel=2,
         )
 
 
 __all__ = [
+        "NotConvergedError",
         "Relax",
         "CellRelax",
         "VolumeRelax",

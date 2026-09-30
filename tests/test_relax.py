@@ -9,7 +9,7 @@ from ase.constraints import FixAtoms, FixSymmetry
 from ase.filters import FrechetCellFilter
 
 from assyst.calculators import AseCalculatorConfig, Morse
-from assyst.relaxations import CellRelax, FullRelax, Relax, SymmetryRelax, VolumeRelax, relax
+from assyst.relaxations import CellRelax, FullRelax, NotConvergedError, Relax, SymmetryRelax, VolumeRelax, relax
 
 
 class MockCalculator:
@@ -198,10 +198,22 @@ def test_relax_clears_constraints_on_output(cu_structure):
     assert len(result.constraints) == 0
 
 
+def test_relax_raises_with_final_structure_when_not_converged(cu_structure):
+    cu_structure.rattle(0.1, seed=0)
+    with pytest.raises(NotConvergedError) as e:
+        Relax(max_steps=0, force_tolerance=1e-8).relax(cu_structure)
+    final = e.value.structure
+    assert isinstance(final.calc, SinglePointCalculator)
+    assert final.info["step"] == "relax"
+    assert final.info["uuid"] != cu_structure.info.get("uuid")
+
+
 def test_relax_records_convergence(cu_structure):
     cu_structure.rattle(0.1, seed=0)
-    reached = Relax(max_steps=0, force_tolerance=1e10).relax(cu_structure)
-    ran_out = Relax(max_steps=0, force_tolerance=1e-8).relax(cu_structure)
+    calc = Morse()
+    (reached,) = relax([cu_structure], Relax(max_steps=0, force_tolerance=1e10), calc)
+    with pytest.warns(UserWarning, match="did not reach"):
+        (ran_out,) = relax([cu_structure], Relax(max_steps=0, force_tolerance=1e-8), calc)
     assert reached.info["relax_converged"] is True
     assert ran_out.info["relax_converged"] is False
 
@@ -212,9 +224,9 @@ def test_relax_drop_unconverged(cu_structure):
     reached = Relax(max_steps=0, force_tolerance=1e10)
     ran_out = Relax(max_steps=0, force_tolerance=1e-8)
     assert len(list(relax([cu_structure], reached, calc, drop_unconverged=True))) == 1
-    with pytest.warns(UserWarning, match="1 of 1 structures.*dropped"):
+    with pytest.warns(UserWarning, match="1 of 1 structures"):
         assert len(list(relax([cu_structure], ran_out, calc, drop_unconverged=True))) == 0
-    with pytest.warns(UserWarning, match="1 of 1 structures.*drop_unconverged=True"):
+    with pytest.warns(UserWarning, match="1 of 1 structures"):
         assert len(list(relax([cu_structure], ran_out, calc))) == 1
 
 
@@ -223,12 +235,13 @@ def test_relax_no_warning_when_converged(cu_structure, recwarn):
     assert not [w for w in recwarn if "did not reach" in str(w.message)]
 
 
-def test_relax_drop_unconverged_without_recorded_convergence(cu_structure, recwarn):
-    class NoRecordRelax(Relax):
+def test_relax_treats_returning_custom_relaxer_as_converged(cu_structure, recwarn):
+    class ReturningRelax(Relax):
         def relax(self, structure):
             return structure.copy()
 
-    assert len(list(relax([cu_structure], NoRecordRelax(), Morse(), drop_unconverged=True))) == 1
+    (result,) = relax([cu_structure], ReturningRelax(), Morse(), drop_unconverged=True)
+    assert result.info["relax_converged"] is True
     assert not [w for w in recwarn if "did not reach" in str(w.message)]
 
 
@@ -271,8 +284,9 @@ def test_relax_records_step(cu_structure):
 
 
 def test_volume_relax_records_step(cu_structure):
-    result = VolumeRelax(max_steps=5).relax(cu_structure)
-    assert result.info["step"] == "volume_relax"
+    with pytest.raises(NotConvergedError) as e:
+        VolumeRelax(max_steps=5).relax(cu_structure)
+    assert e.value.structure.info["step"] == "volume_relax"
 
 
 def test_relax_reduces_energy():
@@ -280,8 +294,10 @@ def test_relax_reduces_energy():
     s.positions[0] += 0.3
     s.calc = Morse().get_calculator()
     initial_energy = s.get_potential_energy()
-    result = Relax(max_steps=100).relax(s)
-    assert result.calc.get_potential_energy() < initial_energy
+    # does not converge in 100 steps; longer runs blow the atoms apart into a zero-force state
+    with pytest.raises(NotConvergedError) as e:
+        Relax(max_steps=100).relax(s)
+    assert e.value.structure.calc.get_potential_energy() < initial_energy
 
 
 def test_full_relax_converges(cu_structure):
