@@ -44,7 +44,7 @@ Relaxation
 
 When a structure is relaxed by a class in :mod:`assyst.relaxations`, the outcome of the optimizer is recorded:
 
-* ``converged``: Whether the optimizer reached the requested ``force_tolerance`` before running out of ``max_steps``.  A structure that stopped early keeps the energy and forces of its last step, so check this key before treating it as a minimum.
+* ``relax_converged``: Whether the optimizer reached the requested ``force_tolerance`` before running out of ``max_steps``.  A structure that stopped early keeps the energy and forces of its last step, so check this key before treating it as a minimum.  Like ``step`` it reflects the most recent relaxation only, and it is carried along unchanged by later perturbations, so on a perturbed structure it describes the relaxation it came from, not the structure itself.
 
 Perturbation
 ------------

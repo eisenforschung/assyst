@@ -50,7 +50,7 @@ class Relax:
         Returned structure will have a SinglePointCalculator with the final energy, forces and stresses attached.
         The name of this relaxation is recorded as the step of the returned structure, see :func:`.step_of`.
         Whether the optimizer reached :attr:`.force_tolerance` before :attr:`.max_steps` is recorded under the
-        ``converged`` key of :attr:`ase.Atoms.info`.
+        ``relax_converged`` key of :attr:`ase.Atoms.info`.
 
         Args:
             structure (:class:`ase.Atoms`): structure to relax
@@ -74,7 +74,7 @@ class Relax:
                 category=RuntimeWarning,
             )
             converged = optimizer.run(fmax=self.force_tolerance, steps=self.max_steps)
-        structure.info["converged"] = bool(converged)
+        structure.info["relax_converged"] = bool(converged)
         structure.calc = None
         structure.calc = SinglePointCalculator(
             structure,
