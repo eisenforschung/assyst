@@ -152,11 +152,14 @@ def relax(
         settings (:class:`.Relax`): the kind of relaxation to perform (position, volume, etc.)
         calculator (:class:`.AseCalculatorConfig` or :class:`ase.calculators.calculator.Calculator`): the energy/force engine to use
         drop_unconverged (bool): skip structures whose relaxation did not reach
-            :attr:`.Relax.force_tolerance` within :attr:`.Relax.max_steps`
+            :attr:`.Relax.force_tolerance` within :attr:`.Relax.max_steps`.  Either way, a
+            :class:`UserWarning` reports how many structures did not converge once all are relaxed.
 
     Yields:
         :class:`ase.Atoms`: the corresponding relaxed configuration to each input structure
     """
+    total = 0
+    unconverged = 0
     for s in structures:
         s = s.copy()
         if isinstance(calculator, AseCalculatorConfig):
@@ -164,9 +167,21 @@ def relax(
         else:
             s.calc = calculator
         s = settings.relax(s)
-        if drop_unconverged and not s.info["relax_converged"]:
-            continue
+        total += 1
+        # custom relaxers may not record convergence; treat those as converged
+        if not s.info.get("relax_converged", True):
+            unconverged += 1
+            if drop_unconverged:
+                continue
         yield s
+    if unconverged > 0:
+        warnings.warn(
+            f"{unconverged} of {total} structures did not reach force_tolerance={settings.force_tolerance} "
+            f"within max_steps={settings.max_steps}"
+            + ("; they were dropped." if drop_unconverged else "; pass drop_unconverged=True to discard them."),
+            UserWarning,
+            stacklevel=2,
+        )
 
 
 __all__ = [

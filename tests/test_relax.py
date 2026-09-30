@@ -212,8 +212,24 @@ def test_relax_drop_unconverged(cu_structure):
     reached = Relax(max_steps=0, force_tolerance=1e10)
     ran_out = Relax(max_steps=0, force_tolerance=1e-8)
     assert len(list(relax([cu_structure], reached, calc, drop_unconverged=True))) == 1
-    assert len(list(relax([cu_structure], ran_out, calc, drop_unconverged=True))) == 0
-    assert len(list(relax([cu_structure], ran_out, calc))) == 1
+    with pytest.warns(UserWarning, match="1 of 1 structures.*dropped"):
+        assert len(list(relax([cu_structure], ran_out, calc, drop_unconverged=True))) == 0
+    with pytest.warns(UserWarning, match="1 of 1 structures.*drop_unconverged=True"):
+        assert len(list(relax([cu_structure], ran_out, calc))) == 1
+
+
+def test_relax_no_warning_when_converged(cu_structure, recwarn):
+    list(relax([cu_structure], Relax(max_steps=0, force_tolerance=1e10), Morse()))
+    assert not [w for w in recwarn if "did not reach" in str(w.message)]
+
+
+def test_relax_drop_unconverged_without_recorded_convergence(cu_structure, recwarn):
+    class NoRecordRelax(Relax):
+        def relax(self, structure):
+            return structure.copy()
+
+    assert len(list(relax([cu_structure], NoRecordRelax(), Morse(), drop_unconverged=True))) == 1
+    assert not [w for w in recwarn if "did not reach" in str(w.message)]
 
 
 def test_relax_does_not_modify_input_structure_positions(cu_structure):
