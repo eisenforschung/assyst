@@ -9,8 +9,7 @@ from collections import defaultdict
 from dataclasses import dataclass, KW_ONLY
 from itertools import combinations_with_replacement, product
 from math import nan, inf
-from numbers import Number
-from typing import cast, Callable, Literal
+from typing import Callable, Literal
 
 from ase import Atoms
 from ase.calculators.singlepoint import SinglePointCalculator
@@ -65,14 +64,16 @@ class OrFilter(FilterBase):
 class DistanceFilter(FilterBase):
     """Filter structures that contain too close atoms.
 
-    Setting a radius to NaN allows all bonds involving this atom."""
+    Setting a radius to NaN allows all bonds involving this atom.  A single number sets the same radius for all
+    elements."""
 
     radii: dict[str, float]
 
-    def __post_init__(self):
-        if isinstance(self.radii, Number):
-            radius = float(cast(float, self.radii))
-            self.radii = {element: radius for element in atomic_numbers if element != "X"}
+    # hand-written so that callers may pass a scalar while the field stays a dict; a kingdom for a real type system
+    def __init__(self, radii: dict[str, float] | float):
+        if not isinstance(radii, dict):
+            radii = dict.fromkeys((element for element in atomic_numbers if element != "X"), float(radii))
+        self.radii = radii
 
     def _element_wise_dist(self, structure: Atoms) -> dict[tuple[str, str], float]:
         pair: dict[tuple[str, str], float] = defaultdict(lambda: inf)
