@@ -3,16 +3,20 @@ Custom Relaxers
 
 ASSYST's relaxation step is designed to be extensible.
 
-Baking a calculator into a ``Relax`` instance
-----------------------------------------------
+Setting the calculator
+-----------------------
 
-:class:`~assyst.relaxations.Relax` (and its subclasses) accept an optional
-``calculator`` field.  When set, it takes precedence over ``structure.calc``,
-so an ASE-compatible engine can be attached once, at construction time,
-instead of the caller setting ``atoms.calc`` on every structure.  The
-top-level :func:`~assyst.relaxations.relax` function has no calculator
-concept of its own; everything, including the calculator, is configured on
-``settings`` alone:
+:class:`~assyst.relaxations.Relax` (and its subclasses) accept a
+``calculator`` field; setting it is the default way to tell a relaxer which
+energy/force engine to use, and it takes precedence over ``structure.calc``.
+Attaching a calculator directly to the :class:`~ase.Atoms` object and leaving
+``calculator`` unset is also understood, by the provided ASE-specific classes
+(:class:`~assyst.relaxations.Relax` and its subclasses) -- but setting
+``calculator`` on the ``Relax`` instance is preferred, since it configures the
+engine once rather than on every structure.  The top-level
+:func:`~assyst.relaxations.relax` function has no calculator concept of its
+own; everything, including the calculator, is configured on ``settings``
+alone:
 
 .. code-block:: python
 

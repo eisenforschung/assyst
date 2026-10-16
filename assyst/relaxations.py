@@ -59,11 +59,10 @@ class Relax:
     def get_calculator(self, structure: Atoms) -> Calculator:
         """Resolve the calculator to use for *structure*.
 
-        Prefers ``self.calculator`` (baked into the relaxer at construction time)
-        over ``structure.calc``, so a custom engine does not have to be wrapped as
-        an ASE calculator and glued onto ``Atoms`` by the caller.  Falls back to
-        ``structure.calc`` for callers that still attach a calculator directly to
-        the structure instead of configuring it on ``Relax``.
+        ``self.calculator`` is the default way to configure the energy/force
+        engine for this relaxer and takes precedence.  ``structure.calc`` is
+        also understood, for callers that attach a calculator directly to the
+        structure instead, and is used when ``calculator`` is left unset.
 
         Args:
             structure (:class:`ase.Atoms`): structure about to be relaxed

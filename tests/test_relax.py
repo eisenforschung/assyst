@@ -102,7 +102,7 @@ def test_relax_function_delegates_to_settings_relax(mock_relax_method, single_at
     mock_relax_method.assert_called_once_with(single_atom_structure)
 
 
-# --- baked-in `calculator` field tests ---
+# --- `Relax.calculator` field tests ---
 
 
 def test_relax_default_calculator_is_none():
@@ -110,7 +110,7 @@ def test_relax_default_calculator_is_none():
 
 
 @patch("ase.optimize.LBFGS.run")
-def test_relax_uses_baked_in_calculator_without_atoms_calc(mock_run):
+def test_relax_uses_calculator_without_atoms_calc(mock_run):
     s = Atoms("H", positions=[[0, 0, 0]], cell=[10, 10, 10], pbc=True)
     relaxed = Relax(calculator=MockCalculator()).relax(s)
     mock_run.assert_called_once()
@@ -118,7 +118,7 @@ def test_relax_uses_baked_in_calculator_without_atoms_calc(mock_run):
 
 
 @patch("ase.optimize.LBFGS.run")
-def test_relax_baked_in_calculator_takes_precedence_over_atoms_calc(mock_run):
+def test_relax_calculator_takes_precedence_over_atoms_calc(mock_run):
     class OtherCalculator(MockCalculator):
         def get_potential_energy(self, atoms=None):
             raise AssertionError("atoms.calc must not be used when Relax.calculator is set")
