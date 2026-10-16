@@ -17,6 +17,18 @@ from ase.optimize import BFGS, FIRE, LBFGS, CellAwareBFGS
 import numpy as np
 
 
+class NotConvergedError(RuntimeError):
+    """Raised by :meth:`.Relax.relax` when the relaxation does not reach its force tolerance.
+
+    Carries the final structure of the relaxation, so callers can still use it.
+    """
+
+    def __init__(self, structure: Atoms, message: str = "relaxation did not converge"):
+        super().__init__(message)
+        self.structure = structure
+        """Final structure of the relaxation, as :meth:`.Relax.relax` would have returned it."""
+
+
 @dataclass(frozen=True, eq=True)
 class Relax:
     """Minimize energy with respect to internal positions.
@@ -28,9 +40,21 @@ class Relax:
     algorithm: Literal["LBFGS", "BFGS", "FIRE"] = "LBFGS"
     calculator: AseCalculatorConfig | Calculator | None = None
 
+    step_name = "relax"
+    """Name of this kind of relaxation when recorded as the step of a structure."""
+
     def apply_filter_and_constraints(self, structure: Atoms):
         """Hook to allow subclasses to add filters and constraints."""
         return structure
+
+    def __str__(self) -> str:
+        """Name of this relaxation when recorded as the step of a structure.
+
+        Names the kind of relaxation, plus the pressure it relaxes against where that is not zero, as in
+        ``full_relax(pressure=3.0)``.  The settings of the optimizer are not part of it.
+        """
+        pressure = getattr(self, "pressure", 0.0)
+        return f"{self.step_name}(pressure={pressure})" if pressure else self.step_name
 
     def get_calculator(self, structure: Atoms) -> Calculator:
         """Resolve the calculator to use for *structure*.
@@ -62,22 +86,50 @@ class Relax:
             )
         return calc
 
+    def __call__(self, structure: Atoms) -> Atoms:
+        """Relax a structure and return the final structure, whether or not the relaxation converged.
+
+        Calls :meth:`.relax` and records whether it converged under the ``relax_converged`` key of
+        :attr:`ase.Atoms.info`, taking the final structure from :class:`.NotConvergedError` if it raised.
+
+        Args:
+            structure (:class:`ase.Atoms`): structure to relax
+
+        Returns:
+            :class:`ase.Atoms`: final structure with attached single point calculator.
+        """
+        try:
+            structure = self.relax(structure)
+            structure.info["relax_converged"] = True
+        except NotConvergedError as e:
+            structure = e.structure
+            structure.info["relax_converged"] = False
+        return structure
+
     def relax(self, structure: Atoms) -> Atoms:
         """Relax a structure and return result.
+
+        Override this to implement a custom relaxation; call the instance itself to relax a structure
+        without having to handle :class:`.NotConvergedError`.
 
         Structure must have a calculator attached, unless this relaxer was
         constructed with `calculator` set.
         Returned structure will have a SinglePointCalculator with the final energy, forces and stresses attached.
+        The name of this relaxation is recorded as the step of the returned structure, see :func:`.step_of`.
 
         Args:
             structure (:class:`ase.Atoms`): structure to relax
 
         Returns:
             :class:`ase.Atoms`: relaxed structure with attached single point calculator.
+
+        Raises:
+            :class:`.NotConvergedError`: if the optimizer does not reach :attr:`.force_tolerance` within
+                :attr:`.max_steps`; the final structure is attached to it, prepared as for a return.
         """
         calc = self.get_calculator(structure)
         structure = structure.copy()
-        update_uuid(structure)
+        update_uuid(structure, step=str(self))
         structure.calc = calc
         optimizer_cls = {"LBFGS": LBFGS, "BFGS": BFGS, "FIRE": FIRE}[self.algorithm]
         optimizer = optimizer_cls(self.apply_filter_and_constraints(structure), logfile="/dev/null")
@@ -90,7 +142,7 @@ class Relax:
                 message="logm result may be inaccurate",
                 category=RuntimeWarning,
             )
-            optimizer.run(fmax=self.force_tolerance, steps=self.max_steps)
+            converged = optimizer.run(fmax=self.force_tolerance, steps=self.max_steps)
         structure.calc = None
         structure.calc = SinglePointCalculator(
             structure,
@@ -99,12 +151,19 @@ class Relax:
             stress=calc.get_stress(),
         )
         structure.constraints.clear()
+        if not converged:
+            raise NotConvergedError(
+                structure,
+                f"{self} did not reach force_tolerance={self.force_tolerance} within max_steps={self.max_steps}",
+            )
         return structure
 
 
 @dataclass(frozen=True, eq=True)
 class CellRelax(Relax):
     """Minimize energy while keeping relative positions and volume constant."""
+
+    step_name = "cell_relax"
 
     def apply_filter_and_constraints(self, structure: Atoms):
         structure.set_constraint(FixAtoms(np.ones(len(structure), dtype=bool)))
@@ -116,6 +175,8 @@ class VolumeRelax(Relax):
     """Minimize energy while keeping relative positions and cell shape constant."""
 
     pressure: float = 0.0
+
+    step_name = "volume_relax"
 
     def apply_filter_and_constraints(self, structure: Atoms):
         structure.set_constraint(FixAtoms(np.ones(len(structure), dtype=bool)))
@@ -130,6 +191,8 @@ class SymmetryRelax(Relax):
 
     pressure: float = 0.0
 
+    step_name = "symmetry_relax"
+
     def apply_filter_and_constraints(self, structure: Atoms):
         structure.set_constraint(FixSymmetry(structure))
         return FrechetCellFilter(structure, scalar_pressure=self.pressure)
@@ -141,14 +204,22 @@ class FullRelax(Relax):
 
     pressure: float = 0.0
 
+    step_name = "full_relax"
+
     def apply_filter_and_constraints(self, structure: Atoms):
         return FrechetCellFilter(structure, scalar_pressure=self.pressure)
 
 
-def relax(structures: Iterable[Atoms], settings: Relax) -> Iterator[Atoms]:
+def relax(
+    structures: Iterable[Atoms],
+    settings: Relax,
+    drop_unconverged: bool = False,
+) -> Iterator[Atoms]:
     """Relax structures according the given relaxation settings.
 
     Output structures have the final energy and force attached as ase's SinglePointCalculator.
+    Whether their relaxation converged is recorded under the ``relax_converged`` key of :attr:`ase.Atoms.info`,
+    see :meth:`.Relax.__call__`.
 
     Everything about how a structure is relaxed -- including which calculator or
     other energy/force engine to use -- is configured on *settings* alone; see
@@ -159,15 +230,34 @@ def relax(structures: Iterable[Atoms], settings: Relax) -> Iterator[Atoms]:
     Args:
         structures (:class:`collections.abc.Iterable` of :class:`ase.Atoms`): the structures to minimize
         settings (:class:`.Relax`): the kind of relaxation to perform (position, volume, etc.)
+        drop_unconverged (bool): skip structures whose relaxation did not reach
+            :attr:`.Relax.force_tolerance` within :attr:`.Relax.max_steps`.  Either way, a
+            :class:`UserWarning` reports how many structures did not converge once all are relaxed.
 
     Yields:
         :class:`ase.Atoms`: the corresponding relaxed configuration to each input structure
     """
+    total = 0
+    unconverged = 0
     for s in structures:
-        yield settings.relax(s)
+        total += 1
+        s = settings(s)
+        if not s.info["relax_converged"]:
+            unconverged += 1
+            if drop_unconverged:
+                continue
+        yield s
+    if unconverged > 0:
+        warnings.warn(
+            f"{unconverged} of {total} structures did not reach force_tolerance={settings.force_tolerance} "
+            f"within max_steps={settings.max_steps}",
+            UserWarning,
+            stacklevel=2,
+        )
 
 
 __all__ = [
+        "NotConvergedError",
         "Relax",
         "CellRelax",
         "VolumeRelax",

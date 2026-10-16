@@ -61,6 +61,25 @@ def test_update_uuid_preserves_seed(atoms):
 
     assert updated_atoms.info['seed'] == original_seed
 
+def test_update_uuid_no_step_by_default(atoms):
+    """Test that update_uuid does not touch 'step' when not given one."""
+    updated_atoms = update_uuid(atoms)
+
+    assert 'step' not in updated_atoms.info
+
+def test_update_uuid_records_step(atoms):
+    """Test that update_uuid stores the given step description."""
+    updated_atoms = update_uuid(atoms, step="relax")
+
+    assert updated_atoms.info['step'] == "relax"
+
+def test_update_uuid_step_overwritten_on_next_call(atoms):
+    """Test that a later call's step replaces the previous one, like 'uuid' does."""
+    update_uuid(atoms, step="sample")
+    updated_atoms = update_uuid(atoms, step="relax")
+
+    assert updated_atoms.info['step'] == "relax"
+
 def test_update_uuid_lineage_independence(atoms):
     """Test that lineage list is not shared between parent and child."""
     original_lineage = ["ancestor"]

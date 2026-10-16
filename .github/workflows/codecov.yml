@@ -48,7 +48,7 @@ jobs:
     - name: Install dependencies
       if: needs.changes.outputs.run == 'true'
       run: |
-        pip install -e .[coverage]
+        pip install -e .[coverage,plotneighborlist]
     - name: Run tests and generate report
       if: needs.changes.outputs.run == 'true'
       run: |

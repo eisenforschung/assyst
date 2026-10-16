@@ -12,6 +12,20 @@ These keys are managed by the :func:`assyst.utils.update_uuid` function and are 
 * ``uuid``: A Universally Unique Identifier (UUID) for the current structure.
 * ``seed``: The UUID of the initial structure from which this structure was derived. It remains constant throughout a lineage.
 * ``lineage``: A list of UUIDs of all parent structures, in the order they were generated.
+* ``step``: The name of the workflow step that produced the current UUID.  Only set when the caller of :func:`assyst.utils.update_uuid` provides one; like ``uuid`` it reflects the most recent step only, the structures it came from are in ``lineage``.
+
+The step names are
+
+* ``pyxtal``: generation by :func:`assyst.crystals.pyxtal`, either directly or through :func:`assyst.crystals.sample`
+* ``relax``, ``cell_relax``, ``volume_relax``, ``symmetry_relax``, ``full_relax``: the corresponding class in :mod:`assyst.relaxations`.  A relaxation against a non-zero pressure carries it, as in ``full_relax(pressure=3.0)``, since it minimizes to a different structure; the settings of the optimizer are not part of the name
+* the string of the applied :class:`assyst.perturbations.PerturbationABC`, the same value that goes into ``perturbation``
+
+This makes the sets of a plain ASSYST run tell themselves apart -- the generated structures carry ``pyxtal``, the
+volume relaxed ones ``volume_relax``, the fully relaxed ones ``full_relax`` and the perturbed ones their perturbation
+-- which the ``symmetry`` and ``perturbation`` keys alone cannot do.
+
+Use :func:`assyst.utils.step_of` to read the key, and pass ``step=`` to :func:`assyst.utils.update_uuid` to record a
+step of your own.
 
 For more details on how lineage is tracked through the workflow, see :doc:`lineage`.
 
@@ -24,6 +38,13 @@ When structures are generated using :func:`assyst.crystals.sample` or :func:`ass
 * ``symmetry``: An alias for ``requested spacegroup``.
 * ``spacegroup``: The actual symmetry group number of the generated structure, which may be higher than the requested one.
 * ``repeat``: The iteration index when multiple structures are generated for the same symmetry group.
+
+Relaxation
+----------
+
+When structures are relaxed with :func:`assyst.relaxations.relax`, or by calling a :class:`assyst.relaxations.Relax` instance on them, the outcome of each relaxation is recorded:
+
+* ``relax_converged``: Whether the optimizer reached the requested ``force_tolerance`` before running out of ``max_steps``, i.e. whether :meth:`assyst.relaxations.Relax.relax` raised :class:`assyst.relaxations.NotConvergedError`.  A structure that stopped early keeps the energy and forces of its last step, so check this key before treating it as a minimum.  Like ``step`` it reflects the most recent relaxation only, and it is carried along unchanged by later perturbations, so on a perturbed structure it describes the relaxation it came from, not the structure itself.
 
 Perturbation
 ------------

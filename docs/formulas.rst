@@ -13,7 +13,7 @@ symbol to the number of atoms of that element per unit cell.
     cu = Formulas(({'Cu': 1}, {'Cu': 2}))
 
 For a range of stoichiometries the :meth:`~assyst.crystals.Formulas.range` helper is usually more
-convenient. It works like Python's built-in :func:`range`, but skips zero and the stop value is exclusive:
+convenient. It works like Python's built-in :func:`range`:
 
 .. code-block:: python
 
@@ -71,6 +71,23 @@ to sample *all* Cu:Ag ratios:
     #                 {'Cu': 2, 'Ag': 1}, {'Cu': 2, 'Ag': 2}))
 
 The two operands must cover **different** elements.
+
+By keeping the zero, it is also easy to create samplings that combine the pure elements and their
+binary compounds in a single list:
+
+.. code-block:: python
+
+    cu  = Formulas.range('Cu', 3)   # Cu₀, Cu₁, Cu₂
+    ag  = Formulas.range('Ag', 3)   # Ag₀, Ag₁, Ag₂
+    all_combos = cu * ag
+    # Formulas(atoms=({'Cu': 0, 'Ag': 0}, {'Cu': 0, 'Ag': 1}, {'Cu': 0, 'Ag': 2},
+    #                 {'Cu': 1, 'Ag': 0}, {'Cu': 1, 'Ag': 1}, {'Cu': 1, 'Ag': 2},
+    #                 {'Cu': 2, 'Ag': 0}, {'Cu': 2, 'Ag': 1}, {'Cu': 2, 'Ag': 2}))
+
+Rows with ``'Cu': 0`` are pure Ag and rows with ``'Ag': 0`` are pure Cu.
+:func:`~assyst.crystals.sample` drops elements with zero atoms from each formula and skips the empty
+formula ``{'Cu': 0, 'Ag': 0}``, so the list can be passed to it as is.
+Call :meth:`~assyst.crystals.Formulas.trim` to remove the empty formula explicitly.
 
 Multi-element systems
 ---------------------

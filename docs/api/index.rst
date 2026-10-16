@@ -10,3 +10,4 @@ assyst
    filters
    calculators
    plot
+   utils
