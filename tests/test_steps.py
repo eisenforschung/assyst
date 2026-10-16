@@ -98,8 +98,9 @@ def test_relaxation_records_its_pressure(cu):
 
 
 def test_later_relaxation_replaces_the_earlier_step(cu):
-    (volmin,) = relax([cu], VolumeRelax(max_steps=1), Morse())
-    (allmin,) = relax([volmin], FullRelax(max_steps=1), Morse())
+    calc = Morse()
+    (volmin,) = relax([cu], VolumeRelax(max_steps=1, calculator=calc))
+    (allmin,) = relax([volmin], FullRelax(max_steps=1, calculator=calc))
     assert step_of(volmin) == "volume_relax"
     assert step_of(allmin) == "full_relax"
 
@@ -163,8 +164,8 @@ def test_workflow_steps_are_distinguishable():
     settings = {"max_steps": 3, "force_tolerance": 1e-2}
 
     spg = list(sample(Formulas.range("Cu", 1, 3), spacegroups=[225, 194], max_atoms=2, rng=0))
-    volmin = list(relax(spg, VolumeRelax(**settings), calculator))
-    allmin = list(relax(volmin, FullRelax(**settings), calculator))
+    volmin = list(relax(spg, VolumeRelax(**settings, calculator=calculator)))
+    allmin = list(relax(volmin, FullRelax(**settings, calculator=calculator)))
     perturbed = list(
         perturb(
             allmin,

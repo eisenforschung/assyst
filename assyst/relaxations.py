@@ -38,6 +38,7 @@ class Relax:
     max_steps: int = 100
     force_tolerance: float = 1e-3
     algorithm: Literal["LBFGS", "BFGS", "FIRE"] = "LBFGS"
+    calculator: AseCalculatorConfig | Calculator | None = None
 
     step_name = "relax"
     """Name of this kind of relaxation when recorded as the step of a structure."""
@@ -54,6 +55,35 @@ class Relax:
         """
         pressure = getattr(self, "pressure", 0.0)
         return f"{self.step_name}(pressure={pressure})" if pressure else self.step_name
+
+    def get_calculator(self, structure: Atoms) -> Calculator:
+        """Resolve the calculator to use for *structure*.
+
+        ``self.calculator`` is the default way to configure the energy/force
+        engine for this relaxer and takes precedence.  ``structure.calc`` is
+        also understood, for callers that attach a calculator directly to the
+        structure instead, and is used when ``calculator`` is left unset.
+
+        Args:
+            structure (:class:`ase.Atoms`): structure about to be relaxed
+
+        Returns:
+            :class:`ase.calculators.calculator.Calculator`: the calculator to use
+
+        Raises:
+            ValueError: neither ``self.calculator`` nor ``structure.calc`` is set
+        """
+        calc = self.calculator
+        if isinstance(calc, AseCalculatorConfig):
+            calc = calc.get_calculator()
+        if calc is None:
+            calc = structure.calc
+        if calc is None:
+            raise ValueError(
+                f"{type(self).__name__} has no calculator: set `calculator` on the "
+                "Relax instance or attach one to `structure.calc`."
+            )
+        return calc
 
     def __call__(self, structure: Atoms) -> Atoms:
         """Relax a structure and return the final structure, whether or not the relaxation converged.
@@ -81,7 +111,8 @@ class Relax:
         Override this to implement a custom relaxation; call the instance itself to relax a structure
         without having to handle :class:`.NotConvergedError`.
 
-        Structure must have a calculator attached.
+        Structure must have a calculator attached, unless this relaxer was
+        constructed with `calculator` set.
         Returned structure will have a SinglePointCalculator with the final energy, forces and stresses attached.
         The name of this relaxation is recorded as the step of the returned structure, see :func:`.step_of`.
 
@@ -95,7 +126,7 @@ class Relax:
             :class:`.NotConvergedError`: if the optimizer does not reach :attr:`.force_tolerance` within
                 :attr:`.max_steps`; the final structure is attached to it, prepared as for a return.
         """
-        calc = structure.calc
+        calc = self.get_calculator(structure)
         structure = structure.copy()
         update_uuid(structure, step=str(self))
         structure.calc = calc
@@ -181,7 +212,6 @@ class FullRelax(Relax):
 def relax(
     structures: Iterable[Atoms],
     settings: Relax,
-    calculator: AseCalculatorConfig | Calculator,
     drop_unconverged: bool = False,
 ) -> Iterator[Atoms]:
     """Relax structures according the given relaxation settings.
@@ -190,10 +220,15 @@ def relax(
     Whether their relaxation converged is recorded under the ``relax_converged`` key of :attr:`ase.Atoms.info`,
     see :meth:`.Relax.__call__`.
 
+    Everything about how a structure is relaxed -- including which calculator or
+    other energy/force engine to use -- is configured on *settings* alone; see
+    :attr:`.Relax.calculator`.  A custom, non-ASE relaxer therefore only needs to
+    hand callers a single object, `settings`, rather than a `settings` plus a
+    separately-tracked calculator.
+
     Args:
         structures (:class:`collections.abc.Iterable` of :class:`ase.Atoms`): the structures to minimize
         settings (:class:`.Relax`): the kind of relaxation to perform (position, volume, etc.)
-        calculator (:class:`.AseCalculatorConfig` or :class:`ase.calculators.calculator.Calculator`): the energy/force engine to use
         drop_unconverged (bool): skip structures whose relaxation did not reach
             :attr:`.Relax.force_tolerance` within :attr:`.Relax.max_steps`.  Either way, a
             :class:`UserWarning` reports how many structures did not converge once all are relaxed.
@@ -204,11 +239,6 @@ def relax(
     total = 0
     unconverged = 0
     for s in structures:
-        s = s.copy()
-        if isinstance(calculator, AseCalculatorConfig):
-            s.calc = calculator.get_calculator()
-        else:
-            s.calc = calculator
         total += 1
         s = settings(s)
         if not s.info["relax_converged"]:

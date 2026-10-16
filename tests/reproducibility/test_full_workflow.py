@@ -30,11 +30,11 @@ def run_workflow(rng):
     # Morse Potential for Cu (roughly)
     reference = MorsePotential(epsilon=.3, r0=2.55265548*1.10619396, rho0=4)
 
-    volset = VolumeRelax(max_steps=5, force_tolerance=1e-2) # reduced steps for speed
-    allset = FullRelax(max_steps=5, force_tolerance=1e-2)   # reduced steps for speed
+    volset = VolumeRelax(max_steps=5, force_tolerance=1e-2, calculator=reference) # reduced steps for speed
+    allset = FullRelax(max_steps=5, force_tolerance=1e-2, calculator=reference)   # reduced steps for speed
 
-    volmin = list(relax(spg, volset, reference))
-    allmin = list(relax(volmin, allset, reference))
+    volmin = list(relax(spg, volset))
+    allmin = list(relax(volmin, allset))
 
     # 3. Random Perturbations
     # Setup perturbations with the seed

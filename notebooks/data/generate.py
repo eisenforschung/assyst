@@ -19,11 +19,11 @@ structures = structures[::4]
 calc = MorsePotential(r0=2.556, epsilon=0.336, rho0=6.0)
 
 
-volset = VolumeRelax(max_steps=10, force_tolerance=1e-3)
-allset = FullRelax(max_steps=100, force_tolerance=1e-3)
+volset = VolumeRelax(max_steps=10, force_tolerance=1e-3, calculator=calc)
+allset = FullRelax(max_steps=100, force_tolerance=1e-3, calculator=calc)
 
-volmin = list(relax(structures, volset, calc))
-allmin = list(relax(volmin, allset, calc))
+volmin = list(relax(structures, volset))
+allmin = list(relax(volmin, allset))
 
 rattle = Rattle(.25) + Stretch(hydro=.05, shear=0.005)
 hydro = Stretch(hydro=.80, shear=.05)
