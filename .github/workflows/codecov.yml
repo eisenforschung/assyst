@@ -54,7 +54,9 @@ jobs:
       run: |
         pytest --cov --cov-branch --cov-report=xml
     - name: Upload coverage to Codecov
-      if: needs.changes.outputs.run == 'true'
+      # Dependabot runs get no CODECOV_TOKEN, and Codecov rejects tokenless
+      # uploads from branches in this repo.
+      if: needs.changes.outputs.run == 'true' && github.actor != 'dependabot[bot]'
       uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
