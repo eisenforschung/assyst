@@ -69,7 +69,7 @@ with different (electronic-structure) reference data, MLIPs, or workflow manager
 There exist multiple software packages that aim to generate training
 data for MLIPs (and often the MLIPs themselves, too), offering
 integrated workflows to do so automatically or semi-automatically, e.g.
-[@gelzinyte23; @ZengDeepMD; @zhang2020dp; @autoplex] and V.G. Fletcher[^2] aimed at solid-state
+[@gelzinyte23; @ZengDeepMD; @zhang2020dp; @autoplex, V.G. Fletcher [^2]] aimed at solid-state
 materials. All of these packages are deeply integrated with the software
 required to run the underlying electronic structure calculations and
 MLIP fitting. While this can be convenient, it also makes setting up
@@ -169,6 +169,8 @@ Because each GUI element cleanly maps onto a native workflow step, GUIs or
 workflow managers can easily control the executation and persistance of the
 steps.
 
+\newpage
+
 ```python
 import pyiron_workflow as pwf
 from ase import Atoms
@@ -179,11 +181,9 @@ from assyst import perturbations as pt
 from assyst.filters import DistanceFilter, FilterBase
 from assyst.plot import volume_histogram
 
-
 def formulas(element: str = "Cu", max_atoms: int = 4) -> cr.Formulas:
     formulas = cr.Formulas.range(element, 1, max_atoms + 1)
     return formulas
-
 
 def sample(
     formulas: cr.Formulas, max_structures: int = 100, seed: int = 42
@@ -193,7 +193,6 @@ def sample(
         shuffle=True, rng=seed,
     ))
     return structures
-
 
 def perturb(
     structures: list[Atoms],
@@ -205,14 +204,12 @@ def perturb(
     ))
     return structures
 
-
 def plot_volumes(structures: list[Atoms]):
     import matplotlib.pyplot as plt
 
     fig = plt.figure()
     volume_histogram(structures)
     return fig
-
 
 wf = pwf.Workflow("assyst")
 wf.formulas = pwf.node(formulas)
@@ -233,7 +230,7 @@ pf.gui
 
 ![Example of a GUI for part of an assyst
 pipeline.  Each box maps directly to a native workflow step in
-[@fig1classes].\label{fig2gui}](Fig2_Pyiron_Gui_Example.png)
+\autoref{fig1classes}.\label{fig2gui}](Fig2_Pyiron_Gui_Example.png)
 
 # Research Impact Statement
 
