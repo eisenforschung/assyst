@@ -69,7 +69,7 @@ with different (electronic-structure) reference data, MLIPs, or workflow manager
 There exist multiple software packages that aim to generate training
 data for MLIPs (and often the MLIPs themselves, too), offering
 integrated workflows to do so automatically or semi-automatically, e.g.
-[@gelzinyte23; @ZengDeepMD; @autoplex] and V.G. Fletcher[^2] aimed at solid-state
+[@gelzinyte23; @ZengDeepMD; @zhang2020dp; @autoplex] and V.G. Fletcher[^2] aimed at solid-state
 materials. All of these packages are deeply integrated with the software
 required to run the underlying electronic structure calculations and
 MLIP fitting. While this can be convenient, it also makes setting up
@@ -127,7 +127,7 @@ section, are likely to require more modifications.
 
 In \autoref{fig1classes}, we show the program design
 that enables this flexibility. Green boxes depict individual workflow
-steps. Between them data flows as lists of ASE `Atoms`
+steps. Between them data flows as lists of ASE  `Atoms`
 objects [@ase-paper]. `Atoms` is a well-known and widely used data structure in
 computational materials science that enables the easy distribution of
 the individual workflow steps. In our previous GUI implementations
@@ -156,16 +156,96 @@ small modular classes that are used to configure the individual workflow
 steps. Violet boxes locate where `assyst` loosely couples to external
 codes.\label{fig1classes}](Fig1_Features_Classes_InputTop_Shortlabel.png){ width=80% }
 
+## GUI Example
+
+We demonstrate the ease of integrating `assyst` with a small GUI for a partial
+training set workflow in the listing below.
+It uses `pyironflow==0.1.4` and `pyiron_workflow==0.20.3`.
+The modular structure allows integrators to wrap each workflow step separately
+according to the requirements of the surrounding framework
+This way exactly the wanted functionality can be exposed or small
+incompatibilites glued over easily.
+Because each GUI element cleanly maps onto a native workflow step, GUIs or
+workflow managers can easily control the executation and persistance of the
+steps.
+
+```python
+import pyiron_workflow as pwf
+from ase import Atoms
+from pyironflow import PyironFlow
+
+from assyst import crystals as cr
+from assyst import perturbations as pt
+from assyst.filters import DistanceFilter, FilterBase
+from assyst.plot import volume_histogram
+
+
+def formulas(element: str = "Cu", max_atoms: int = 4) -> cr.Formulas:
+    formulas = cr.Formulas.range(element, 1, max_atoms + 1)
+    return formulas
+
+
+def sample(
+    formulas: cr.Formulas, max_structures: int = 100, seed: int = 42
+) -> list[Atoms]:
+    structures = list(cr.sample(
+        formulas, max_structures=max_structures,
+        shuffle=True, rng=seed,
+    ))
+    return structures
+
+
+def perturb(
+    structures: list[Atoms],
+    perturbation: pt.PerturbationABC,
+    filters: FilterBase,
+) -> list[Atoms]:
+    structures = list(pt.perturb(
+        structures, [perturbation], filters=filters
+    ))
+    return structures
+
+
+def plot_volumes(structures: list[Atoms]):
+    import matplotlib.pyplot as plt
+
+    fig = plt.figure()
+    volume_histogram(structures)
+    return fig
+
+
+wf = pwf.Workflow("assyst")
+wf.formulas = pwf.node(formulas)
+wf.sample = pwf.node(sample, formulas=wf.formulas)
+wf.rattle = pwf.node(
+    pt.Rattle, sigma=0.1, create_supercells=True, rng=42
+)
+wf.min_dist = pwf.node(DistanceFilter, radii=0.8)
+wf.perturb = pwf.node(
+    perturb, structures=wf.sample, perturbation=wf.rattle,
+    filters=wf.min_dist,
+)
+wf.volumes = pwf.node(plot_volumes, structures=wf.perturb)
+
+pf = PyironFlow([wf], library_roots=None)
+pf.gui
+```
+
+![Example of a GUI for part of an assyst
+pipeline.  Each box maps directly to a native workflow step in
+[@fig1classes].\label{fig2gui}](Fig2_Pyiron_Gui_Example.png)
+
 # Research Impact Statement
 
-`assyst` implements a novel method to generate training data
-that we described in detail in [@poul23; @poul25]. While this
-implementation was not used in the original publications, those papers
-prompted multiple independent
-investigations [@ito25; @bienvenue25; @brunner26] using derived training
-sets, so we believe a unified and easily extended implementation
-will be helpful. `assyst` has been used in multiple public teaching
-workshops.
+`assyst` implements a method to generate training data that we described in
+detail in [@poul23; @poul25].
+While this implementation was not used in the original publications, those
+papers prompted multiple independent investigations [@ito25; @bienvenue25;
+@brunner26] using derived training sets.
+The `assyst` package was created in part also to define a reference
+implementation and facilitate future method extensions like these from a common
+core.
+`assyst` has been used in multiple public teaching workshops as well.
 
 # Documentation and Source Code
 
