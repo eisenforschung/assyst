@@ -108,7 +108,7 @@ duplication. Hence, we redesigned ASSYST from scratch by relying on:
 
 The result is a lightweight code that can be quickly integrated into other
 packages, even without in-depth knowledge of the code base. Users of
-high performance computing (HPC) systems can benefit from this particularly
+high-performance computing (HPC) systems can benefit from this particularly
 because the individual steps of a workflow producing an MLIP require quite
 different and heterogeneous compute resources. Initial preparation tasks
 may require minimal parallelization, if any, whereas electronic
@@ -127,7 +127,7 @@ section, are likely to require more modifications.
 
 In \autoref{fig1classes}, we show the program design
 that enables this flexibility. Green boxes depict individual workflow
-steps. Between them data flows as lists of ASE  `Atoms`
+steps. Between them data flows as lists of ASE `Atoms`
 objects [@ase-paper]. `Atoms` is a well-known and widely used data structure in
 computational materials science that enables the easy distribution of
 the individual workflow steps. In our previous GUI implementations[^1], each of
@@ -164,9 +164,9 @@ It uses `pyironflow` version 0.1.4 and `pyiron_workflow` version 0.20.3.
 The modular structure allows integrators to wrap each workflow step separately
 according to the requirements of the surrounding framework
 This way exactly the wanted functionality can be exposed or small
-incompatibilites glued over easily.
+incompatibilities glued over easily.
 Because each GUI element cleanly maps onto a native workflow step, GUIs or
-workflow managers can easily control the executation and persistance of the
+workflow managers can easily control the execution and persistence of the
 steps.
 
 \newpage
