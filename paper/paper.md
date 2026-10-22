@@ -69,7 +69,7 @@ with different (electronic-structure) reference data, MLIPs, or workflow manager
 There exist multiple software packages that aim to generate training
 data for MLIPs (and often the MLIPs themselves, too), offering
 integrated workflows to do so automatically or semi-automatically, e.g.,
-[@gelzinyte23; @ZengDeepMD; @zhang2020dp; @autoplex, V.G. Fletcher [^2]] aimed at solid-state
+[@gelzinyte23; @ZengDeepMD; @zhang2020dp; @autoplex, V.G. Fletcher[^2]] aimed at solid-state
 materials. All of these packages are deeply integrated with the software
 required to run the underlying electronic structure calculations and
 MLIP fitting. While this can be convenient, it also makes setting up
