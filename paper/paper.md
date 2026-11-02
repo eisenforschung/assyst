@@ -35,9 +35,9 @@ Simulation Environment (ASE) Calculator API. The package can be easily
 integrated with workflow managers, e.g., Executorlib [@executorlib] and
 pyiron [@pyiron], command-line interfaces (CLI) or graphical user
 interfaces (GUI), enabling heterogeneous high-performance computing (HPC)
-deployment. Released under the BSD 3-clause license with full documentation and
-CI testing, ASSYST enables the flexible and extensible generation of
-MLIP training data across diverse research workflows.
+deployment. Released under the BSD 3-Clause license with full documentation and
+continuous integration (CI) testing, ASSYST enables the flexible and extensible
+generation of MLIP training data across diverse research workflows.
 
 # Statement of Need
 
@@ -69,7 +69,7 @@ with different (electronic-structure) reference data, MLIPs, or workflow manager
 There exist multiple software packages that aim to generate training
 data for MLIPs (and often the MLIPs themselves, too), offering
 integrated workflows to do so automatically or semi-automatically, e.g.,
-[@gelzinyte23; @ZengDeepMD; @zhang2020dp; @autoplex, V.G. Fletcher[^2]] aimed at solid-state
+[@gelzinyte23; @ZengDeepMD; @zhang2020dp; @autoplex; @ns_database_builder] aimed at solid-state
 materials. All of these packages are deeply integrated with the software
 required to run the underlying electronic structure calculations and
 MLIP fitting. While this can be convenient, it also makes setting up
@@ -86,9 +86,6 @@ tools.
 [^1]: See
 [DPG2025](https://workshop.pyiron.org/DPG-tutorial-2025/02_assyst.html) and
 [DPG2026](https://workshop.pyiron.org/DPG-tutorial-2026/03_assyst.html).
-
-[^2]: V.G. Fletcher,
-[NS_database_builder](https://github.com/VGFletcher/NS_database_builder)
 
 # Software Design and Features
 
@@ -162,7 +159,7 @@ We demonstrate the ease of integrating ASSYST with a small GUI for a partial
 training set workflow in the listing below.
 It uses `pyironflow` version 0.1.4 and `pyiron_workflow` version 0.20.3.
 The modular structure allows integrators to wrap each workflow step separately
-according to the requirements of the surrounding framework
+according to the requirements of the surrounding framework.
 This way exactly the wanted functionality can be exposed or small
 incompatibilities glued over easily.
 Because each GUI element cleanly maps onto a native workflow step, GUIs or
@@ -235,7 +232,7 @@ pipeline.  Each box maps directly to a native workflow step in
 # Research Impact Statement
 
 ASSYST implements a method to generate training data that we described in
-detail in [@poul23; @poul25].
+detail in earlier publications [@poul23; @poul25].
 While this implementation was not used in the original publications, those
 papers prompted multiple independent investigations [@ito25; @bienvenue25;
 @brunner26] using derived training sets.
@@ -248,7 +245,7 @@ ASSYST has been used in multiple public teaching workshops as well.
 
 Documentation including worked examples in notebooks is available at
 <https://assyst.readthedocs.io/stable>. The source code can be obtained
-under BSD 3-clause license at
+under the BSD 3-Clause license at
 <https://github.com/eisenforschung/assyst>.
 
 # AI Usage Disclosure
@@ -258,7 +255,7 @@ documentation, and a small number of features. The majority of AI
 contributions are clearly marked as such by the commit information as
 authored by `google-labs-jules[bot]` [@jules],
 `Claude <noreply@anthropic.com>` or `claude[bot]`.
-`jules` was used with Gemini 2.5 [@gemini_2_5] and 3 [@gemini_3_pro]; for
+`Jules` was used with Gemini 2.5 [@gemini_2_5] and 3 [@gemini_3_pro]; for
 `Claude` we used Sonnet [@claude_sonnet_4_6] and Opus [@claude_opus_4_6;
 @claude_opus_4_7; @claude_opus_5_5]. Prompts are linked in PR
 descriptions where applicable. Additionally, most of the test suite was
