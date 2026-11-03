@@ -21,6 +21,70 @@ affiliations:
     name: Max Planck Institute for Sustainable Materials, Germany
 date: 21 May 2026
 bibliography: paper.bib
+# Override these entries because the bundled APA style title-cases BibTeX journal names.
+# Pandoc's nocase span preserves the journal's lowercase "npj" spelling.
+# Keep them in sync with paper.bib.
+references:
+ - id: bienvenue25
+   type: article-journal
+   author:
+    - {family: Bienvenu, given: Baptiste}
+    - {family: Todorova, given: Mira}
+    - {family: Neugebauer, given: Jörg}
+    - {family: Raabe, given: Dierk}
+    - {family: Mrovec, given: Matous}
+    - {family: Lysogorskiy, given: Yury}
+    - {family: Drautz, given: Ralf}
+   title: 'Development of an atomic cluster expansion potential for iron and its oxides'
+   container-title: '[npj]{.nocase} Computational Materials'
+   issued: {date-parts: [[2025]]}
+   volume: '11'
+   issue: '1'
+   publisher: Springer Nature
+   DOI: 10.1038/s41524-025-01574-w
+ - id: grace
+   type: article-journal
+   author:
+    - {family: Lysogorskiy, given: Yury}
+    - {family: Bochkarev, given: Anton}
+    - {family: Drautz, given: Ralf}
+   title: 'Graph atomic cluster expansion for foundational machine learning interatomic potentials'
+   container-title: '[npj]{.nocase} Computational Materials'
+   issued: {date-parts: [[2026]]}
+   publisher: Nature Publishing Group UK London
+   DOI: 10.1038/s41524-026-01979-1
+ - id: herzog2024coupled
+   type: article-journal
+   author:
+    - {family: Herzog, given: Basile}
+    - {family: Gallo, given: Alejandro}
+    - {family: Hummel, given: Felix}
+    - {family: Badawi, given: Michael}
+    - {family: Bučko, given: Tomáš}
+    - {family: Lebègue, given: Sébastien}
+    - {family: Grüneis, given: Andreas}
+    - {family: Rocca, given: Dario}
+   title: 'Coupled cluster finite temperature simulations of periodic materials via machine learning'
+   container-title: '[npj]{.nocase} Computational Materials'
+   issued: {date-parts: [[2024]]}
+   volume: '10'
+   issue: '1'
+   page: '68'
+   publisher: Nature Publishing Group UK London
+   DOI: 10.1038/s41524-024-01249-y
+ - id: poul25
+   type: article-journal
+   author:
+    - {family: Poul, given: Marvin}
+    - {family: Huber, given: Liam}
+    - {family: Neugebauer, given: Jörg}
+   title: 'Automated generation of structure datasets for machine learning potentials and alloys'
+   container-title: '[npj]{.nocase} Computational Materials'
+   issued: {date-parts: [[2025]]}
+   volume: '11'
+   issue: '1'
+   publisher: Springer Nature
+   DOI: 10.1038/s41524-025-01669-4
 ---
 
 # Summary
