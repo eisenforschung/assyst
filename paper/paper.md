@@ -23,7 +23,6 @@ date: 21 May 2026
 bibliography: paper.bib
 # Override these entries because the bundled APA style title-cases BibTeX journal names.
 # Pandoc's nocase span preserves the journal's lowercase "npj" spelling.
-# Keep them in sync with paper.bib.
 references:
  - id: bienvenue25
    type: article-journal
