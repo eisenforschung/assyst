@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/997271420.svg)](https://doi.org/10.5281/zenodo.15744358) [![Documentation Status](https://readthedocs.org/projects/assyst/badge/?version=stable)](https://assyst.readthedocs.io/stable/?badge=stable) [![codecov](https://codecov.io/gh/eisenforschung/assyst/graph/badge.svg?token=9PHHWIQ92Z)](https://codecov.io/gh/eisenforschung/assyst)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.11133/status.svg)](https://doi.org/10.21105/joss.11133) [![Documentation Status](https://readthedocs.org/projects/assyst/badge/?version=stable)](https://assyst.readthedocs.io/stable/?badge=stable) [![codecov](https://codecov.io/gh/eisenforschung/assyst/graph/badge.svg?token=9PHHWIQ92Z)](https://codecov.io/gh/eisenforschung/assyst)
 
 # ASSYST or _Automated Small SYmmetric Structure Training_
 
@@ -8,7 +8,7 @@ potentials.
 ASSYST is the Automated Small Symmetric Structure Training, a training protocol, aimed at providing comprehensive,
 transferable training sets for machine learning interatomic potentials (MLIP) automatically. A detailed explanation and
 verification of the method can be found in our papers.
-[1](https://doi.org/10.1038/s41524-025-01669-4)[2](https://doi.org/10.1103/PhysRevB.107.104103) ASSYST gives up the notion of fitting potentials to
+[[1]](https://doi.org/10.1038/s41524-025-01669-4)[[2]](https://doi.org/10.1103/PhysRevB.107.104103) ASSYST gives up the notion of fitting potentials to
 individual phases or structures and instead tries to deliver a training set spanning the full potential energy surface
 (PES) of a material.
 
@@ -32,17 +32,21 @@ the issues.
 
 ## Citation
 
-Please use the following citation when referencing the method in your work.
+Please use the following citation when referencing the method in your work or use [this file](CITATION.ciff).
 
 ```
-@article{poul2025automated,
-  title={Automated generation of structure datasets for machine learning potentials and alloys},
+@article{Poul2026,
+  title={ASSYST: A Python package for automated generation of training data for machine learning interatomic potentials},
   volume={11},
-  DOI={10.1038/s41524-025-01669-4},
-  number={1},
-  journal={npj Computational Materials},
-  author={Poul, Marvin and Huber, Liam and Neugebauer, J\"org},
-  year={2025},
-  month={Jun}
+  ISSN={2475-9066},
+  url={http://dx.doi.org/10.21105/joss.11133},
+  DOI={10.21105/joss.11133},
+  number={127},
+  journal={Journal of Open Source Software},
+  publisher={The Open Journal},
+  author={Poul, Marvin and Neugebauer, Jörg},
+  year={2026},
+  month=Nov,
+  pages={11133}
 }
 ```
