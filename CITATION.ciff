@@ -1,0 +1,34 @@
+cff-version: "1.2.0"
+authors:
+- family-names: Poul
+  given-names: Marvin
+  orcid: "https://orcid.org/0000-0002-6029-8748"
+- family-names: Neugebauer
+  given-names: Jörg
+  orcid: "https://orcid.org/0000-0002-7903-2472"
+doi: 10.5281/zenodo.23571160
+message: If you use this software, please cite our article in the
+  Journal of Open Source Software.
+preferred-citation:
+  authors:
+  - family-names: Poul
+    given-names: Marvin
+    orcid: "https://orcid.org/0000-0002-6029-8748"
+  - family-names: Neugebauer
+    given-names: Jörg
+    orcid: "https://orcid.org/0000-0002-7903-2472"
+  date-published: 2026-11-07
+  doi: 10.21105/joss.11133
+  issn: 2475-9066
+  issue: 127
+  journal: Journal of Open Source Software
+  publisher:
+    name: Open Journals
+  start: 11133
+  title: "ASSYST: A Python package for automated generation of training
+    data for machine learning interatomic potentials"
+  type: article
+  url: "https://joss.theoj.org/papers/10.21105/joss.11133"
+  volume: 11
+title: "ASSYST: A Python package for automated generation of training
+  data for machine learning interatomic potentials"
