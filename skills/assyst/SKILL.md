@@ -60,11 +60,9 @@ See `references/versions.md` for every difference.
 | `DistanceFilter(scalar)` | **broken: accepts everything** | works |
 | `DistanceFilter` neighbour cutoff | fixed at 5 Å | adapts to the radii |
 
-Some docs pages still show the 0.x call `relax(structures, FullRelax(), calc)`
-(`docs/index.rst` quick start, `docs/design.rst`). On 1.0 that call does not attach
-`calc`: it passes `calc` as `drop_unconverged`, and the relaxation raises
+The 0.x call `relax(structures, FullRelax(), calc)` does not attach `calc` on 1.0: it
+passes `calc` as `drop_unconverged`, and the relaxation raises
 `ValueError: ... has no calculator` unless the structures already carry `.calc`.
-Trust the source and the `SimpleUnary` notebook over those pages.
 
 ## Core workflow (assyst ≥ 1.0)
 
@@ -220,9 +218,8 @@ uuids of all parents), `step` (≥ 1.0), `perturbation`, `relax_converged` (≥ 
    do not, and their first relaxation then starts the lineage from scratch, one level too
    shallow. Call `assyst.utils.update_uuid(atoms, step="my_source")` on foreign seeds. On
    ≥ 1.0, use `step_of()` to identify the stage instead of counting `lineage`.
-10. **`RandomChoice(a, b, chance)` picks `b` with probability `chance`.** The upstream
-    notebook's comment says its 0.7 favours hydrostatic strain, but the code favours its
-    second argument (shear, measured at 0.697).
+10. **`RandomChoice(a, b, chance)` picks `b` with probability `chance`.** In the recipe
+    above, 0.7 therefore favours the second argument (shear, measured at 0.697).
     Filters shift the mix further: `perturb()` redraws a rejected structure, so the choice
     that fails the filter more often is under-represented. In the core workflow above,
     on Cu with EMT, 222 hydrostatic against 1398 shear strains came out (14 % against the
@@ -238,10 +235,7 @@ uuids of all parents), `step` (≥ 1.0), `perturbation`, `relax_converged` (≥ 
     2 eV/atom of the minimum), so set energy-weighting windows (for example pacemaker's
     `DElow`) from the measured spread, not from a published default.
 13. **Upstream is `eisenforschung/assyst`.** Older personal forks are stale and lack
-    modules such as `assyst.plot`. The depth-first, per-seed workflow driver
-    (`breadth_first`/`depth_first`, PR #138) is **not in any release**. If you vendor it
-    from the PR, note that it calls `relax(structures, settings, calculator)` (the 0.x
-    signature) and breaks on 1.0.
+    modules such as `assyst.plot`.
 
 ## Verifying the output
 

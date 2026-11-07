@@ -23,12 +23,3 @@ Read off `git diff 0.16.0 1.0.0 -- assyst/`.
   `pyxtal()` once per formula, so an **integer** seed re-seeded every formula with
   the same stream. In 0.16 one `Generator` drives the whole grid. As a result, 0.15 and
   0.16 produce different structures from the same integer seed.
-
-## Not in any release
-
-- `assyst.workflow` (`RelaxStage`, `PerturbStage`, `FilterStage`, `breadth_first` and
-  `depth_first(seeds, stages, executor=None)`) exists only in the open PR
-  eisenforschung/assyst#138. That PR was last updated in 2026-06 and is written against
-  the 0.x `relax(structures, settings, calculator)` signature.
-- `ElementScaledRattle` default reference lengths (PR #154) and leverage-score
-  subselection (PR #151) are also open PRs.
