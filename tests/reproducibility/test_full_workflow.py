@@ -43,7 +43,7 @@ def run_workflow(rng):
     rattle_p = Rattle(.25, rng=rng) + Stretch(hydro=.05, shear=0.005, rng=rng)
     hydro = Stretch(hydro=.80, shear=.05, rng=rng)
     shear = Stretch(hydro=.05, shear=.20, rng=rng)
-    stretch_p = RandomChoice(hydro, shear, .7, rng=rng)
+    stretch_p = RandomChoice(hydro, shear, .3, rng=rng)
 
     mods = [rattle_p, stretch_p] # apply each once
 

@@ -28,7 +28,7 @@ allmin = list(relax(volmin, allset))
 rattle = Rattle(.25) + Stretch(hydro=.05, shear=0.005)
 hydro = Stretch(hydro=.80, shear=.05)
 shear = Stretch(hydro=.05, shear=.20)
-stretch = RandomChoice(hydro, shear, .7)
+stretch = RandomChoice(hydro, shear, .3)
 mods = 1*[rattle] + 1*[stretch]
 
 f = VolumeFilter(300) & DistanceFilter({'Cu': 1., 'Zn': 1.}) & AspectFilter(6)
