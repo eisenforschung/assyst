@@ -59,8 +59,18 @@ jobs:
           gh api "repos/$REPO/actions/runs/$RUN_ID/jobs" --paginate \
             --jq '.jobs[] | select(.conclusion == "failure" or .conclusion == "timed_out") | [.id, .name] | @tsv' \
             > jobs.tsv
+          # Job logs always contain ANSI colour codes (the runner echoes each
+          # script in colour), which `gh` refuses to print without
+          # --allow-escape-sequences. Strip them so the model sees plain text,
+          # and keep gh's error in the file if the download still fails.
           while IFS=$'\t' read -r id name; do
-            gh api "repos/$REPO/actions/jobs/$id/logs" > "$id.log" || echo "(log unavailable)" > "$id.log"
+            if gh api --allow-escape-sequences "repos/$REPO/actions/jobs/$id/logs" > "$id.raw" 2> "$id.err"; then
+              sed -E 's/\x1b\[[0-9;]*[A-Za-z]//g' "$id.raw" > "$id.log"
+            else
+              { echo "(log unavailable: gh api failed)"; cat "$id.err"; } > "$id.log"
+              cat "$id.err" >&2
+            fi
+            rm -f "$id.raw" "$id.err"
           done < jobs.tsv
           cat jobs.tsv
           wc -l ./*.log || true
